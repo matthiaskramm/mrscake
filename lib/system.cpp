@@ -40,7 +40,7 @@
 //
 //M*/
 
-#include "precomp.hpp"
+#include "precomp_core.hpp"
 
 #if defined WIN32 || defined _WIN32 || defined WINCE
 #include <tchar.h>

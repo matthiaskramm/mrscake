@@ -40,7 +40,7 @@
 //
 //M*/
 
-#include "precomp.hpp"
+#include "precomp_core.hpp"
 
 #define CV_USE_SYSTEM_MALLOC 1
 

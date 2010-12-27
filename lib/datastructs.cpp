@@ -38,7 +38,7 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#include "precomp.hpp"
+#include "precomp_core.hpp"
 
 #define ICV_FREE_PTR(storage)  \
     ((schar*)(storage)->top + (storage)->block_size - (storage)->free_space)
