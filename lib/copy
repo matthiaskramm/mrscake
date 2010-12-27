@@ -1,0 +1,46 @@
+#!/bin/sh
+OPENCV=/home/sources/opencv/opencv/modules/
+cp $OPENCV/core/src/alloc.cpp .
+cp $OPENCV/core/src/arithm.cpp .
+cp $OPENCV/core/src/array.cpp .
+cp $OPENCV/core/src/convert.cpp .
+cp $OPENCV/core/src/copy.cpp .
+cp $OPENCV/core/src/datastructs.cpp .
+cp $OPENCV/core/src/mathfuncs.cpp .
+cp $OPENCV/core/src/matmul.cpp .
+cp $OPENCV/core/src/matrix.cpp .
+cp $OPENCV/core/src/persistence.cpp .
+cp $OPENCV/core/src/precomp.cpp .
+cp $OPENCV/core/src/rand.cpp .
+cp $OPENCV/core/src/stat.cpp .
+cp $OPENCV/core/src/system.cpp .
+cp $OPENCV/core/src/tables.cpp .
+cp $OPENCV/core/src/precomp.hpp ./precomp_core.hpp
+
+cp $OPENCV/ml/src/ann_mlp.cpp .
+cp $OPENCV/ml/src/estimate.cpp .
+cp $OPENCV/ml/src/data.cpp .
+cp $OPENCV/ml/src/inner_functions.cpp .
+cp $OPENCV/ml/src/cnn.cpp .
+cp $OPENCV/ml/src/boost.cpp .
+cp $OPENCV/ml/src/gbt.cpp .
+cp $OPENCV/ml/src/ertrees.cpp .
+cp $OPENCV/ml/src/knearest.cpp .
+cp $OPENCV/ml/src/tree.cpp .
+cp $OPENCV/ml/src/rtrees.cpp .
+cp $OPENCV/ml/src/testset.cpp .
+cp $OPENCV/ml/src/svm.cpp .
+cp $OPENCV/ml/src/precomp.hpp .
+
+cp $OPENCV/core/include/opencv2/core/core.hpp .
+cp $OPENCV/core/include/opencv2/core/internal.hpp .
+cp $OPENCV/core/include/opencv2/core/mat.hpp .
+cp $OPENCV/core/include/opencv2/core/operations.hpp .
+cp $OPENCV/core/include/opencv2/core/version.hpp .
+
+cp $OPENCV/ml/include/opencv2/ml/ml.hpp .
+
+mkdir -p opencv2
+rm -f opencv2/ml opencv2/core
+ln -s .. opencv2/ml
+ln -s .. opencv2/core
