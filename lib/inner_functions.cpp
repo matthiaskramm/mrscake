@@ -1038,6 +1038,15 @@ cvSortSamplesByClasses( const float** samples, const CvMat* classes,
     if( !samples || !classes || !class_ranges )
         CV_ERROR( CV_StsNullPtr, "INTERNAL ERROR: some of the args are NULL pointers" );
 
+#if 0
+    CvMat classes2;
+    if(classes->rows != 1 && classes->cols == 1) {
+        /* transpose matrix, if necessary */
+        classes2 = cvMat(classes->cols, classes->rows, classes->type, CV_MAT_ELEM_PTR(*classes, 0, 0));
+        classes = &classes2;
+    }
+#endif
+
     if( classes->rows != 1 || CV_MAT_TYPE(classes->type) != CV_32SC1 )
         CV_ERROR( CV_StsBadArg, "classes array must be a single row of integers" );
 
