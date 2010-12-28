@@ -62,10 +62,12 @@ int main()
                                      /*gamma*/1, /*coef0*/0, /*C*/1, /*nu*/0.5,
                                      /*p*/0, /*class_weights*/0,
                                      cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON));
+
     CvMat count_to_width = make_counting_matrix(width,1);
     CvMat count_to_height = make_counting_matrix(1,5);
-    
+
     svm.train_auto(&values, &response, &count_to_width, 0, params, 2);
+    printf("gamma:%f coef0:%f\n", params.gamma, params.coef0);
     //svm.train(&values, &response, &count_to_width, 0, params);
 
     int count = 0;
