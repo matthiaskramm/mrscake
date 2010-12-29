@@ -4,8 +4,8 @@
 
 void print_result(float train_err, float test_err, const CvMat* var_imp)
 {
-    printf( "train error    %f\n", train_err );
-    printf( "test error    %f\n\n", test_err );
+    printf( "train error    %.2f%%\n", train_err );
+    printf( "test error    %.2f%%\n\n", test_err );
     
 #ifndef VARIABLE_IMPORTANCE
     var_imp = 0;
@@ -72,7 +72,31 @@ static void cvmSetI(CvMat*m, int y, int x, int v)
     int*e = (int*)(CV_MAT_ELEM_PTR(*m, y, x));
     *e = v;
 }
+static int cvmGetI(const CvMat*m, int y, int x)
+{
+    return CV_MAT_ELEM((*m), int, y, x);
+}
+static float cvmGetF(const CvMat*m, int y, int x)
+{
+    return CV_MAT_ELEM((*m), float, y, x);
+}
 
+static CvMat cvmat_new_int(int rows, int columns) 
+{
+    return cvMat(rows, columns, CV_32FC1, calloc(1, sizeof(int)*rows*columns));
+}
+
+CvMat cvmat_make_boolean_class_columns(const CvMat*mat, int num_features)
+{
+    CvMat columns = cvmat_new_int(mat->rows, num_features);
+    int t;
+    for(t=0;t<mat->rows;t++) {
+        int cls = (int)cvmGetF(mat, t, 0);
+	assert(cls >= 0 && cls < num_features);
+	cvmSetI(&columns, t, cls, 1);
+    }
+    return columns;
+}
 
 class CvMySVM: public CvSVM
 {
@@ -127,7 +151,7 @@ double svm_print_error(CvMySVM*svm, const CvMat*values, const CvMat*response, in
     print_result(train_error * 100 / train_total, error * 100 / total, 0);
 }
 
-double ann_print_error(CvANN_MLP*ann, const CvMat*values, const CvMat*response, int response_idx, const CvMat*train_sidx)
+double ann_print_error(CvANN_MLP*ann, const CvMat*values, int num_classes, const CvMat*response, int response_idx, const CvMat*train_sidx)
 {
     int count = 0;
     float*tmp = new float[values->cols];
@@ -136,27 +160,45 @@ double ann_print_error(CvANN_MLP*ann, const CvMat*values, const CvMat*response, 
     int train_total = 0;
     double error = 0;
     double train_error = 0;
+    float*last_layer = (float*)malloc(sizeof(float)*num_classes);
     for(t=0;t<values->rows;t++) {
         int s;
         int c = 0;
         for(s=0;s<values->cols;s++) {
-            tmp[c] = CV_MAT_ELEM((*values), float, t, s);
+            tmp[c] = cvmGetF(values, t, s);
             c++;
         }
-        double r1 = 0.0;
         CvMat input = cvMat(1, c, CV_32FC1, tmp);
-        CvMat output = cvMat(1, 1, CV_32FC1, &r1);
+        CvMat output = cvMat(1, num_classes, CV_32FC1, last_layer);
 
-        float r2 = CV_MAT_ELEM((*response), float, t, 0);
+        int r2 = (int)cvmGetF(response, t, 0);
         ann->predict(&input, &output);
+       
+	int r1 = -1;
+	float max = -INFINITY;
+	printf("%d: ", r2);
+	for(s=0;s<num_classes;s++) {
+	    printf("%f ", last_layer[s]);
+	    if(last_layer[s] > max) {
+		max = last_layer[s];
+		r1 = s;
+	    }
+	}
+	//r1 = num_classes-1-r1;
+	if(r1==r2) 
+	    printf("OK");
+	else
+	    printf(" %d!=%d", r1, r2);
+	printf("\n");
 
         bool train = 0;
         for(s=0;s<train_sidx->cols;s++) {
-            if(CV_MAT_ELEM((*train_sidx), unsigned, 0, s) == t) {
+            if(cvmGetI(train_sidx, 0, s) == t) {
                 train = 1;
                 break;
             }
         }
+
         if(train) {
             train_total++;
             if(r1!=r2)
@@ -167,17 +209,20 @@ double ann_print_error(CvANN_MLP*ann, const CvMat*values, const CvMat*response, 
                 error++;
         }
     }
+    free(last_layer);
     print_result(train_error * 100 / train_total, error * 100 / total, 0);
 }
 
+/* FIXME: these should come from a header file */
 CVAPI(CvMat*) cvCreateMat( int rows, int cols, int type );
+CvMat* cvPreprocessCategoricalResponses( const CvMat* responses, const CvMat* sample_idx, int sample_all, CvMat** out_response_map, CvMat** class_counts);
 
 int main()
 {
     const int train_sample_count = 300;
     bool is_regression = false;
 
-    const char* filename = "/usr/share/opencv/samples/c/waveform.data";
+    const char* filename = "data/waveform.data";
     int response_idx = 21;
 
     CvMLData data;
@@ -200,6 +245,9 @@ int main()
     const CvMat* var_types = data.get_var_types();
     const CvMat* train_sidx = data.get_train_sample_idx();
     const CvMat* var_idx = data.get_var_idx();
+    CvMat*response_map;
+    CvMat*ordered_response = cvPreprocessCategoricalResponses(response, var_idx, response->rows, &response_map, 0);
+    int num_classes = response_map->cols;
     
     CvDTree dtree;
     printf("======DTREE=====\n");
@@ -230,15 +278,19 @@ int main()
     print_result( gbtrees.calc_error( &data, CV_TRAIN_ERROR), gbtrees.calc_error( &data, CV_TEST_ERROR ), 0);
 
     printf("======NEURONAL NETWORK=====\n");
+
     int num_layers = 2;
-    CvMat layers = cvMat(1, 2, CV_32SC1, calloc(1, sizeof(double)*num_layers*1));
+    CvMat layers = cvMat(1, num_layers, CV_32SC1, calloc(1, sizeof(double)*num_layers*1));
     cvmSetI(&layers, 0, 0, values->cols);
-    cvmSetI(&layers, 0, 1, 1); //FIXME: this should be the number of classes
+    //cvmSetI(&layers, 0, 1, values->cols / 2);
+    cvmSetI(&layers, 0, 1, num_classes);
     CvANN_MLP ann(&layers, CvANN_MLP::SIGMOID_SYM, 0.5, 0.5);
     CvANN_MLP_TrainParams ann_params;
-    ann.train(values, response, NULL, train_sidx, ann_params, 0x0000);
+    CvMat ann_response = cvmat_make_boolean_class_columns(response, num_classes);
 
-    ann_print_error(&ann, values, response, response_idx, train_sidx);
+    ann.train(values, &ann_response, NULL, train_sidx, ann_params, 0x0000);
+
+    ann_print_error(&ann, values, num_classes, response, response_idx, train_sidx);
 
     printf("======KNEAREST=====\n");
     CvKNearest knearest;
@@ -270,7 +322,7 @@ int main()
     svm1.train_auto(values, response, var_idx, train_sidx, params1);
     svm_print_error(&svm1, values, response, response_idx, train_sidx);
 
-    printf("======== Linear svm2 =======\n");
+    printf("======== Linear SVM =======\n");
     CvMySVM svm2;
     CvSVMParams params2 = CvSVMParams(CvSVM::C_SVC, CvSVM::LINEAR,
                                      /*degree*/0, /*gamma*/1, /*coef0*/0, /*C*/1,
@@ -282,7 +334,7 @@ int main()
 
 #if 0 /* slow */
 
-    printf("======== Polygonal svm3 =======\n");
+    printf("======== Polygonal SVM =======\n");
     //printf("indexes: %d / %d, responses: %d\n", train_sidx->cols, var_idx->cols, values->rows);
     CvMySVM svm3;
     CvSVMParams params3 = CvSVMParams(CvSVM::C_SVC, CvSVM::POLY,
