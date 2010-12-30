@@ -755,7 +755,7 @@ void CvGBTrees::do_subsample()
 //===========================================================================
 
 float CvGBTrees::predict( const CvMat* _sample, const CvMat* _missing,
-        CvMat* /*weak_responses*/, CvSlice slice, int k) const 
+        CvMat* /*weak_responses*/, CvSlice slice, int k) const
 {
     float result = 0.0f;
 
@@ -773,13 +773,13 @@ float CvGBTrees::predict( const CvMat* _sample, const CvMat* _missing,
     {
         if ((weak[i]) && (weak_count))
         {
-            cvStartReadSeq( weak[i], &reader ); 
+            cvStartReadSeq( weak[i], &reader );
             cvSetSeqReaderPos( &reader, slice.start_index );
             for (int j=0; j<weak_count; ++j)
             {
                 CV_READ_SEQ_ELEM( tree, reader );
                 sum[i] += params.shrinkage *
-                         (float)(tree->predict(_sample, _missing)->value);
+                         (float)(tree->predict(_sample, _missing, false)->value);
             }
         }
     }

@@ -3580,10 +3580,12 @@ CvDTreeNode* CvDTree::predict( const CvMat* _sample,
     if( !CV_IS_MAT(_sample) || CV_MAT_TYPE(_sample->type) != CV_32FC1 ||
         (_sample->cols != 1 && _sample->rows != 1) ||
         (_sample->cols + _sample->rows - 1 != data->var_all && !preprocessed_input) ||
-        (_sample->cols + _sample->rows - 1 != data->var_count && preprocessed_input) )
+        (_sample->cols + _sample->rows - 1 != data->var_count && preprocessed_input) ) 
+    {
             CV_ERROR( CV_StsBadArg,
         "the input sample must be 1d floating-point vector with the same "
         "number of elements as the total number of variables used for training" );
+    }
 
     sample = _sample->data.fl;
     step = CV_IS_MAT_CONT(_sample->type) ? 1 : _sample->step/sizeof(sample[0]);
@@ -3644,6 +3646,7 @@ CvDTreeNode* CvDTree::predict( const CvMat* _sample,
                             "one of input categorical variable is not an integer" );
                         
                         int sh = 0;
+                        /* binary search */
                         while( a < b )
                         {
                             sh++;

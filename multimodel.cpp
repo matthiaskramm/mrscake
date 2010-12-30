@@ -72,6 +72,11 @@ static void cvmSetI(CvMat*m, int y, int x, int v)
     int*e = (int*)(CV_MAT_ELEM_PTR(*m, y, x));
     *e = v;
 }
+static void cvmSetF(CvMat*m, int y, int x, float f)
+{
+    float*e = (float*)(CV_MAT_ELEM_PTR(*m, y, x));
+    *e = f;
+}
 static int cvmGetI(const CvMat*m, int y, int x)
 {
     return CV_MAT_ELEM((*m), int, y, x);
@@ -83,19 +88,49 @@ static float cvmGetF(const CvMat*m, int y, int x)
 
 static CvMat cvmat_new_int(int rows, int columns) 
 {
+    return cvMat(rows, columns, CV_32SC1, calloc(1, sizeof(int)*rows*columns));
+}
+
+static CvMat cvmat_new_float(int rows, int columns) 
+{
     return cvMat(rows, columns, CV_32FC1, calloc(1, sizeof(int)*rows*columns));
 }
 
 CvMat cvmat_make_boolean_class_columns(const CvMat*mat, int num_features)
 {
-    CvMat columns = cvmat_new_int(mat->rows, num_features);
+    CvMat columns = cvmat_new_float(mat->rows, num_features);
     int t;
     for(t=0;t<mat->rows;t++) {
+        int s;
+        for(s=0;s<num_features;s++) {
+	    cvmSetF(&columns, t, s, -1);
+        }
         int cls = (int)cvmGetF(mat, t, 0);
 	assert(cls >= 0 && cls < num_features);
-	cvmSetI(&columns, t, cls, 1);
+	cvmSetF(&columns, t, cls, 1);
     }
     return columns;
+}
+
+CvMat cvmat_remove_column(const CvMat*mat, int column)
+{
+    assert(column<mat->cols && column>=0);
+    assert(mat->cols > 1);
+
+    CvMat new_mat = cvMat(mat->rows, mat->cols-1, mat->type, malloc(mat->rows*mat->cols*8));
+    int t;
+    int size = CV_ELEM_SIZE(mat->type);
+    for(t=0;t<mat->rows;t++) {
+        int pos = 0;
+        int s;
+        for(s=0;s<mat->cols;s++) {
+            if(s!=column) {
+                memcpy(CV_MAT_ELEM_PTR(new_mat, t, pos), CV_MAT_ELEM_PTR((*mat), t, s), size);
+                pos++;
+            }
+        }
+    }
+    return new_mat;
 }
 
 class CvMySVM: public CvSVM
@@ -106,6 +141,48 @@ class CvMySVM: public CvSVM
         return predict(values, num_values, returnDFval);
     }
 };
+    
+
+double gbt_print_error(CvGBTrees*gbt, const CvMat*values, const CvMat*response, int response_idx, const CvMat*train_sidx)
+{
+    int count = 0;
+    float*tmp = new float[values->cols];
+    int t;
+    int total = 0;
+    int train_total = 0;
+    double error = 0;
+    double train_error = 0;
+    for(t=0;t<values->rows;t++) {
+        int s;
+        int c=0;
+        for(s=0;s<values->cols;s++) {
+            tmp[c++] = CV_MAT_ELEM((*values), float, t, s);
+        }
+        CvMat m = cvMat(1, c, CV_32FC1, tmp);
+
+        float r1 = gbt->predict(&m, 0);
+        float r2 = CV_MAT_ELEM((*response), float, t, 0);
+
+        bool train = 0;
+        for(s=0;s<train_sidx->cols;s++) {
+            if(CV_MAT_ELEM((*train_sidx), unsigned, 0, s) == t) {
+                train = 1;
+                break;
+            }
+        }
+
+        if(train) {
+            train_total++;
+            if(r1!=r2)
+                train_error++;
+        } else {
+            total++;
+            if(r1!=r2)
+                error++;
+        }
+    }
+    print_result(train_error * 100 / train_total, error * 100 / total, 0);
+}
 
 double svm_print_error(CvMySVM*svm, const CvMat*values, const CvMat*response, int response_idx, const CvMat*train_sidx)
 {
@@ -151,7 +228,9 @@ double svm_print_error(CvMySVM*svm, const CvMat*values, const CvMat*response, in
     print_result(train_error * 100 / train_total, error * 100 / total, 0);
 }
 
-double ann_print_error(CvANN_MLP*ann, const CvMat*values, int num_classes, const CvMat*response, int response_idx, const CvMat*train_sidx)
+double ann_print_error(CvANN_MLP*ann, const CvMat*values, int num_classes,
+                       const CvMat*bool_response, const CvMat*response,
+                       int response_idx, const CvMat*train_sidx)
 {
     int count = 0;
     float*tmp = new float[values->cols];
@@ -165,31 +244,41 @@ double ann_print_error(CvANN_MLP*ann, const CvMat*values, int num_classes, const
         int s;
         int c = 0;
         for(s=0;s<values->cols;s++) {
-            tmp[c] = cvmGetF(values, t, s);
-            c++;
+            if(s != response_idx) {
+                tmp[c] = cvmGetF(values, t, s);
+                c++;
+            }
         }
         CvMat input = cvMat(1, c, CV_32FC1, tmp);
         CvMat output = cvMat(1, num_classes, CV_32FC1, last_layer);
 
+#ifdef PRINT
+        for(s=0;s<num_classes;s++) {
+            float f = (float)cvmGetF(bool_response, t, s);
+            printf("%f ", f);
+        }
+        printf("| ");
+#endif
+
         int r2 = (int)cvmGetF(response, t, 0);
         ann->predict(&input, &output);
-       
+
 	int r1 = -1;
 	float max = -INFINITY;
-	printf("%d: ", r2);
 	for(s=0;s<num_classes;s++) {
+#ifdef PRINT
 	    printf("%f ", last_layer[s]);
+#endif
 	    if(last_layer[s] > max) {
 		max = last_layer[s];
 		r1 = s;
 	    }
 	}
-	//r1 = num_classes-1-r1;
-	if(r1==r2) 
-	    printf("OK");
-	else
-	    printf(" %d!=%d", r1, r2);
-	printf("\n");
+#ifdef PRINT
+        if(r1!=r2)
+            printf("E");
+        printf("\n");
+#endif
 
         bool train = 0;
         for(s=0;s<train_sidx->cols;s++) {
@@ -251,15 +340,17 @@ int main()
     
     CvDTree dtree;
     printf("======DTREE=====\n");
-    dtree.train( &data, CvDTreeParams( 10, 2, 0, false, 16, 0, false, false, 0 ));
+    CvDTreeParams cvd_params( 10, 1, 0, false, 16, 0, false, false, 0);
+    dtree.train( &data, cvd_params);
     print_result( dtree.calc_error( &data, CV_TRAIN_ERROR), dtree.calc_error( &data, CV_TEST_ERROR ), dtree.get_var_importance() );
 
-    if(is_regression) {
-        printf("======BOOST=====\n");
-        CvBoost boost;
-        boost.train( &data, CvBoostParams(CvBoost::DISCRETE, 100, 0.95, 2, false, 0));
-        print_result( boost.calc_error( &data, CV_TRAIN_ERROR ), boost.calc_error( &data, CV_TEST_ERROR), 0 );
-    }
+#if 0
+    /* boosted trees are only implemented for two classes */
+    printf("======BOOST=====\n");
+    CvBoost boost;
+    boost.train( &data, CvBoostParams(CvBoost::DISCRETE, 100, 0.95, 2, false, 0));
+    print_result( boost.calc_error( &data, CV_TRAIN_ERROR ), boost.calc_error( &data, CV_TEST_ERROR), 0 );
+#endif
 
     printf("======RTREES=====\n");
     CvRTrees rtrees;
@@ -274,23 +365,29 @@ int main()
     printf("======GBTREES=====\n");
     CvGBTrees gbtrees;
     CvGBTreesParams gbparams;
+    gbparams.loss_function_type = CvGBTrees::DEVIANCE_LOSS; // classification, not regression
     gbtrees.train( &data, gbparams);
+    
+    //gbt_print_error(&gbtrees, values, response, response_idx, train_sidx);
     print_result( gbtrees.calc_error( &data, CV_TRAIN_ERROR), gbtrees.calc_error( &data, CV_TEST_ERROR ), 0);
 
     printf("======NEURONAL NETWORK=====\n");
 
-    int num_layers = 2;
+    int num_layers = 3;
     CvMat layers = cvMat(1, num_layers, CV_32SC1, calloc(1, sizeof(double)*num_layers*1));
-    cvmSetI(&layers, 0, 0, values->cols);
-    //cvmSetI(&layers, 0, 1, values->cols / 2);
+    cvmSetI(&layers, 0, 0, values->cols-1);
     cvmSetI(&layers, 0, 1, num_classes);
-    CvANN_MLP ann(&layers, CvANN_MLP::SIGMOID_SYM, 0.5, 0.5);
+    cvmSetI(&layers, 0, 2, num_classes);
+    CvANN_MLP ann(&layers, CvANN_MLP::SIGMOID_SYM, 0.0, 0.0);
     CvANN_MLP_TrainParams ann_params;
+    //ann_params.train_method = CvANN_MLP_TrainParams::BACKPROP;
     CvMat ann_response = cvmat_make_boolean_class_columns(response, num_classes);
 
-    ann.train(values, &ann_response, NULL, train_sidx, ann_params, 0x0000);
+    CvMat values2 = cvmat_remove_column(values, response_idx);
+    ann.train(&values2, &ann_response, NULL, train_sidx, ann_params, 0x0000);
+    //ann.train(values, &ann_response, NULL, train_sidx, ann_params, 0x0000);
 
-    ann_print_error(&ann, values, num_classes, response, response_idx, train_sidx);
+    ann_print_error(&ann, values, num_classes, &ann_response, response, response_idx, train_sidx);
 
     printf("======KNEAREST=====\n");
     CvKNearest knearest;
