@@ -31,3 +31,7 @@ row_t*row_new(int num_inputs)
     r->num_inputs = num_inputs;
     return r;
 }
+void row_destroy(row_t*row)
+{
+    free(row);
+}

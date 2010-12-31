@@ -298,12 +298,12 @@ node_t* node_new3(nodetype_t*t, node_t*one, node_t*two, node_t*three)
     return n;
 }
 
-void node_free(node_t*n)
+void node_destroy(node_t*n)
 {
     int t;
     if((n->type->flags&NODE_FLAG_HAS_CHILDREN) && n->child) {
 	for(t=0;t<n->num_children;t++) {
-	    node_free(n->child[t]);n->child[t] = 0;
+	    node_destroy(n->child[t]);n->child[t] = 0;
 	}
 	free(n->child);
     }

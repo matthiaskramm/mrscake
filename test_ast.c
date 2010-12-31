@@ -22,8 +22,8 @@ int main()
     node_print(node);
 
     row_t*row = row_new(4);
-    row->inputs[0] = variable_make_continuous(5.0);
-    row->inputs[1] = variable_make_continuous(3.0);
+    row->inputs[0] = variable_make_continuous(1.0);
+    row->inputs[1] = variable_make_continuous(2.0);
     row->inputs[2] = variable_make_continuous(3.0);
     row->inputs[3] = variable_make_categorical(5);
 
@@ -31,5 +31,8 @@ int main()
     e.row = row;
     value_t v = node_eval(node, &e);
     value_print(&v);
+
+    row_destroy(row);
+    node_destroy(node);
     return 0;
 }

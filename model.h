@@ -25,6 +25,7 @@ typedef struct _row {
 } row_t;
 
 row_t*row_new(int num_inputs);
+void row_destroy(row_t*row);
 
 /* input variable with column info (for sparse rows) */
 typedef struct _variable_and_position {
@@ -40,7 +41,6 @@ typedef struct _sparse_row {
     variable_and_position_t*inputs;
     int num_inputs;
 } sparse_row_t;
-
 
 /* a single "row" in the data, combining a single known output with
    the corresponding inputs */
@@ -66,7 +66,5 @@ typedef struct _model_trainer {
     model_t*(*train)(example_t*examples, int num_examples);
     void*internal;
 } model_trainer_t;
-
-
 
 #endif
