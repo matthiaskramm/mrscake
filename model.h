@@ -1,9 +1,9 @@
 #ifndef __model_h__
 #define __model_h__
 #include <stdint.h>
+#include "types.h"
 //#include "io.h"
 
-typedef int32_t category_t;
 typedef enum {CATEGORICAL,CONTINUOUS,MISSING} columntype_t;
 
 /* input variable (a.k.a. "free" variable) */
@@ -45,26 +45,24 @@ typedef struct _sparse_row {
 /* a single "row" in the data, combining a single known output with
    the corresponding inputs */
 typedef struct _example {
-    row_t row;
+    int num_inputs;
     category_t desired_output;
+    variable_t inputs[0];
 } example_t;
 
 typedef struct _model {
-    uint32_t id;
     int num_inputs;
 
-    int (*description_length)();
-    
+    void* (*get_code)();
     category_t (*predict)(row_t row);
-    
-//    void (*write)(writer_t*writer);
 
     void*internal;
 } model_t;
 
-typedef struct _model_trainer {
+typedef struct _model_factory {
+    const char*name;
     model_t*(*train)(example_t*examples, int num_examples);
     void*internal;
-} model_trainer_t;
+} model_factory_t;
 
 #endif

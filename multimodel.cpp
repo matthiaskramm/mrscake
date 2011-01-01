@@ -1,4 +1,5 @@
 #include "ml.hpp"
+#include "cvtools.h"
 #include <stdio.h>
 #include <assert.h>
 
@@ -302,10 +303,6 @@ double ann_print_error(CvANN_MLP*ann, const CvMat*values, int num_classes,
     print_result(train_error * 100 / train_total, error * 100 / total, 0);
 }
 
-/* FIXME: these should come from a header file */
-CVAPI(CvMat*) cvCreateMat( int rows, int cols, int type );
-CvMat* cvPreprocessCategoricalResponses( const CvMat* responses, const CvMat* sample_idx, int sample_all, CvMat** out_response_map, CvMat** class_counts);
-
 int main()
 {
     const int train_sample_count = 300;
@@ -335,7 +332,7 @@ int main()
     const CvMat* train_sidx = data.get_train_sample_idx();
     const CvMat* var_idx = data.get_var_idx();
     CvMat*response_map;
-    CvMat*ordered_response = cvPreprocessCategoricalResponses(response, var_idx, response->rows, &response_map, 0);
+    //CvMat*ordered_response = cvPreprocessCategoricalResponses(response, var_idx, response->rows, &response_map, 0);
     int num_classes = response_map->cols;
     
     CvDTree dtree;

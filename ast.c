@@ -39,52 +39,6 @@
 
 #define EVAL_CHILD(i) ((n)->child[(i)]->type->eval((n)->child[(i)],locals))
 
-#define FLOAT(v) (check_type((v),TYPE_FLOAT),(v).f)
-#define INT(v) (check_type((v),TYPE_INT),(v).i)
-#define CATEGORY(v) (check_type((v),TYPE_CATEGORY),(v).c)
-#define BOOL(v) (check_type((v),TYPE_BOOL),(v).b)
-
-static inline int check_type(value_t v, uint8_t type)
-{
-    assert(v.type == type);
-    return 0;
-}
-
-static inline value_t bool_value(bool b)
-{
-    value_t v;
-    v.type = TYPE_BOOL;
-    v.b = b;
-    return v;
-}
-static inline value_t float_value(float f)
-{
-    value_t v;
-    v.type = TYPE_FLOAT;
-    v.f = f;
-    return v;
-}
-static inline value_t missing_value()
-{
-    value_t v;
-    v.type = TYPE_MISSING;
-    return v;
-}
-static inline value_t category_value(category_t c)
-{
-    value_t v;
-    v.type = TYPE_CATEGORY;
-    v.c = c;
-    return v;
-}
-static inline value_t int_value(int i)
-{
-    value_t v;
-    v.type = TYPE_INT;
-    v.i = i;
-    return v;
-}
-
 // -------------------------- root node -------------------------------
 
 value_t node_root_eval(node_t*n, environment_t* locals)
@@ -105,7 +59,7 @@ max_args:2,
 value_t node_add_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
-    return float_value(FLOAT(left) + FLOAT(right));
+    return float_value(AS_FLOAT(left) + AS_FLOAT(right));
 }
 nodetype_t node_add =
 {
@@ -121,7 +75,7 @@ max_args:2,
 value_t node_minus_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
-    return float_value(FLOAT(left) - FLOAT(right));
+    return float_value(AS_FLOAT(left) - AS_FLOAT(right));
 }
 nodetype_t node_minus =
 {
@@ -137,7 +91,7 @@ max_args:2,
 value_t node_lt_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
-    return bool_value(FLOAT(left) < FLOAT(right));
+    return bool_value(AS_FLOAT(left) < AS_FLOAT(right));
 }
 nodetype_t node_lt =
 {
@@ -153,7 +107,7 @@ max_args:2,
 value_t node_gt_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
-    return bool_value(FLOAT(left) > FLOAT(right));
+    return bool_value(AS_FLOAT(left) > AS_FLOAT(right));
 }
 nodetype_t node_gt =
 {
@@ -164,11 +118,49 @@ min_args:2,
 max_args:2,
 };
 
+// -------------------------- array ------------------------------------
+
+value_t node_array_eval(node_t*n, environment_t* locals)
+{
+    return n->value;
+}
+nodetype_t node_array =
+{
+name:"array",
+flags:0,
+eval: node_array_eval,
+min_args:0,
+max_args:0,
+};
+
+// -------------------------- x in y ----------------------------------
+
+value_t node_in_eval(node_t*n, environment_t* locals)
+{
+    EVAL_HEADER_2(left,right);
+    int i;
+    int c = AS_CATEGORY(left);
+    array_t* a = AS_ARRAY(right);
+    for(i=0;i<a->size;i++) {
+        if(AS_CATEGORY(a->values[i]) == c)
+            return bool_value(true);
+    }
+    return bool_value(false);
+}
+nodetype_t node_in =
+{
+name:"in",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_in_eval,
+min_args:2,
+max_args:2,
+};
+
 // -------------------- if(x) then y else z ----------------------------
 
 value_t node_if_eval(node_t*n, environment_t* locals)
 {
-    bool condition = BOOL(EVAL_CHILD(0));
+    bool condition = AS_BOOL(EVAL_CHILD(0));
     if(condition == true) {
 	return EVAL_CHILD(1);
     } else {
@@ -244,6 +236,13 @@ node_t* node_new(nodetype_t*t,...)
 	n->value = int_value(va_arg(arglist,int));
     } else if(n->type == &node_category) {
 	n->value = category_value(va_arg(arglist,category_t));
+    } else if(n->type == &node_array) {
+        int array_size = va_arg(arglist,int);
+	n->value = array_value(array_size);
+        int t;
+        for(t=0;t<n->value.a->size;t++) {
+            n->value.a->values[t] = category_value(va_arg(arglist,category_t));
+        }
     }
     va_end(arglist);
     return n;
@@ -361,29 +360,5 @@ void node_print(node_t*n)
     printf("------------VVVV---------------\n");
     node_print2(n,"","",stdout);
     printf("-------------------------------\n");
-}
-
-void value_print(value_t*v)
-{
-    switch(v->type) {
-        case TYPE_FLOAT:
-            printf("FLOAT(%f)\n", v->f);
-        break;
-        case TYPE_INT:
-            printf("INT(%d)\n", v->i);
-        break;
-        case TYPE_CATEGORY:
-            printf("CATEGORY(%d)\n", v->c);
-        break;
-        case TYPE_BOOL:
-            printf("BOOL(%s)\n", v->b?"true":"false");
-        break;
-        case TYPE_MISSING:
-            printf("BOOL(%s)\n", v->b?"true":"false");
-        break;
-        default:
-            printf("BAD VALUE\n");
-        break;
-    }
 }
 

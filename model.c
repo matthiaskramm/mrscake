@@ -25,6 +25,16 @@ variable_t variable_make_missing()
     return v;
 }
 
+example_t*example_new(int num_inputs)
+{
+    example_t*r = (example_t*)malloc(sizeof(example_t)+sizeof(variable_t)*num_inputs);
+    r->num_inputs = num_inputs;
+    return r;
+}
+void example_destroy(example_t*example)
+{
+    free(example);
+}
 row_t*row_new(int num_inputs)
 {
     row_t*r = (row_t*)malloc(sizeof(row_t)+sizeof(variable_t)*num_inputs);

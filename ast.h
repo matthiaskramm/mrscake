@@ -24,31 +24,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "model.h"
+#include "types.h"
 
 typedef struct _node node_t;
 typedef struct _nodetype nodetype_t;
-typedef struct _value value_t;
 typedef struct _environment environment_t;
 
 #define NODE_FLAG_HAS_CHILDREN 1
-
-#define TYPE_FLOAT 1
-#define TYPE_CATEGORY 2
-#define TYPE_INT 3
-#define TYPE_BOOL 4
-#define TYPE_MISSING 5
-
-struct _value {
-    union {
-        float f;
-	category_t c;
-	int i;
-	bool b;
-    };
-    uint8_t type;
-};
-
-void value_print(value_t*v);
 
 struct _environment {
     row_t* row;
@@ -79,8 +61,10 @@ extern nodetype_t node_if;
 extern nodetype_t node_add;
 extern nodetype_t node_lt;
 extern nodetype_t node_gt;
+extern nodetype_t node_in;
 extern nodetype_t node_var;
 extern nodetype_t node_category;
+extern nodetype_t node_array;
 
 node_t* node_new(nodetype_t*t, ...);
 void node_free(node_t*n);
@@ -145,6 +129,8 @@ void node_print(node_t*n);
 #define ADD NODE_BEGIN(&node_add)
 #define LT NODE_BEGIN(&node_lt)
 #define GT NODE_BEGIN(&node_gt)
+#define ARRAY(args...) NODE_BEGIN(&node_array, ##args)
+#define IN NODE_BEGIN(&node_in)
 #define VAR(i) NODE_BEGIN(&node_var, i)
 #define RETURN(n) NODE_BEGIN(&node_category, n)
 

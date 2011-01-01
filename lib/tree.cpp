@@ -3590,6 +3590,7 @@ CvDTreeNode* CvDTree::predict( const CvMat* _sample,
     sample = _sample->data.fl;
     step = CV_IS_MAT_CONT(_sample->type) ? 1 : _sample->step/sizeof(sample[0]);
 
+    // preprocessed_input is usually true.
     if( data->cat_count && !preprocessed_input ) // cache for categorical variables
     {
         int n = data->cat_count->cols;
