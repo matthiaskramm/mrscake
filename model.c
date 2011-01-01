@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "model.h"
+#include "ast.h"
 
 variable_t variable_make_categorical(category_t c)
 {
@@ -44,4 +45,11 @@ row_t*row_new(int num_inputs)
 void row_destroy(row_t*row)
 {
     free(row);
+}
+
+void model_destroy(model_t*m)
+{
+    if(m->code)
+        node_destroy(m->code);
+    free(m);
 }

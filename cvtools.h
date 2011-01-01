@@ -14,6 +14,7 @@ class CvMLDataFromExamples: public CvMLData
 {
     public:
     CvMLDataFromExamples(example_t**examples, int num_examples);
+    ~CvMLDataFromExamples();
 };
 
 #endif // __CVTOOLS_H__

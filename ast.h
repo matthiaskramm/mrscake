@@ -26,6 +26,10 @@
 #include "model.h"
 #include "types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _node node_t;
 typedef struct _nodetype nodetype_t;
 typedef struct _environment environment_t;
@@ -133,5 +137,10 @@ void node_print(node_t*n);
 #define IN NODE_BEGIN(&node_in)
 #define VAR(i) NODE_BEGIN(&node_var, i)
 #define RETURN(n) NODE_BEGIN(&node_category, n)
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

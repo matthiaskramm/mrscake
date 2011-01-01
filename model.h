@@ -4,6 +4,10 @@
 #include "types.h"
 //#include "io.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {CATEGORICAL,CONTINUOUS,MISSING} columntype_t;
 
 /* input variable (a.k.a. "free" variable) */
@@ -54,12 +58,11 @@ example_t*example_new(int num_inputs);
 
 typedef struct _model {
     int num_inputs;
-
-    void* (*get_code)();
-    category_t (*predict)(row_t row);
-
-    void*internal;
+    columntype_t*column_types;
+    void*code;
 } model_t;
+
+void model_destroy(model_t*);
 
 typedef struct _model_factory {
     const char*name;
@@ -68,5 +71,9 @@ typedef struct _model_factory {
 } model_factory_t;
 
 extern model_factory_t dtree_model_factory;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

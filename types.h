@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef int32_t category_t;
 typedef struct _value value_t;
 typedef struct _array array_t;
@@ -51,5 +55,9 @@ int check_type(value_t v, uint8_t type);
 #define AS_CATEGORY(v) (check_type((v),TYPE_CATEGORY),(v).c)
 #define AS_BOOL(v) (check_type((v),TYPE_BOOL),(v).b)
 #define AS_ARRAY(v) (check_type((v),TYPE_ARRAY),(v).a)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -2,8 +2,8 @@
 #include "model.h"
 #include "ast.h"
 
-class CodeGeneratingDTree: public CvDTree {
-
+class CodeGeneratingDTree: public CvDTree 
+{
     void walk(CvDTreeNode*node, node_t*code_node) const
     {
         const int* vidx;
@@ -52,6 +52,13 @@ class CodeGeneratingDTree: public CvDTree {
         }
     }
 
+    public:
+    
+    CodeGeneratingDTree()
+        :CvDTree()
+    {
+    }
+
     node_t* get_program() const
     {
         if( !root ) {
@@ -69,9 +76,13 @@ static model_t*dtree_train(example_t**examples, int num_examples)
 {
     CvMLDataFromExamples data(examples, num_examples);
 
-    CvDTree dtree;
+    CodeGeneratingDTree dtree;
     CvDTreeParams cvd_params(10, 1, 0, false, 16, 0, false, false, 0);
     dtree.train(&data, cvd_params);
+
+    model_t*m = (model_t*)malloc(sizeof(model_t));
+    m->code = dtree.get_program();
+    return m;
 }
 
 model_factory_t dtree_model_factory = {
