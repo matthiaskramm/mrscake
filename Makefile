@@ -1,10 +1,10 @@
-all: multimodel svm ann ast
+all: multimodel svm ann ast model
 
 CC=gcc -g
 CXX=g++ -g
 
 MODELS=model_cv_dtree.o
-OBJECTS=cvtools.o ann.o svm.o types.o ast.o model.o $(MODELS)
+OBJECTS=cvtools.o types.o ast.o model.o $(MODELS)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -33,7 +33,7 @@ cvtools.o: cvtools.cpp Makefile
 model_cv_dtree.o: model_cv_dtree.cpp Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-test_ast.o: test_ast.c ast.h model.h Makefile
+test_model.o: test_model.c model.h model.h Makefile
 	$(CC) -c $< -o $@
 
 ast: test_ast.o $(OBJECTS)
@@ -47,6 +47,9 @@ svm: svm.o lib/libml.a Makefile
 
 ann: ann.o lib/libml.a Makefile 
 	$(CXX) ann.o -o $@ lib/libml.a -lz -lpthread -lrt
+
+model: test_model.o lib/libml.a Makefile 
+	$(CXX) test_model.o $(OBJECTS) -o $@ lib/libml.a -lz -lpthread -lrt
 
 test: ast
 	./ast	

@@ -65,7 +65,7 @@ class CodeGeneratingDTree: public CvDTree {
     }
 };
 
-static model_t*dtree_train(example_t*examples, int num_examples)
+static model_t*dtree_train(example_t**examples, int num_examples)
 {
     CvMLDataFromExamples data(examples, num_examples);
 

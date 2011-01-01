@@ -50,6 +50,8 @@ typedef struct _example {
     variable_t inputs[0];
 } example_t;
 
+example_t*example_new(int num_inputs);
+
 typedef struct _model {
     int num_inputs;
 
@@ -61,8 +63,10 @@ typedef struct _model {
 
 typedef struct _model_factory {
     const char*name;
-    model_t*(*train)(example_t*examples, int num_examples);
+    model_t*(*train)(example_t**examples, int num_examples);
     void*internal;
 } model_factory_t;
+
+extern model_factory_t dtree_model_factory;
 
 #endif

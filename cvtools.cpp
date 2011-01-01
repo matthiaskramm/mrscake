@@ -1,9 +1,9 @@
 #include "cvtools.h"
 
-CvMLDataFromExamples::CvMLDataFromExamples(example_t*examples, int num_examples)
+CvMLDataFromExamples::CvMLDataFromExamples(example_t**examples, int num_examples)
 {
-    int input_columns = examples[0].num_inputs;
-    int response_idx = input_columns+1;
+    int input_columns = examples[0]->num_inputs;
+    int response_idx = input_columns;
     int train_sample_count = (num_examples+1)>>1;
     values = cvCreateMat(num_examples, response_idx, CV_32FC1);
     var_idx_mask = cvCreateMat( 1, input_columns+1, CV_8UC1 );
@@ -15,7 +15,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(example_t*examples, int num_examples)
 
     int i,j;
     for(j=0;j<input_columns;j++) {
-        if(examples[j].inputs[j].type == CATEGORICAL) {
+        if(examples[j]->inputs[j].type == CATEGORICAL) {
             this->change_var_type(j, CV_VAR_CATEGORICAL);
         }
     }
@@ -24,13 +24,13 @@ CvMLDataFromExamples::CvMLDataFromExamples(example_t*examples, int num_examples)
     for(i=0;i<num_examples;i++) {
         float* ddata = values->data.fl + cols_count*i;
         for(j=0;j<input_columns;j++) {
-            variable_t*v = &examples[i].inputs[j];
+            variable_t*v = &examples[i]->inputs[j];
             ddata[j] =
                 v->type == CATEGORICAL ?
                     v->category :
                     v->value;
         }
-        ddata[input_columns] = examples[i].desired_output;
+        ddata[input_columns] = examples[i]->desired_output;
     }
 
     train_sample_count = num_examples;
