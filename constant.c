@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <assert.h>
-#include "types.h"
+#include "constant.h"
 
 #define TYPE_FLOAT 1
 #define TYPE_CATEGORY 2
@@ -13,90 +14,104 @@ char*type_name[] = {"undefined","float","category","int","bool","missing","array
 
 array_t* array_new(int size)
 {
-    array_t*array = (array_t*)calloc(1, sizeof(array_t)+sizeof(value_t)*size);
+    array_t*array = (array_t*)calloc(1, sizeof(array_t)+sizeof(constant_t)*size);
     array->size = size;
     return array;
 }
+array_t* array_create(int size, ...)
+{
+    va_list arglist;
+    va_start(arglist, size);
+    int t;
+    array_t*array = array_new(size);
+    for(t=0;t<size;t++) {
+        array->entries[t] = category_constant(va_arg(arglist,category_t));
+    }
+    va_end(arglist);
+    return array;
+}
+
 void array_destroy(array_t*a)
 {
     free(a);
 }
 
-value_t bool_value(bool b)
+constant_t bool_constant(bool b)
 {
-    value_t v;
+    constant_t v;
     v.type = TYPE_BOOL;
     v.b = b;
     return v;
 }
-value_t float_value(float f)
+constant_t float_constant(float f)
 {
-    value_t v;
+    constant_t v;
     v.type = TYPE_FLOAT;
     v.f = f;
     return v;
 }
-value_t missing_value()
+constant_t missing_constant()
 {
-    value_t v;
+    constant_t v;
     v.type = TYPE_MISSING;
     return v;
 }
-value_t category_value(category_t c)
+constant_t category_constant(category_t c)
 {
-    value_t v;
+    constant_t v;
     v.type = TYPE_CATEGORY;
     v.c = c;
     return v;
 }
-value_t int_value(int i)
+constant_t int_constant(int i)
 {
-    value_t v;
+    constant_t v;
     v.type = TYPE_INT;
     v.i = i;
     return v;
 }
-value_t array_value(int size)
+constant_t array_constant(array_t*a)
 {
-    value_t v;
+    constant_t v;
     v.type = TYPE_ARRAY;
-    v.a = array_new(size);
+    v.a = a;
     return v;
 }
-void value_print(value_t*v)
+void constant_print(constant_t*v)
 {
     int t;
     switch(v->type) {
         case TYPE_FLOAT:
-            printf("FLOAT(%f)", v->f);
+            printf("%.2f", v->f);
         break;
         case TYPE_INT:
-            printf("INT(%d)", v->i);
+            printf("%d", v->i);
         break;
         case TYPE_CATEGORY:
-            printf("CATEGORY(%d)", v->c);
+            printf("C%d", v->c);
         break;
         case TYPE_BOOL:
-            printf("BOOL(%s)", v->b?"true":"false");
+            printf("%s", v->b?"true":"false");
         break;
         case TYPE_MISSING:
-            printf("BOOL(%s)", v->b?"true":"false");
+            printf("<missing>");
         break;
         case TYPE_ARRAY:
-            printf("ARRAY[");
-            for(t=0;t<v->a->size;t++) {
+            printf("[");
+            array_t*a = AS_ARRAY(*v);
+            for(t=0;t<a->size;t++) {
                 if(t>0)
                     printf(",");
-                value_print(&v->a->values[t]);
+                constant_print(&a->entries[t]);
             }
             printf("]");
         break;
         default:
-            printf("BAD VALUE");
+            printf("<bad value>");
         break;
     }
 }
-void value_clear(value_t*v)
+void constant_clear(constant_t*v)
 {
     switch(v->type) {
         case TYPE_ARRAY:
@@ -106,7 +121,7 @@ void value_clear(value_t*v)
     }
 }
 
-int check_type(value_t v, uint8_t type)
+int constant_check_type(constant_t v, uint8_t type)
 {
     if(v.type!=type)
         fprintf(stderr, "expected %s, got %s\n", type_name[type], type_name[v.type]);

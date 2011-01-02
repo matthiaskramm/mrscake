@@ -17,4 +17,6 @@ class CvMLDataFromExamples: public CvMLData
     ~CvMLDataFromExamples();
 };
 
+CvMat*cvmat_from_row(row_t*row, bool add_one);
+
 #endif // __CVTOOLS_H__

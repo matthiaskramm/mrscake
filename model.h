@@ -1,7 +1,7 @@
 #ifndef __model_h__
 #define __model_h__
 #include <stdint.h>
-#include "types.h"
+#include "constant.h"
 //#include "io.h"
 
 #ifdef __cplusplus
@@ -22,6 +22,7 @@ typedef struct _variable {
 variable_t variable_make_categorical(category_t c);
 variable_t variable_make_continuous(float v);
 variable_t variable_make_missing();
+double variable_value(variable_t*v);
 
 typedef struct _row {
     int num_inputs;
@@ -55,6 +56,7 @@ typedef struct _example {
 } example_t;
 
 example_t*example_new(int num_inputs);
+row_t*example_to_row(example_t*e);
 
 typedef struct _model {
     int num_inputs;
@@ -62,7 +64,8 @@ typedef struct _model {
     void*code;
 } model_t;
 
-void model_destroy(model_t*);
+category_t model_predict(model_t*m, row_t*row);
+void model_destroy(model_t*m);
 
 typedef struct _model_factory {
     const char*name;

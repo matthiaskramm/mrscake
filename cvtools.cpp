@@ -47,3 +47,16 @@ CvMLDataFromExamples::~CvMLDataFromExamples()
 {
 }
 
+CvMat*cvmat_from_row(row_t*row, bool add_one)
+{
+    CvMat* matrix_row = cvCreateMat(1, row->num_inputs+(add_one?1:0), CV_32FC1);
+    int t;
+    for(t=0;t<row->num_inputs;t++) {
+        matrix_row->data.fl[t] = variable_value(&row->inputs[t]);
+    }
+    if(add_one)
+        matrix_row->data.fl[row->num_inputs] = 0;
+    return matrix_row;
+}
+
+

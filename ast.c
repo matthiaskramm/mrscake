@@ -26,14 +26,14 @@
 #include <assert.h>
 #include "ast.h"
 
-#define EVAL_HEADER_1 \
-    value_t left = n->child[0]->type->eval(n->child[0],locals); \
-    value_t r;
+#define EVAL_HEADER_1(v) \
+    constant_t v = n->child[0]->type->eval(n->child[0],locals); \
+    constant_t r;
 
 #define EVAL_HEADER_2_LR(v1,v2) \
-    value_t v1 = n->child[0]->type->eval(n->child[0],locals);\
-    value_t v2 = n->child[1]->type->eval(n->child[1],locals);\
-    value_t r;
+    constant_t v1 = n->child[0]->type->eval(n->child[0],locals);\
+    constant_t v2 = n->child[1]->type->eval(n->child[1],locals);\
+    constant_t r;
 
 #define EVAL_HEADER_2(v1,v2) EVAL_HEADER_2_LR(v1,v2)
 
@@ -41,7 +41,7 @@
 
 // -------------------------- root node -------------------------------
 
-value_t node_root_eval(node_t*n, environment_t* locals)
+constant_t node_root_eval(node_t*n, environment_t* locals)
 {
     return EVAL_CHILD(0);
 }
@@ -56,10 +56,10 @@ max_args:2,
 
 // -------------------------- x + y -----------------------------------
 
-value_t node_add_eval(node_t*n, environment_t* locals)
+constant_t node_add_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
-    return float_value(AS_FLOAT(left) + AS_FLOAT(right));
+    return float_constant(AS_FLOAT(left) + AS_FLOAT(right));
 }
 nodetype_t node_add =
 {
@@ -72,10 +72,10 @@ max_args:2,
 
 // -------------------------- x - y -----------------------------------
 
-value_t node_minus_eval(node_t*n, environment_t* locals)
+constant_t node_minus_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
-    return float_value(AS_FLOAT(left) - AS_FLOAT(right));
+    return float_constant(AS_FLOAT(left) - AS_FLOAT(right));
 }
 nodetype_t node_minus =
 {
@@ -86,12 +86,28 @@ min_args:2,
 max_args:2,
 };
 
+// -------------------------- not x ----------------------------------
+
+constant_t node_not_eval(node_t*n, environment_t* locals)
+{
+    EVAL_HEADER_1(condition);
+    return bool_constant(!AS_BOOL(condition));
+}
+nodetype_t node_not =
+{
+name:"not",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_not_eval,
+min_args:1,
+max_args:1,
+};
+
 // -------------------------- x < y -----------------------------------
 
-value_t node_lt_eval(node_t*n, environment_t* locals)
+constant_t node_lt_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
-    return bool_value(AS_FLOAT(left) < AS_FLOAT(right));
+    return bool_constant(AS_FLOAT(left) < AS_FLOAT(right));
 }
 nodetype_t node_lt =
 {
@@ -102,12 +118,28 @@ min_args:2,
 max_args:2,
 };
 
-// -------------------------- x > y -----------------------------------
+// -------------------------- x <= y -----------------------------------
 
-value_t node_gt_eval(node_t*n, environment_t* locals)
+constant_t node_lte_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
-    return bool_value(AS_FLOAT(left) > AS_FLOAT(right));
+    return bool_constant(AS_FLOAT(left) <= AS_FLOAT(right));
+}
+nodetype_t node_lte =
+{
+name:"lte",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_lte_eval,
+min_args:2,
+max_args:2,
+};
+
+// -------------------------- x > y -----------------------------------
+
+constant_t node_gt_eval(node_t*n, environment_t* locals)
+{
+    EVAL_HEADER_2(left,right);
+    return bool_constant(AS_FLOAT(left) > AS_FLOAT(right));
 }
 nodetype_t node_gt =
 {
@@ -120,7 +152,7 @@ max_args:2,
 
 // -------------------------- array ------------------------------------
 
-value_t node_array_eval(node_t*n, environment_t* locals)
+constant_t node_array_eval(node_t*n, environment_t* locals)
 {
     return n->value;
 }
@@ -135,17 +167,17 @@ max_args:0,
 
 // -------------------------- x in y ----------------------------------
 
-value_t node_in_eval(node_t*n, environment_t* locals)
+constant_t node_in_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
     int i;
     int c = AS_CATEGORY(left);
     array_t* a = AS_ARRAY(right);
     for(i=0;i<a->size;i++) {
-        if(AS_CATEGORY(a->values[i]) == c)
-            return bool_value(true);
+        if(AS_CATEGORY(a->entries[i]) == c)
+            return bool_constant(true);
     }
-    return bool_value(false);
+    return bool_constant(false);
 }
 nodetype_t node_in =
 {
@@ -158,7 +190,7 @@ max_args:2,
 
 // -------------------- if(x) then y else z ----------------------------
 
-value_t node_if_eval(node_t*n, environment_t* locals)
+constant_t node_if_eval(node_t*n, environment_t* locals)
 {
     bool condition = AS_BOOL(EVAL_CHILD(0));
     if(condition == true) {
@@ -178,16 +210,16 @@ max_args:3,
 
 // ---------------------- var i ---------------------------------------
 
-value_t node_var_eval(node_t*n, environment_t* locals)
+constant_t node_var_eval(node_t*n, environment_t* locals)
 {
     assert(n->value.i >= 0 && n->value.i < locals->row->num_inputs);
     variable_t v = locals->row->inputs[n->value.i];
     if(v.type == CATEGORICAL) {
-	return category_value(v.category);
+	return category_constant(v.category);
     } else if(v.type == CONTINUOUS) {
-	return float_value(v.value);
+	return float_constant(v.value);
     } else if(v.type == MISSING) {
-	return missing_value(v.value);
+	return missing_constant(v.value);
     } else {
 	assert(!"bad type for input value");
     }
@@ -203,9 +235,9 @@ max_args:0,
 
 // ---------------------- category i (return i) -------------------------
 
-value_t node_category_eval(node_t*n, environment_t* locals)
+constant_t node_category_eval(node_t*n, environment_t* locals)
 {
-    return category_value(n->value.c);
+    return category_constant(n->value.c);
 }
 nodetype_t node_category =
 {
@@ -233,16 +265,12 @@ node_t* node_new(nodetype_t*t,...)
     va_list arglist;
     va_start(arglist, t);
     if(n->type == &node_var) {
-	n->value = int_value(va_arg(arglist,int));
+	n->value = int_constant(va_arg(arglist,int));
     } else if(n->type == &node_category) {
-	n->value = category_value(va_arg(arglist,category_t));
+	n->value = category_constant(va_arg(arglist,category_t));
     } else if(n->type == &node_array) {
-        int array_size = va_arg(arglist,int);
-	n->value = array_value(array_size);
-        int t;
-        for(t=0;t<n->value.a->size;t++) {
-            n->value.a->values[t] = category_value(va_arg(arglist,category_t));
-        }
+        array_t*array = va_arg(arglist,array_t*);
+	n->value = array_constant(array);
     }
     va_end(arglist);
     return n;
@@ -309,9 +337,15 @@ void node_destroy(node_t*n)
     free(n);
 }
 
-value_t node_eval(node_t*n,environment_t* e)
+constant_t node_eval(node_t*n,environment_t* e)
 {
     return n->type->eval(n, e);
+}
+
+bool node_is_primitive(node_t*n)
+{
+    return(n->type == &node_category ||
+           n->type == &node_array);
 }
 
 /*
@@ -348,8 +382,12 @@ void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
         free(o4);
     } else if(n->type == &node_var) {
         fprintf(fi, "%s%s (%d)\n", p1, n->type->name, n->value.i);
-    } else if(n->type == &node_category) {
-        fprintf(fi, "%s%s (%d)\n", p1, n->type->name, n->value.c);
+    /*} else if(n->type == &node_category) {
+        fprintf(fi, "%s%s (%d)\n", p1, n->type->name, n->value.c);*/
+    } else if(node_is_primitive(n)) {
+        fprintf(fi, "%s%s (", p1, n->type->name);
+        constant_print(&n->value);
+        fprintf(fi, ")\n");
     } else {
         fprintf(fi, "%s%s\n", p1, n->type->name);
     }

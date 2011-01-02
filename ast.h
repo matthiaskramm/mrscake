@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "model.h"
-#include "types.h"
+#include "constant.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +45,7 @@ struct _nodetype {
     int flags;
     int min_args;
     int max_args;
-    value_t (*eval)(node_t*n, environment_t* params);
+    constant_t (*eval)(node_t*n, environment_t* params);
 };
 
 struct _node {
@@ -56,7 +56,7 @@ struct _node {
             node_t**child;
             int num_children;
         };
-	value_t value;
+	constant_t value;
     };
 };
 
@@ -64,15 +64,17 @@ extern nodetype_t node_root;
 extern nodetype_t node_if;
 extern nodetype_t node_add;
 extern nodetype_t node_lt;
+extern nodetype_t node_lte;
 extern nodetype_t node_gt;
 extern nodetype_t node_in;
+extern nodetype_t node_not;
 extern nodetype_t node_var;
 extern nodetype_t node_category;
 extern nodetype_t node_array;
 
 node_t* node_new(nodetype_t*t, ...);
 void node_free(node_t*n);
-value_t node_eval(node_t*n,environment_t* e);
+constant_t node_eval(node_t*n,environment_t* e);
 void node_print(node_t*n);
 
 
@@ -128,15 +130,20 @@ void node_print(node_t*n);
 	       } while(0)
 
 #define IF NODE_BEGIN(&node_if)
+#define NOT NODE_BEGIN(&node_not)
 #define THEN assert(current_node && current_node->type == &node_if && current_node->num_children == 1);
 #define ELSE assert(current_node && current_node->type == &node_if && current_node->num_children == 2);
 #define ADD NODE_BEGIN(&node_add)
 #define LT NODE_BEGIN(&node_lt)
+#define LTE NODE_BEGIN(&node_lte)
 #define GT NODE_BEGIN(&node_gt)
-#define ARRAY(args...) NODE_BEGIN(&node_array, ##args)
 #define IN NODE_BEGIN(&node_in)
 #define VAR(i) NODE_BEGIN(&node_var, i)
-#define RETURN(n) NODE_BEGIN(&node_category, n)
+#define RETURN(n) do {VERIFY_INT(n);NODE_BEGIN(&node_category, n)}while(0);
+#define FLOAT_CONSTANT(f) NODE_BEGIN(&node_array, f)
+#define ARRAY_CONSTANT(args...) NODE_BEGIN(&node_array, ##args)
+
+#define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)
 
 #ifdef __cplusplus
 }

@@ -4,7 +4,7 @@ CC=gcc -g
 CXX=g++ -g
 
 MODELS=model_cv_dtree.o
-OBJECTS=$(MODELS) cvtools.o types.o ast.o model.o
+OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -12,29 +12,29 @@ lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 multimodel.o: multimodel.cpp Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model.o: model.c Makefile
+model.o: model.c constant.h ast.h Makefile
 	$(CC) -c $< -o $@
 
 ast.o: ast.c ast.h model.h Makefile
 	$(CC) -c $< -o $@
 
-types.o: types.c types.h model.h Makefile
+constant.o: constant.c constant.h model.h Makefile
 	$(CC) -c $< -o $@
 
-cvtools.o: cvtools.cpp Makefile
+cvtools.o: cvtools.cpp lib/ml.hpp Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_dtree.o: model_cv_dtree.cpp Makefile
+model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
 test_model.o: test_model.c model.h model.h Makefile
 	$(CC) -c $< -o $@
 
-ast: test_ast.o $(OBJECTS)
-	$(CC) test_ast.o types.o ast.o model.o -o $@
+ast: test_ast.o $(OBJECTS) lib/libml.a Makefile
+	$(CXX) test_ast.o $(OBJECTS) lib/libml.a -o $@ -lz -lpthread -lrt
 
 model: test_model.o $(OBJECTS) lib/libml.a Makefile 
-	$(CXX) test_model.o $(OBJECTS) -o $@ lib/libml.a -lz -lpthread -lrt
+	$(CXX) test_model.o $(OBJECTS) lib/libml.a -o $@ -lz -lpthread -lrt
 
 # ------------ old test code -----------------
 

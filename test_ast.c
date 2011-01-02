@@ -35,16 +35,16 @@ void test_if()
     node_print(node);
 
     environment_t env = test_environment();
-    value_t v = node_eval(node, &env);
-    value_print(&v);puts("\n");
+    constant_t v = node_eval(node, &env);
+    constant_print(&v);puts("\n");
 
     v = node_eval(node, &env);
     assert(v.c == 2);
-    assert(v.type == TYPE_CATEGORY);
+    assert(v.type == CONSTANT_CATEGORY);
     env.row->inputs[2].value = 2.5;
     v = node_eval(node, &env);
     assert(v.c == 1);
-    assert(v.type == TYPE_CATEGORY);
+    assert(v.type == CONSTANT_CATEGORY);
 
     row_destroy(env.row);
     node_destroy(node);
@@ -56,7 +56,7 @@ void test_array()
 	IF
 	    IN
                 VAR(3)
-		ARRAY(3, 1,2,3)
+		ARRAY_CONSTANT(array_create(3, 1,2,3));
 	    END;
 	THEN
 	    RETURN(1)
@@ -69,14 +69,14 @@ void test_array()
 
     environment_t env = test_environment();
 
-    value_t v = node_eval(node, &env);
+    constant_t v = node_eval(node, &env);
     assert(v.c == 2);
-    assert(v.type == TYPE_CATEGORY);
+    assert(v.type == CONSTANT_CATEGORY);
 
     env.row->inputs[3].category = 3;
     v = node_eval(node, &env);
     assert(v.c == 1);
-    assert(v.type == TYPE_CATEGORY);
+    assert(v.type == CONSTANT_CATEGORY);
 
     row_destroy(env.row);
     node_destroy(node);

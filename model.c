@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <memory.h>
 #include "model.h"
 #include "ast.h"
 
@@ -9,7 +10,6 @@ variable_t variable_make_categorical(category_t c)
     v.category = c;
     return v;
 }
-
 variable_t variable_make_continuous(float f)
 {
     variable_t v;
@@ -17,7 +17,6 @@ variable_t variable_make_continuous(float f)
     v.value = f;
     return v;
 }
-
 variable_t variable_make_missing()
 {
     variable_t v;
@@ -25,11 +24,21 @@ variable_t variable_make_missing()
     v.value = __builtin_nan("");
     return v;
 }
+double variable_value(variable_t*v)
+{
+    return (v->type == CATEGORICAL) ? v->category : v->value;
+}
 
 example_t*example_new(int num_inputs)
 {
     example_t*r = (example_t*)malloc(sizeof(example_t)+sizeof(variable_t)*num_inputs);
     r->num_inputs = num_inputs;
+    return r;
+}
+row_t*example_to_row(example_t*e)
+{
+    row_t*r = row_new(e->num_inputs);
+    memcpy(r->inputs, e->inputs, sizeof(variable_t)*e->num_inputs);
     return r;
 }
 void example_destroy(example_t*example)
@@ -47,6 +56,14 @@ void row_destroy(row_t*row)
     free(row);
 }
 
+category_t model_predict(model_t*m, row_t*row)
+{
+    environment_t e;
+    e.row = row;
+    node_t*code = (node_t*)m->code;
+    constant_t c = node_eval(code, &e);
+    return AS_CATEGORY(c);
+}
 void model_destroy(model_t*m)
 {
     if(m->code)
