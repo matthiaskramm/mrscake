@@ -165,6 +165,21 @@ min_args:0,
 max_args:0,
 };
 
+// -------------------------- float ------------------------------------
+
+constant_t node_float_eval(node_t*n, environment_t* locals)
+{
+    return n->value;
+}
+nodetype_t node_float =
+{
+name:"float",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_float_eval,
+min_args:0,
+max_args:0,
+};
+
 // -------------------------- x in y ----------------------------------
 
 constant_t node_in_eval(node_t*n, environment_t* locals)
@@ -293,6 +308,8 @@ node_t* node_new(nodetype_t*t,...)
 	n->value = int_constant(va_arg(arglist,int));
     } else if(n->type == &node_category) {
 	n->value = category_constant(va_arg(arglist,category_t));
+    } else if(n->type == &node_float) {
+	n->value = float_constant(va_arg(arglist,double));
     } else if(n->type == &node_array) {
         array_t*array = va_arg(arglist,array_t*);
 	n->value = array_constant(array);
@@ -370,7 +387,9 @@ constant_t node_eval(node_t*n,environment_t* e)
 bool node_is_primitive(node_t*n)
 {
     return(n->type == &node_category ||
-           n->type == &node_array);
+           n->type == &node_array ||
+           n->type == &node_float
+           );
 }
 
 /*

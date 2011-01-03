@@ -123,6 +123,7 @@ void verify(example_t**examples, int num_examples, model_t*m, CodeGeneratingDTre
         category_t c1 = tree->predict(r);
         category_t c2 = model_predict(m, r);
         assert(c1 == c2);
+        //printf("%d %d\n", c1, c2);
     }
 }
 #endif
