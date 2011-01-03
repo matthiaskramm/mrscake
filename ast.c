@@ -159,7 +159,7 @@ constant_t node_array_eval(node_t*n, environment_t* locals)
 nodetype_t node_array =
 {
 name:"array",
-flags:0,
+flags:NODE_FLAG_HAS_VALUE,
 eval: node_array_eval,
 min_args:0,
 max_args:0,
@@ -227,7 +227,7 @@ constant_t node_var_eval(node_t*n, environment_t* locals)
 nodetype_t node_var =
 {
 name:"var",
-flags:0,
+flags:NODE_FLAG_HAS_VALUE,
 eval: node_var_eval,
 min_args:0,
 max_args:0,
@@ -242,11 +242,36 @@ constant_t node_category_eval(node_t*n, environment_t* locals)
 nodetype_t node_category =
 {
 name:"category",
-flags:0,
+flags:NODE_FLAG_HAS_VALUE,
 eval: node_category_eval,
 min_args:0,
 max_args:0,
 };
+
+// ======================== node list ==================================
+
+nodetype_t* nodes[] = {
+#define NODE(opcode, name) &name,
+LIST_NODES
+#undef NODE
+};
+
+void nodelist_init()
+{
+    static bool is_initialized = false;
+    if(is_initialized) 
+        return;
+#   define NODE(op, name) name.opcode = op;
+    LIST_NODES
+    #undef NODE
+    is_initialized = true;
+}
+
+uint8_t node_get_opcode(node_t*n)
+{
+    nodelist_init();
+    return n->type->opcode;
+}
 
 // ======================== node handling ==============================
 

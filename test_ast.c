@@ -1,5 +1,7 @@
 #include <assert.h>
 #include "ast.h"
+#include "io.h"
+#include "serialize.h"
 
 environment_t test_environment()
 {
@@ -12,6 +14,17 @@ environment_t test_environment()
     environment_t e;
     e.row = row;
     return e;
+}
+
+node_t*test_serialization(node_t*node)
+{
+    writer_t *w = growingmemwriter_new();
+    node_write(node, w);
+    reader_t*r = growingmemwriter_getreader(w);
+    w->finish(w);
+    node = node_read(r);
+    r->dealloc(r);
+    return node;
 }
 
 void test_if()
@@ -33,6 +46,8 @@ void test_if()
     END_CODE;
 
     node_print(node);
+    
+    node = test_serialization(node);
 
     environment_t env = test_environment();
     constant_t v = node_eval(node, &env);
@@ -66,6 +81,8 @@ void test_array()
     END_CODE;
 
     node_print(node);
+
+    node = test_serialization(node);
 
     environment_t env = test_environment();
 

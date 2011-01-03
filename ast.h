@@ -35,6 +35,7 @@ typedef struct _nodetype nodetype_t;
 typedef struct _environment environment_t;
 
 #define NODE_FLAG_HAS_CHILDREN 1
+#define NODE_FLAG_HAS_VALUE 2
 
 struct _environment {
     row_t* row;
@@ -45,6 +46,7 @@ struct _nodetype {
     int flags;
     int min_args;
     int max_args;
+    uint8_t opcode;
     constant_t (*eval)(node_t*n, environment_t* params);
 };
 
@@ -60,17 +62,27 @@ struct _node {
     };
 };
 
-extern nodetype_t node_root;
-extern nodetype_t node_if;
-extern nodetype_t node_add;
-extern nodetype_t node_lt;
-extern nodetype_t node_lte;
-extern nodetype_t node_gt;
-extern nodetype_t node_in;
-extern nodetype_t node_not;
-extern nodetype_t node_var;
-extern nodetype_t node_category;
-extern nodetype_t node_array;
+/* all known node types & opcodes */
+#define LIST_NODES \
+    NODE(0x71, node_root) \
+    NODE(0x01, node_if) \
+    NODE(0x02, node_add) \
+    NODE(0x03, node_lt) \
+    NODE(0x04, node_lte) \
+    NODE(0x05, node_gt) \
+    NODE(0x06, node_in) \
+    NODE(0x07, node_not) \
+    NODE(0x08, node_var) \
+    NODE(0x09, node_category) \
+    NODE(0x0a, node_array)
+
+#define NODE(opcode, name) extern nodetype_t name;
+LIST_NODES
+#undef NODE
+
+extern nodetype_t* nodelist[];
+void nodelist_init();
+uint8_t node_get_opcode(node_t*n);
 
 node_t* node_new(nodetype_t*t, ...);
 void node_free(node_t*n);
@@ -115,6 +127,11 @@ void node_print(node_t*n);
 		} \
 	    } while(0);
 
+#define NODE_CLOSE do {assert(current_node->num_children >= current_node->type->min_args && \
+                           current_node->num_children <= current_node->type->max_args);\
+                    current_node = current_node->parent; \
+                   } while(0)
+
 #define START_CODE(program) \
 	node_t* program; \
 	{ \
@@ -124,11 +141,7 @@ void node_print(node_t*n);
 #define END_CODE \
 	}
 
-#define END do {assert(current_node->num_children >= current_node->type->min_args && \
-	               current_node->num_children <= current_node->type->max_args);\
-                current_node = current_node->parent; \
-	       } while(0)
-
+#define END NODE_CLOSE
 #define IF NODE_BEGIN(&node_if)
 #define NOT NODE_BEGIN(&node_not)
 #define THEN assert(current_node && current_node->type == &node_if && current_node->num_children == 1);

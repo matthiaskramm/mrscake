@@ -4,7 +4,7 @@ CC=gcc -g
 CXX=g++ -g
 
 MODELS=model_cv_dtree.o
-OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o
+OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -19,6 +19,12 @@ ast.o: ast.c ast.h model.h Makefile
 	$(CC) -c $< -o $@
 
 constant.o: constant.c constant.h model.h Makefile
+	$(CC) -c $< -o $@
+
+serialize.o: serialize.c serialize.h ast.h constant.h Makefile
+	$(CC) -c $< -o $@
+
+io.o: io.c io.h Makefile
 	$(CC) -c $< -o $@
 
 cvtools.o: cvtools.cpp lib/ml.hpp Makefile
