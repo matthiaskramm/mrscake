@@ -156,6 +156,15 @@ static void reader_memread_dealloc(reader_t*reader)
 	free(reader->internal);
     free(reader);
 }
+static void reader_memread_dealloc_withdata(reader_t*reader)
+{
+    memread_t*mr = (memread_t*)reader->internal;
+    if(mr->data)
+        free(mr->data);
+    if(reader->internal)
+	free(reader->internal);
+    free(reader);
+}
 reader_t* memreader_new(void*newdata, int newlength)
 {
     reader_t*r = (reader_t*)malloc(sizeof(reader_t));
@@ -228,6 +237,7 @@ static void writer_memwrite_finish(writer_t*w)
     if(w->internal) 
 	free(w->internal);
     w->internal = 0;
+    free(w);
 }
 static void dummy_flush(writer_t*w)
 {
@@ -293,7 +303,7 @@ static void writer_growmemwrite_finish(writer_t*w)
     }
     mw->length = 0;
     free(w->internal);mw=0;
-    memset(w, 0, sizeof(writer_t));
+    free(w);
 }
 void* writer_growmemwrite_memptr(writer_t*w, int*len)
 {
@@ -303,11 +313,14 @@ void* writer_growmemwrite_memptr(writer_t*w, int*len)
     }
     return mw->data;
 }
-void* writer_growmemwrite_getmem(writer_t*w)
+void* writer_growmemwrite_getmem(writer_t*w, int*len)
 {
     growmemwrite_t*mw = (growmemwrite_t*)w->internal;
     void*ret = mw->data;
-    /* remove own reference so that neither write() nor finish() can free it.
+    if(len) {
+	*len = w->pos;
+    }
+    /* remove our own reference so that neither write() nor finish() can free it.
        It's property of the caller now.
     */
     mw->data = 0;
@@ -320,13 +333,13 @@ void writer_growmemwrite_reset(writer_t*w)
     w->bitpos = 0;
     w->mybyte = 0;
 }
-writer_t* growingmemwriter_new(uint32_t grow)
+writer_t* growingmemwriter_new()
 {
     writer_t*w = (writer_t*)malloc(sizeof(writer_t));
     growmemwrite_t *mw = (growmemwrite_t *)malloc(sizeof(growmemwrite_t));
     mw->length = 4096;
     mw->data = (unsigned char *)malloc(mw->length);
-    mw->grow = grow?grow:4096;
+    mw->grow = 4096;
     memset(w, 0, sizeof(writer_t));
     w->write = writer_growmemwrite_write;
     w->flush = dummy_flush;
@@ -338,11 +351,20 @@ writer_t* growingmemwriter_new(uint32_t grow)
     w->pos = 0;
     return w;
 }
+writer_t* growingmemwriter_new2(uint32_t grow)
+{
+    writer_t*w = growingmemwriter_new();
+    growmemwrite_t*mw = (growmemwrite_t*)w->internal;
+    mw->grow = grow;
+    return w;
+}
 reader_t* growingmemwriter_getreader(writer_t*w)
 {
     int len;
-    void*mem = writer_growmemwrite_memptr(w, &len);
-    return memreader_new(mem, len);
+    void*mem = writer_growmemwrite_getmem(w, &len);
+    reader_t*r = memreader_new(mem, len);
+    r->dealloc = reader_memread_dealloc_withdata;
+    return r;
 }
 
 /* ---------------------------- file writer ------------------------------- */
@@ -365,7 +387,7 @@ static void writer_filewrite_finish(writer_t*w)
     if(mr->free_handle)
 	close(mr->handle);
     free(w->internal);
-    memset(w, 0, sizeof(writer_t));
+    free(w);
 }
 writer_t* filewriter_new(int handle)
 {
@@ -409,7 +431,7 @@ static int writer_nullwrite_write(writer_t*w, void* data, int len)
 }
 static void writer_nullwrite_finish(writer_t*w)
 {
-    memset(w, 0, sizeof(writer_t));
+    free(w);
 }
 writer_t* nullwriter_new()
 {
@@ -663,7 +685,7 @@ static void writer_zlibdeflate_finish(writer_t*writer)
     ret = deflateEnd(&z->zs);
     if (ret != Z_OK) zlib_error(ret, "bitio:deflate_end", &z->zs);
     free(writer->internal);
-    memset(writer, 0, sizeof(writer_t));
+    free(writer);
     //output->finish(output); 
 #else
     fprintf(stderr, "Error: swftools was compiled without zlib support");
@@ -822,7 +844,7 @@ char*read_string(reader_t*r)
 	if(!b)
 	    break;
     }
-    char*string = (char*)writer_growmemwrite_getmem(g);
+    char*string = (char*)writer_growmemwrite_getmem(g, 0);
     g->finish(g);
     return string;
 }

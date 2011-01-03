@@ -112,9 +112,10 @@ writer_t* zlibdeflatewriter_new(writer_t*output);
 writer_t* memwriter_new(void*data, int length);
 writer_t* nullwriter_new();
 writer_t* growingmemwriter_new();
+writer_t* growingmemwriter_new2(uint32_t grow);
 
 void* writer_growmemwrite_memptr(writer_t*w, int*len);
-void* writer_growmemwrite_getmem(writer_t*w);
+void* writer_growmemwrite_getmem(writer_t*w, int*len);
 void writer_growmemwrite_reset(writer_t*w);
 reader_t* growingmemwriter_getreader(writer_t*w);
 

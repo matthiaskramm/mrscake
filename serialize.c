@@ -17,10 +17,14 @@ static nodetype_t* opcode_to_node(uint8_t opcode)
 
 node_t* node_read(reader_t*reader)
 {
+    uint8_t opcode_root = read_uint8(reader);
+    assert(opcode_root == node_root.opcode);
     START_CODE(root)
+
     do {
         uint8_t opcode = read_uint8(reader);
         nodetype_t*type = opcode_to_node(opcode);
+        assert(type);
         if(type->flags & NODE_FLAG_HAS_VALUE) {
             if(type==&node_array) {
                 uint8_t len = read_uint8(reader);
@@ -43,10 +47,10 @@ node_t* node_read(reader_t*reader)
         } else {
             NODE_BEGIN(type);
         }
-        if(current_node->num_children == current_node->type->max_args) {
+        while(current_node && current_node->num_children == current_node->type->max_args) {
             NODE_CLOSE;
         }
-    } while(current_node != root);
+    } while(current_node);
     END_CODE;
     return root;
 }

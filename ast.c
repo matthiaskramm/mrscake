@@ -50,8 +50,8 @@ nodetype_t node_root =
 name:"root",
 flags:NODE_FLAG_HAS_CHILDREN,
 eval:node_root_eval,
-min_args:2,
-max_args:2,
+min_args:1,
+max_args:1,
 };
 
 // -------------------------- x + y -----------------------------------
