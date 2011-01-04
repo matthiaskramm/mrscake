@@ -99,6 +99,10 @@ void row_destroy(row_t*row)
     free(row);
 }
 
+void model_print(model_t*m)
+{
+    node_print((node_t*)m->code);
+}
 category_t model_predict(model_t*m, row_t*row)
 {
     environment_t e;

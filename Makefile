@@ -73,7 +73,7 @@ ann: ann.o lib/libml.a Makefile
 
 
 test: predict.so
-	python test.py
+	python test_python_module.py
 
 clean:
 	rm -f svm test ast ann multimodel *.o

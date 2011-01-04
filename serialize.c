@@ -39,11 +39,14 @@ node_t* node_read(reader_t*reader)
             } else if(type==&node_category) {
                 category_t c = read_uint8(reader);
                 NODE_BEGIN(type, c);
+            } else if(type==&node_float) {
+                float f = read_float(reader);
+                NODE_BEGIN(type, f);
             } else if(type==&node_var) {
                 int var_index = read_uint8(reader);
                 NODE_BEGIN(type, var_index);
             } else {
-                fprintf(stderr, "Don't know how to deserialize this node type (%02x)\n", opcode);
+                fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, opcode);
                 return 0;
             }
         } else {
@@ -72,6 +75,9 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
     } else if(node->type==&node_category) {
         category_t c = AS_CATEGORY(node->value);
         write_uint8(writer, c);
+    } else if(node->type==&node_float) {
+        float f = AS_FLOAT(node->value);
+        write_float(writer, f);
     } else if(node->type==&node_var) {
         int var_index = AS_INT(node->value);
         write_uint8(writer, var_index);

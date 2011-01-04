@@ -439,7 +439,7 @@ void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
 
 void node_print(node_t*n)
 {
-    printf("------------VVVV---------------\n");
+    printf("------------ code -------------\n");
     node_print2(n,"","",stdout);
     printf("-------------------------------\n");
 }

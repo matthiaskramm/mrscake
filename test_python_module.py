@@ -9,7 +9,8 @@ print data
 model = data.get_model()
 print model
 model.save("/tmp/model.dat")
-#model2 = predict.load_model("/tmp/model.dat")
+model = predict.load_model("/tmp/model.dat")
+print model
 print model.predict([3,2.0,7,3.0,1])
 print model.predict([3,2.0,7,4.0,1])
 print model.predict([3,2.0,7,5.0,1])

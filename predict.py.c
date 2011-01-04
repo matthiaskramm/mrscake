@@ -149,9 +149,10 @@ static PyObject* model_getattr(PyObject * _self, char* a)
 static int model_setattr(PyObject * self, char* a, PyObject * o) {
     return -1;
 }
-static int model_print(PyObject * _self, FILE *fi, int flags)
+static int py_model_print(PyObject * _self, FILE *fi, int flags)
 {
     ModelObject*self = (ModelObject*)_self;
+    model_print(self->model);
     return 0;
 }
 PyDoc_STRVAR(model_save_doc, \
@@ -166,7 +167,7 @@ static PyObject* py_model_save(PyObject* _self, PyObject* args, PyObject* kwargs
     int ret;
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
 	return NULL;
-    
+
     model_save(self->model, filename);
     return PY_NONE;
 }
@@ -208,7 +209,7 @@ PyDoc_STRVAR(model_new_doc, \
 "Model()\n\n"
 "Load a model.\n"
 );
-static PyObject* model_new(PyObject* module, PyObject* args, PyObject* kwargs)
+static PyObject* py_model_new(PyObject* module, PyObject* args, PyObject* kwargs)
 {
     return py_model_load(module, args, kwargs);
 }
@@ -367,7 +368,7 @@ static PyTypeObject ModelClass =
     tp_basicsize: sizeof(ModelObject),
     tp_itemsize: 0,
     tp_dealloc: model_dealloc,
-    tp_print: model_print,
+    tp_print: py_model_print,
     tp_getattr: model_getattr,
     tp_setattr: model_setattr,
     tp_doc: model_doc,
@@ -392,10 +393,10 @@ static PyObject* predict_setparameter(PyObject* module, PyObject* args, PyObject
 static PyMethodDef predict_methods[] =
 {
     {"setparameter", (PyCFunction)predict_setparameter, M_FLAGS, predict_setparameter_doc},
-    {"load_model", (PyCFunction)model_load, M_FLAGS, model_load_doc},
+    {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},
 
     {"DataSet", (PyCFunction)dataset_new, M_FLAGS, dataset_new_doc},
-    {"Model", (PyCFunction)model_new, M_FLAGS, model_new_doc},
+    {"Model", (PyCFunction)py_model_new, M_FLAGS, model_new_doc},
 
     /* sentinel */
     {0, 0, 0, 0}

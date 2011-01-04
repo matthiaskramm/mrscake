@@ -71,6 +71,7 @@ typedef struct _model {
 category_t model_predict(model_t*m, row_t*row);
 model_t* model_load(const char*filename);
 void model_save(model_t*m, const char*filename);
+void model_print(model_t*m);
 void model_destroy(model_t*m);
 
 typedef struct _model_factory {

@@ -69,11 +69,12 @@ reader_t*nullreader_new()
 }
 /* ---------------------------- file reader ------------------------------- */
 
-static int reader_fileread(reader_t*reader, void* data, int len) 
+static int reader_fileread(reader_t*r, void* data, int len) 
 {
-    int ret = read((int)reader->internal, data, len);
+    int handle = *(int*)r->internal;
+    int ret = read(handle, data, len);
     if(ret>=0)
-	reader->pos += ret;
+	r->pos += ret;
     return ret;
 }
 static void reader_fileread_dealloc(reader_t*r)
@@ -87,7 +88,8 @@ static void reader_fileread_dealloc(reader_t*r)
 }
 static int reader_fileread_seek(reader_t*r, int pos)
 {
-    return lseek(*(int*)r->internal, pos, SEEK_SET);
+    int handle = *(int*)r->internal;
+    return lseek(handle, pos, SEEK_SET);
 }
 reader_t* filereader_new(int handle)
 {
@@ -384,8 +386,9 @@ static int writer_filewrite_write(writer_t*w, void* data, int len)
 static void writer_filewrite_finish(writer_t*w)
 {
     filewrite_t *mr = (filewrite_t*)w->internal;
-    if(mr->free_handle)
+    if(mr->free_handle) {
 	close(mr->handle);
+    }
     free(w->internal);
     free(w);
 }
@@ -787,6 +790,7 @@ uint8_t read_uint8(reader_t*r)
     uint8_t b = 0;
     if(r->read(r, &b, 1)<1) {
 	fprintf(stderr, "io.c:read_uint8: Read over end of memory region\n");
+        return 0;
     }
     return b;
 }
