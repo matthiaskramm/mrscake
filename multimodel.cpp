@@ -368,24 +368,6 @@ int main()
     //gbt_print_error(&gbtrees, values, response, response_idx, train_sidx);
     print_result( gbtrees.calc_error( &data, CV_TRAIN_ERROR), gbtrees.calc_error( &data, CV_TEST_ERROR ), 0);
 
-    printf("======NEURONAL NETWORK=====\n");
-
-    int num_layers = 3;
-    CvMat layers = cvMat(1, num_layers, CV_32SC1, calloc(1, sizeof(double)*num_layers*1));
-    cvmSetI(&layers, 0, 0, values->cols-1);
-    cvmSetI(&layers, 0, 1, num_classes);
-    cvmSetI(&layers, 0, 2, num_classes);
-    CvANN_MLP ann(&layers, CvANN_MLP::SIGMOID_SYM, 0.0, 0.0);
-    CvANN_MLP_TrainParams ann_params;
-    //ann_params.train_method = CvANN_MLP_TrainParams::BACKPROP;
-    CvMat ann_response = cvmat_make_boolean_class_columns(response, num_classes);
-
-    CvMat values2 = cvmat_remove_column(values, response_idx);
-    ann.train(&values2, &ann_response, NULL, train_sidx, ann_params, 0x0000);
-    //ann.train(values, &ann_response, NULL, train_sidx, ann_params, 0x0000);
-
-    ann_print_error(&ann, values, num_classes, &ann_response, response, response_idx, train_sidx);
-
     printf("======KNEAREST=====\n");
     CvKNearest knearest;
     //bool CvKNearest::train( const Mat& _train_data, const Mat& _responses,
@@ -425,6 +407,24 @@ int main()
     //svm2.train(values, response, train_sidx, var_idx, params2);
     svm2.train_auto(values, response, var_idx, train_sidx, params2);
     svm_print_error(&svm2, values, response, response_idx, train_sidx);
+
+    printf("======NEURONAL NETWORK=====\n");
+
+    int num_layers = 3;
+    CvMat layers = cvMat(1, num_layers, CV_32SC1, calloc(1, sizeof(double)*num_layers*1));
+    cvmSetI(&layers, 0, 0, values->cols-1);
+    cvmSetI(&layers, 0, 1, num_classes);
+    cvmSetI(&layers, 0, 2, num_classes);
+    CvANN_MLP ann(&layers, CvANN_MLP::SIGMOID_SYM, 0.0, 0.0);
+    CvANN_MLP_TrainParams ann_params;
+    //ann_params.train_method = CvANN_MLP_TrainParams::BACKPROP;
+    CvMat ann_response = cvmat_make_boolean_class_columns(response, num_classes);
+
+    CvMat values2 = cvmat_remove_column(values, response_idx);
+    ann.train(&values2, &ann_response, NULL, train_sidx, ann_params, 0x0000);
+    //ann.train(values, &ann_response, NULL, train_sidx, ann_params, 0x0000);
+
+    ann_print_error(&ann, values, num_classes, &ann_response, response, response_idx, train_sidx);
 
 #if 0 /* slow */
 

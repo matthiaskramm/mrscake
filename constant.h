@@ -3,12 +3,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "model.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef int32_t category_t;
 typedef struct _constant constant_t;
 typedef struct _array array_t;
 

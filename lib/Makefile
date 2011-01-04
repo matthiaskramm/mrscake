@@ -1,6 +1,6 @@
 all: libml.a
 
-CXX=g++ -I. -O -g
+CXX=g++ -fPIC -I. -O -g
 
 HEADERS=precomp.hpp.gch precomp_core.hpp.gch
 

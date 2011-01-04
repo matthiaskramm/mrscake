@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <stdlib.h>
+#include <memory.h>
 #include "ast.h"
 #include "io.h"
 
@@ -88,5 +90,20 @@ void node_write(node_t*node, writer_t*writer)
             node_write(node->child[t], writer);
         }
     }
+}
+model_t* model_load(const char*filename)
+{
+    model_t*m = (model_t*)malloc(sizeof(model_t));
+    reader_t *r = filereader_new2(filename);
+    m->code = (void*)node_read(r);
+    r->dealloc(r);
+    return m;
+}
+void model_save(model_t*m, const char*filename)
+{
+    node_t*code = (node_t*)m->code;
+    writer_t *w = filewriter_new2(filename);
+    node_write(code, w);
+    w->finish(w);
 }
 

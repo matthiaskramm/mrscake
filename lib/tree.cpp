@@ -409,8 +409,8 @@ void CvDTreeTrainData::set_data( const CvMat* _train_data, int _tflag,
                         val = cvRound(t);
                         if( fabs(t - val) > FLT_EPSILON )
                         {
-                            sprintf( err, "%d-th value of %d-th (categorical) "
-                                "variable is not an integer", i, vi );
+                            sprintf( err, "%d/%d-th value (row) of %d/%d-th (categorical) "
+                                "variable (column) is not an integer (%f)", i, sample_count, vi, var_count, t);
                             CV_ERROR( CV_StsBadArg, err );
                         }
                     }

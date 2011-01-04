@@ -107,7 +107,7 @@ reader_t* zzipreader_new(ZZIP_FILE*z);
 #endif
 
 writer_t* filewriter_new(int handle);
-writer_t* filewriter_new2(char*filename);
+writer_t* filewriter_new2(const char*filename);
 writer_t* zlibdeflatewriter_new(writer_t*output);
 writer_t* memwriter_new(void*data, int length);
 writer_t* nullwriter_new();

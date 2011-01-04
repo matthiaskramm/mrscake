@@ -405,7 +405,7 @@ writer_t* filewriter_new(int handle)
     w->pos = 0;
     return w;
 }
-writer_t* filewriter_new2(char*filename)
+writer_t* filewriter_new2(const char*filename)
 {
 #ifdef HAVE_OPEN64
     int fi = open64
