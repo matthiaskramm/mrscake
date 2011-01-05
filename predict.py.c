@@ -136,6 +136,19 @@ example_t* pylist_to_example(PyObject*input)
 
     return e;
 }
+static example_t**example_list_to_array(example_list_t*example_list)
+{
+    int num_examples = list_length(example_list);
+    example_t**examples = (example_t**)malloc(sizeof(example_t*)*num_examples);
+    int pos = 0;
+    example_list_t*i = example_list;
+    while(i) {
+        examples[pos] = i->example;
+        i = i->next;
+        pos++;
+    }
+    return examples;
+}
 //---------------------------------------------------------------------
 static void model_dealloc(PyObject* _self) {
     ModelObject* self = (ModelObject*)_self;
@@ -238,6 +251,10 @@ static int dataset_setattr(PyObject * self, char* a, PyObject * o) {
 static int dataset_print(PyObject * _self, FILE *fi, int flags)
 {
     DataSetObject*self = (DataSetObject*)_self;
+    int num_examples = list_length(self->examples);
+    example_t**examples = example_list_to_array(self->examples);
+    examples_print(examples, num_examples);
+    free(examples);
     return 0;
 }
 PyDoc_STRVAR(dataset_train_doc, \
@@ -256,7 +273,7 @@ static PyObject* dataset_train(PyObject * _self, PyObject* args, PyObject* kwarg
         return PY_ERROR("first argument to train() must be a list");
 
     example_t*e = pylist_to_example(input);
-    if(!e) 
+    if(!e)
         return NULL;
     if(!PyInt_Check(output)) {
         return PY_ERROR("output parameter must be an integer");
@@ -265,19 +282,6 @@ static PyObject* dataset_train(PyObject * _self, PyObject* args, PyObject* kwarg
 
     list_append(self->examples, e);
     return PY_NONE;
-}
-static example_t**example_list_to_array(example_list_t*example_list)
-{
-    int num_examples = list_length(example_list);
-    example_t**examples = (example_t**)malloc(sizeof(example_t*)*num_examples);
-    int pos = 0;
-    example_list_t*i = example_list;
-    while(i) {
-        examples[pos] = i->example;
-        i = i->next;
-        pos++;
-    }
-    return examples;
 }
 PyDoc_STRVAR(dataset_get_model_doc, \
 "get_model()\n\n"
@@ -297,7 +301,6 @@ static PyObject* dataset_get_model(PyObject*_self, PyObject* args, PyObject* kwa
 
     example_t**examples = example_list_to_array(self->examples);
     examples_check_format(examples, num_examples);
-    examples_print(examples, num_examples);
     model_t* model = model_select(examples, num_examples);
     free(examples);
 

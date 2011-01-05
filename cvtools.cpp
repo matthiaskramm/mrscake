@@ -5,8 +5,10 @@ CvMLDataFromExamples::CvMLDataFromExamples(example_t**examples, int num_examples
 {
     int input_columns = examples[0]->num_inputs;
     int response_idx = input_columns;
-    int train_sample_count = (num_examples+1)>>1;
     int total_columns = input_columns+1;
+   
+    /* train on half the examples */
+    int train_sample_count = (num_examples+1)>>1;
     
     this->values = cvCreateMat(num_examples, total_columns, CV_32FC1);
     cvZero(this->values);
