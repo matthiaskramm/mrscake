@@ -33,40 +33,48 @@ typedef struct _row {
 row_t*row_new(int num_inputs);
 void row_destroy(row_t*row);
 
-/* input variable with column info (for sparse rows) */
-typedef struct _variable_and_position {
-    int index;
-    columntype_t type;
-    union {
-	category_t category;
-	float value;
-    };
-} variable_and_position_t;
+/* a dictionary maps identifiers (textual categories) to numerical category ids */
+typedef struct _dictionary {
+    void*internal;
+} dictionary_t;
 
-typedef struct _sparse_row {
-    variable_and_position_t*inputs;
-    int num_inputs;
-} sparse_row_t;
+dictionary_t* dictionary_new();
+category_t dictionary_find_word(const char*word);
+category_t dictionary_find_or_add_word(const char*word);
+const char* dictionary_find_category(category_t c);
+void dictionary_destroy(dictionary_t*dict);
 
 /* a single "row" in the data, combining a single known output with
    the corresponding inputs */
 typedef struct _example {
     int num_inputs;
-    category_t desired_output;
+    struct _example*previous;
+    category_t desired_output; // TODO: make this variable_t
     variable_t inputs[0];
 } example_t;
 
 example_t*example_new(int num_inputs);
 row_t*example_to_row(example_t*e);
 
-void examples_check_format(example_t**e, int num_examples);
-void examples_print(example_t**e, int num_examples);
+typedef struct _dataset {
+    example_t*examples;
+    int num_examples;
+} dataset_t;
+
+dataset_t* dataset_new();
+void dataset_add(dataset_t*d, example_t*e);
+void dataset_check_format(dataset_t*dataset);
+void dataset_print(dataset_t*dataset);
+void dataset_destroy(dataset_t*dataset);
 
 typedef struct _model {
     int num_inputs;
+    dictionary_t*word2category;
     columntype_t*column_types;
     void*code;
 } model_t;
+
+model_t* dataset_get_model(dataset_t*dataset);
 
 category_t model_predict(model_t*m, row_t*row);
 model_t* model_load(const char*filename);
@@ -76,13 +84,11 @@ void model_destroy(model_t*m);
 
 typedef struct _model_factory {
     const char*name;
-    model_t*(*train)(example_t**examples, int num_examples);
+    model_t*(*train)(dataset_t*dataset);
     void*internal;
 } model_factory_t;
 
 extern model_factory_t dtree_model_factory;
-
-model_t* model_select(example_t**examples, int num_examples);
 
 #ifdef __cplusplus
 }

@@ -136,19 +136,6 @@ example_t* pylist_to_example(PyObject*input)
 
     return e;
 }
-static example_t**example_list_to_array(example_list_t*example_list)
-{
-    int num_examples = list_length(example_list);
-    example_t**examples = (example_t**)malloc(sizeof(example_t*)*num_examples);
-    int pos = 0;
-    example_list_t*i = example_list;
-    while(i) {
-        examples[pos] = i->example;
-        i = i->next;
-        pos++;
-    }
-    return examples;
-}
 //---------------------------------------------------------------------
 static void model_dealloc(PyObject* _self) {
     ModelObject* self = (ModelObject*)_self;
@@ -248,7 +235,7 @@ static PyObject* dataset_getattr(PyObject * _self, char* a)
 static int dataset_setattr(PyObject * self, char* a, PyObject * o) {
     return -1;
 }
-static int dataset_print(PyObject * _self, FILE *fi, int flags)
+static int py_dataset_print(PyObject * _self, FILE *fi, int flags)
 {
     DataSetObject*self = (DataSetObject*)_self;
     int num_examples = list_length(self->examples);
@@ -352,7 +339,7 @@ static PyTypeObject DataSetClass =
     tp_basicsize: sizeof(DataSetObject),
     tp_itemsize: 0,
     tp_dealloc: dataset_dealloc,
-    tp_print: dataset_print,
+    tp_print: py_dataset_print,
     tp_getattr: dataset_getattr,
     tp_setattr: dataset_setattr,
     tp_doc: dataset_doc,

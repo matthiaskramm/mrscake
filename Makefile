@@ -5,7 +5,7 @@ CXX=g++ -g -fPIC
 
 LIBS=-lz -lpthread -lrt
 MODELS=model_cv_dtree.o
-OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o
+OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dictionary.o dataset.o
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -23,6 +23,12 @@ ast.o: ast.c ast.h model.h Makefile
 	$(CC) -c $< -o $@
 
 constant.o: constant.c constant.h model.h Makefile
+	$(CC) -c $< -o $@
+
+dictionary.o: dictionary.c dictionary.h model.h Makefile
+	$(CC) -c $< -o $@
+
+dataset.o: dataset.c dataset.h model.h Makefile
 	$(CC) -c $< -o $@
 
 list.o: list.c list.h Makefile

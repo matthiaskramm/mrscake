@@ -13,7 +13,7 @@ CVAPI(void) cvSet(void* arr, CvScalar value, const void* maskarr);
 class CvMLDataFromExamples: public CvMLData
 {
     public:
-    CvMLDataFromExamples(example_t**examples, int num_examples);
+    CvMLDataFromExamples(dataset_t*dataset);
     ~CvMLDataFromExamples();
 };
 

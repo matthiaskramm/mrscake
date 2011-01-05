@@ -5,6 +5,7 @@
 
 int main()
 {
+#if 0
     example_t* examples[5];
     examples[0] = example_new(3);
     examples[0]->inputs[0] = variable_make_categorical(7);
@@ -42,4 +43,5 @@ int main()
     example_destroy(examples[2]);
     example_destroy(examples[3]);
     example_destroy(examples[4]);
+#endif
 }

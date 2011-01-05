@@ -1,5 +1,6 @@
 #include "cvtools.h"
 #include "model.h"
+#include "dataset.h"
 #include "ast.h"
 
 #define VERIFY 1
@@ -115,22 +116,24 @@ class CodeGeneratingDTree: public CvDTree
 };
 
 #ifdef VERIFY
-void verify(example_t**examples, int num_examples, model_t*m, CodeGeneratingDTree*tree)
+void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
 {
+    example_t**examples = example_list_to_array(dataset);
     int t;
-    for(t=0;t<num_examples;t++) {
+    for(t=0;t<dataset->num_examples;t++) {
         row_t* r = example_to_row(examples[t]);
         category_t c1 = tree->predict(r);
         category_t c2 = model_predict(m, r);
         assert(c1 == c2);
         //printf("%d %d\n", c1, c2);
     }
+    free(examples);
 }
 #endif
 
-static model_t*dtree_train(example_t**examples, int num_examples)
+static model_t*dtree_train(dataset_t*dataset)
 {
-    CvMLDataFromExamples data(examples, num_examples);
+    CvMLDataFromExamples data(dataset);
 
     CodeGeneratingDTree dtree;
     CvDTreeParams cvd_params(10, 1, 0, false, 16, 0, false, false, 0);
@@ -140,7 +143,7 @@ static model_t*dtree_train(example_t**examples, int num_examples)
     m->code = dtree.get_program();
 
 #ifdef VERIFY
-    verify(examples, num_examples, m, &dtree);
+    verify(dataset, m, &dtree);
 #endif
     return m;
 }

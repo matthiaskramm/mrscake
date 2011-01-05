@@ -1,6 +1,6 @@
 #include "model.h"
 
-model_t* model_select(example_t**examples, int num_examples)
+model_t* model_select(dataset_t*dataset)
 {
-    return dtree_model_factory.train(examples, num_examples);
+    return dtree_model_factory.train(dataset);
 }

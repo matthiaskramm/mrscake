@@ -1,16 +1,18 @@
 #include "cvtools.h"
+#include "dataset.h"
 
-CvMLDataFromExamples::CvMLDataFromExamples(example_t**examples, int num_examples)
+CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
     :CvMLData()
 {
+    example_t**examples = example_list_to_array(dataset);
     int input_columns = examples[0]->num_inputs;
     int response_idx = input_columns;
     int total_columns = input_columns+1;
    
     /* train on half the examples */
-    int train_sample_count = (num_examples+1)>>1;
+    int train_sample_count = (dataset->num_examples+1)>>1;
     
-    this->values = cvCreateMat(num_examples, total_columns, CV_32FC1);
+    this->values = cvCreateMat(dataset->num_examples, total_columns, CV_32FC1);
     cvZero(this->values);
     this->var_idx_mask = cvCreateMat( 1, total_columns, CV_8UC1);
     cvSet(var_idx_mask, cvRealScalar(1), 0);
@@ -30,7 +32,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(example_t**examples, int num_examples
         }
     }
 
-    for(i=0;i<num_examples;i++) {
+    for(i=0;i<dataset->num_examples;i++) {
         float* ddata = values->data.fl + total_columns*i;
         for(j=0;j<input_columns;j++) {
             variable_t*v = &examples[i]->inputs[j];
@@ -42,7 +44,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(example_t**examples, int num_examples
         ddata[response_idx] = examples[i]->desired_output;
     }
 
-    train_sample_count = num_examples;
+    train_sample_count = dataset->num_examples;
 }
     
 CvMLDataFromExamples::~CvMLDataFromExamples()
