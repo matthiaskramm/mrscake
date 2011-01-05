@@ -125,6 +125,7 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
         category_t c1 = tree->predict(r);
         category_t c2 = model_predict(m, r);
         assert(c1 == c2);
+        row_destroy(r);
         //printf("%d %d\n", c1, c2);
     }
     free(examples);

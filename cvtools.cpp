@@ -8,10 +8,10 @@ CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
     int input_columns = examples[0]->num_inputs;
     int response_idx = input_columns;
     int total_columns = input_columns+1;
-   
+
     /* train on half the examples */
     int train_sample_count = (dataset->num_examples+1)>>1;
-    
+
     this->values = cvCreateMat(dataset->num_examples, total_columns, CV_32FC1);
     cvZero(this->values);
     this->var_idx_mask = cvCreateMat( 1, total_columns, CV_8UC1);
@@ -25,7 +25,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
     this->set_train_test_split(&spl);
 
     int i,j;
-    
+
     for(j=0;j<input_columns;j++) {
         if(examples[0]->inputs[j].type == CATEGORICAL) {
             this->change_var_type(j, CV_VAR_CATEGORICAL);
@@ -36,7 +36,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
         float* ddata = values->data.fl + total_columns*i;
         for(j=0;j<input_columns;j++) {
             variable_t*v = &examples[i]->inputs[j];
-            
+
             ddata[j] = v->type == CATEGORICAL ?
                     v->category :
                     v->value;
@@ -45,8 +45,9 @@ CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
     }
 
     train_sample_count = dataset->num_examples;
+    free(examples);
 }
-    
+
 CvMLDataFromExamples::~CvMLDataFromExamples()
 {
 }
