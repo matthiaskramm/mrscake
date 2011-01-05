@@ -49,7 +49,7 @@ DECLARE_LIST(example);
 
 typedef struct {
     PyObject_HEAD
-    example_list_t*examples;
+    dataset_t*dataset;
 } DataSetObject;
 
 typedef struct {
@@ -224,7 +224,7 @@ static PyMethodDef model_methods[] =
 //---------------------------------------------------------------------
 static void dataset_dealloc(PyObject* _self) {
     DataSetObject* self = (DataSetObject*)_self;
-    list_free(self->examples);
+    dataset_destroy(self->dataset);
     PyObject_Del(self);
 }
 static PyObject* dataset_getattr(PyObject * _self, char* a)
@@ -238,17 +238,14 @@ static int dataset_setattr(PyObject * self, char* a, PyObject * o) {
 static int py_dataset_print(PyObject * _self, FILE *fi, int flags)
 {
     DataSetObject*self = (DataSetObject*)_self;
-    int num_examples = list_length(self->examples);
-    example_t**examples = example_list_to_array(self->examples);
-    examples_print(examples, num_examples);
-    free(examples);
+    dataset_print(self->dataset);
     return 0;
 }
 PyDoc_STRVAR(dataset_train_doc, \
 "train(feature1=value1,feature2=value2,...).should_be(5)\n\n"
 "Adds a row of training data to the model.\n"
 );
-static PyObject* dataset_train(PyObject * _self, PyObject* args, PyObject* kwargs)
+static PyObject* py_dataset_train(PyObject * _self, PyObject* args, PyObject* kwargs)
 {
     DataSetObject*self = (DataSetObject*)_self;
     static char *kwlist[] = {"input","output",NULL};
@@ -267,29 +264,27 @@ static PyObject* dataset_train(PyObject * _self, PyObject* args, PyObject* kwarg
     }
     e->desired_output = PyInt_AS_LONG(output);
 
-    list_append(self->examples, e);
+    dataset_add(self->dataset, e);
     return PY_NONE;
 }
 PyDoc_STRVAR(dataset_get_model_doc, \
 "get_model()\n\n"
 "Adds a row of training data to the model.\n"
 );
-static PyObject* dataset_get_model(PyObject*_self, PyObject* args, PyObject* kwargs)
+static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* kwargs)
 {
     DataSetObject*self = (DataSetObject*)_self;
     static char *kwlist[] = {NULL};
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "", kwlist))
 	return NULL;
 
-    int num_examples = list_length(self->examples);
+    int num_examples = self->dataset->num_examples;
     if(!num_examples) {
         return PY_ERROR("No training data given. Can't build a model from no data.");
     }
 
-    example_t**examples = example_list_to_array(self->examples);
-    examples_check_format(examples, num_examples);
-    model_t* model = model_select(examples, num_examples);
-    free(examples);
+    dataset_check_format(self->dataset);
+    model_t* model = model_select(self->dataset);
 
     ModelObject*ret = PyObject_New(ModelObject, &ModelClass);
     ret->model = model;
@@ -299,20 +294,20 @@ PyDoc_STRVAR(dataset_new_doc, \
 "DataSet()\n\n"
 "Creates a new (initially empty) dataset.\n"
 );
-static PyObject* dataset_new(PyObject* module, PyObject* args, PyObject* kwargs)
+static PyObject* py_dataset_new(PyObject* module, PyObject* args, PyObject* kwargs)
 {
     static char *kwlist[] = {NULL};
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "", kwlist))
 	return NULL;
     DataSetObject*self = PyObject_New(DataSetObject, &DataSetClass);
-    self->examples = NULL;
+    self->dataset = dataset_new();
     return (PyObject*)self;
 }
 static PyMethodDef dataset_methods[] =
 {
     /* DataSet functions */
-    {"train", (PyCFunction)dataset_train, METH_KEYWORDS, dataset_train_doc},
-    {"get_model", (PyCFunction)dataset_get_model, METH_KEYWORDS, dataset_get_model_doc},
+    {"train", (PyCFunction)py_dataset_train, METH_KEYWORDS, dataset_train_doc},
+    {"get_model", (PyCFunction)py_dataset_get_model, METH_KEYWORDS, dataset_get_model_doc},
     {0,0,0,0}
 };
 
@@ -385,7 +380,7 @@ static PyMethodDef predict_methods[] =
     {"setparameter", (PyCFunction)predict_setparameter, M_FLAGS, predict_setparameter_doc},
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},
 
-    {"DataSet", (PyCFunction)dataset_new, M_FLAGS, dataset_new_doc},
+    {"DataSet", (PyCFunction)py_dataset_new, M_FLAGS, dataset_new_doc},
     {"Model", (PyCFunction)py_model_new, M_FLAGS, model_new_doc},
 
     /* sentinel */

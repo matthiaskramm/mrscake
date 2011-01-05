@@ -124,5 +124,5 @@ for inputs,output in examples:
     else:
         correct += 1
 
-print "%2.2f%% accuracy" % (correct*100.0 / (wrong + correct))
+print "%2.2f%% accuracy (%2.2f%% error)" % ((correct*100.0 / (wrong + correct)), (wrong*100.0 / (wrong + correct)))
 

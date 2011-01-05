@@ -89,6 +89,7 @@ typedef struct _model_factory {
 } model_factory_t;
 
 extern model_factory_t dtree_model_factory;
+model_t* model_select(dataset_t*dataset);
 
 #ifdef __cplusplus
 }
