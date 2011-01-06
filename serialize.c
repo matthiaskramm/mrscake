@@ -61,7 +61,7 @@ node_t* node_read(reader_t*reader)
 }
 
 static void node_write_internal_data(node_t*node, writer_t*writer)
-{    
+{
     if(node->type==&node_array) {
         array_t*a = node->value.a;
         assert(a->size <= 255);
@@ -102,6 +102,7 @@ model_t* model_load(const char*filename)
     model_t*m = (model_t*)malloc(sizeof(model_t));
     reader_t *r = filereader_new2(filename);
     m->code = (void*)node_read(r);
+    m->wordmap = 0;
     r->dealloc(r);
     return m;
 }

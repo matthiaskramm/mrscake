@@ -18,6 +18,7 @@ typedef struct _array array_t;
 #define CONSTANT_BOOL 4
 #define CONSTANT_MISSING 5
 #define CONSTANT_ARRAY 6
+#define CONSTANT_STRING 7
 extern char*type_name[];
 
 struct _constant {
@@ -27,6 +28,7 @@ struct _constant {
 	int i;
 	bool b;
         array_t* a;
+        char* s;
     };
     uint8_t type;
 };
@@ -37,6 +39,7 @@ constant_t missing_constant();
 constant_t category_constant(category_t c);
 constant_t int_constant(int i);
 constant_t array_constant(array_t*a);
+constant_t string_constant(const char*s);
 
 void constant_print(constant_t*v);
 void constant_clear(constant_t*v);
@@ -56,6 +59,7 @@ int constant_check_type(constant_t v, uint8_t type);
 #define AS_CATEGORY(v) (constant_check_type((v),CONSTANT_CATEGORY),(v).c)
 #define AS_BOOL(v) (constant_check_type((v),CONSTANT_BOOL),(v).b)
 #define AS_ARRAY(v) (constant_check_type((v),CONSTANT_ARRAY),(v).a)
+#define AS_STRING(v) (constant_check_type((v),CONSTANT_STRING),(v).s)
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,7 @@
 #include "ml.hpp"
 #include "lib/core_c.h"
 #include "model.h"
+#include "dataset.h"
 
 /* FIXME- these should come from opencv's include files */
 CVAPI(CvMat*) cvCreateMat( int rows, int cols, int type );
@@ -13,7 +14,7 @@ CVAPI(void) cvSet(void* arr, CvScalar value, const void* maskarr);
 class CvMLDataFromExamples: public CvMLData
 {
     public:
-    CvMLDataFromExamples(dataset_t*dataset);
+    CvMLDataFromExamples(sanitized_dataset_t*dataset);
     ~CvMLDataFromExamples();
 };
 

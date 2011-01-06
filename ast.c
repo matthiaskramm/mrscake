@@ -186,11 +186,20 @@ constant_t node_in_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
     int i;
-    int c = AS_CATEGORY(left);
-    array_t* a = AS_ARRAY(right);
-    for(i=0;i<a->size;i++) {
-        if(AS_CATEGORY(a->entries[i]) == c)
-            return bool_constant(true);
+    if(left.type == CONSTANT_STRING) {
+        char*s = AS_STRING(left);
+        array_t* a = AS_ARRAY(right);
+        for(i=0;i<a->size;i++) {
+            if(!strcmp(AS_STRING(a->entries[i]), s))
+                return bool_constant(true);
+        }
+    } else {
+        int c = AS_CATEGORY(left);
+        array_t* a = AS_ARRAY(right);
+        for(i=0;i<a->size;i++) {
+            if(AS_CATEGORY(a->entries[i]) == c)
+                return bool_constant(true);
+        }
     }
     return bool_constant(false);
 }
@@ -234,7 +243,9 @@ constant_t node_var_eval(node_t*n, environment_t* locals)
     } else if(v.type == CONTINUOUS) {
 	return float_constant(v.value);
     } else if(v.type == MISSING) {
-	return missing_constant(v.value);
+	return missing_constant();
+    } else if(v.type == TEXT) {
+	return string_constant(v.text);
     } else {
 	assert(!"bad type for input value");
     }
@@ -259,6 +270,21 @@ nodetype_t node_category =
 name:"category",
 flags:NODE_FLAG_HAS_VALUE,
 eval: node_category_eval,
+min_args:0,
+max_args:0,
+};
+
+// ---------------------- text s ------------- -------------------------
+
+constant_t node_string_eval(node_t*n, environment_t* locals)
+{
+    return n->value;
+}
+nodetype_t node_string =
+{
+name:"string",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_string_eval,
 min_args:0,
 max_args:0,
 };
@@ -301,7 +327,7 @@ node_t* node_new(nodetype_t*t,...)
 	n->child = (node_t**)malloc(sizeof(node_t*)*t->max_args);
     }
     n->num_children = 0;
-	    
+
     va_list arglist;
     va_start(arglist, t);
     if(n->type == &node_var) {
@@ -313,6 +339,8 @@ node_t* node_new(nodetype_t*t,...)
     } else if(n->type == &node_array) {
         array_t*array = va_arg(arglist,array_t*);
 	n->value = array_constant(array);
+    } else if(n->type == &node_string) {
+	n->value = string_constant(va_arg(arglist,char*));
     }
     va_end(arglist);
     return n;
@@ -370,6 +398,9 @@ node_t* node_new3(nodetype_t*t, node_t*one, node_t*two, node_t*three)
 void node_destroy(node_t*n)
 {
     int t;
+    if(n->type->flags&NODE_FLAG_HAS_VALUE) {
+        constant_clear(&n->value);
+    }
     if((n->type->flags&NODE_FLAG_HAS_CHILDREN) && n->child) {
 	for(t=0;t<n->num_children;t++) {
 	    node_destroy(n->child[t]);n->child[t] = 0;

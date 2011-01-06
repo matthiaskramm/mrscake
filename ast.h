@@ -75,7 +75,8 @@ struct _node {
     NODE(0x08, node_var) \
     NODE(0x09, node_category) \
     NODE(0x0a, node_array) \
-    NODE(0x0b, node_float)
+    NODE(0x0b, node_float) \
+    NODE(0x0c, node_string)
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES
@@ -155,6 +156,7 @@ void node_print(node_t*n);
 #define VAR(i) NODE_BEGIN(&node_var, i)
 #define RETURN(n) do {VERIFY_INT(n);NODE_BEGIN(&node_category, n)}while(0);
 #define FLOAT_CONSTANT(f) NODE_BEGIN(&node_float, f)
+#define STRING_CONSTANT(s) NODE_BEGIN(&node_string, s)
 #define ARRAY_CONSTANT(args...) NODE_BEGIN(&node_array, ##args)
 
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)

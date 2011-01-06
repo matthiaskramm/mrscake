@@ -3,9 +3,9 @@
 #include "dataset.h"
 #include "ast.h"
 
-#define VERIFY 1
+//#define VERIFY 1
 
-class CodeGeneratingDTree: public CvDTree 
+class CodeGeneratingDTree: public CvDTree
 {
     int map_category_back(int ci, int i) const
     {
@@ -17,16 +17,26 @@ class CodeGeneratingDTree: public CvDTree
         return cmap[from+i];
     }
 
-    array_t*parse_bitfield(int ci, int subset[2]) const 
+    int count_categories(int ci) const
+    {
+        const int*cmap = data->cat_map->data.i;
+        const int*cofs = data->cat_ofs->data.i;
+        int from = cofs[ci];
+        int to = (ci+1 >= data->cat_ofs->cols) ? data->cat_map->cols : cofs[ci+1];
+        return to-from;
+    }
+
+    array_t*parse_bitfield(int ci, int subset[2]) const
     {
         /* FIXME: We have a maximum of 64 categories, seperated into "left" and "right"
                   ones. There's the case of an input category not occuring in that
                   set, which would require us to treat that input variable as
                   "missing" (as opposed to, as we currently do, as "right"). */
         int s,t;
-        int max_categories = 64; // FIXME: this is a restriction of opencv's dtrees
         int count = 0;
-        for(s=0;s<64;s++) {
+
+        int num_categories = count_categories(ci);
+        for(s=0;s<num_categories;s++) {
             // CAT_DIR == -1 means "go left"
             if(CV_DTREE_CAT_DIR(s,subset)<0) {
                 count++;
@@ -34,10 +44,14 @@ class CodeGeneratingDTree: public CvDTree
         }
         array_t* a = array_new(count);
         count = 0;
-        for(s=0;s<64;s++) {
+        for(s=0;s<num_categories;s++) {
             if(CV_DTREE_CAT_DIR(s,subset)<0) {
                 int c = map_category_back(ci, s);
-                a->entries[count++] = category_constant(c);
+                if(dataset->wordmap && wordmap_find_category(dataset->wordmap, c)) {
+                    a->entries[count++] = string_constant(wordmap_find_category(dataset->wordmap, c));
+                } else {
+                    a->entries[count++] = category_constant(c);
+                }
             }
         }
         return a;
@@ -51,7 +65,7 @@ class CodeGeneratingDTree: public CvDTree
             RETURN((int)floor(node->value+FLT_EPSILON));
             return;
         }
-        
+
         CvDTreeSplit* split = node->split;
         int ci = vtype[split->var_idx];
         /* TODO: a split contains multiple variables we can use (iterate
@@ -75,7 +89,7 @@ class CodeGeneratingDTree: public CvDTree
                 array_t*a = parse_bitfield(ci, split->subset);
                     IN
                         VAR(split->var_idx);
-                        ARRAY_CONSTANT(a); 
+                        ARRAY_CONSTANT(a);
                     END;
             }
             if(split->inversed) {
@@ -89,9 +103,10 @@ class CodeGeneratingDTree: public CvDTree
     }
 
     public:
-    CodeGeneratingDTree()
+    CodeGeneratingDTree(sanitized_dataset_t*dataset)
         :CvDTree()
     {
+        this->dataset = dataset;
     }
 #ifdef VERIFY
     category_t predict(row_t*row)
@@ -113,6 +128,7 @@ class CodeGeneratingDTree: public CvDTree
         END_CODE;
         return code;
     }
+    sanitized_dataset_t*dataset;
 };
 
 #ifdef VERIFY
@@ -134,18 +150,22 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
 
 static model_t*dtree_train(dataset_t*dataset)
 {
-    CvMLDataFromExamples data(dataset);
+    sanitized_dataset_t*d = dataset_sanitize(dataset);
 
-    CodeGeneratingDTree dtree;
+    CvMLDataFromExamples data(d);
+
+    CodeGeneratingDTree dtree(d);
     CvDTreeParams cvd_params(10, 1, 0, false, 16, 0, false, false, 0);
     dtree.train(&data, cvd_params);
 
     model_t*m = (model_t*)malloc(sizeof(model_t));
+    m->wordmap = d->wordmap;d->wordmap=0;
     m->code = dtree.get_program();
 
 #ifdef VERIFY
     verify(dataset, m, &dtree);
 #endif
+    sanitized_dataset_destroy(d);
     return m;
 }
 

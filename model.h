@@ -21,7 +21,7 @@ typedef struct _variable {
 
 variable_t variable_make_categorical(category_t c);
 variable_t variable_make_continuous(float v);
-variable_t variable_make_text(char*s);
+variable_t variable_make_text(const char*s);
 variable_t variable_make_missing();
 double variable_value(variable_t*v);
 
@@ -34,22 +34,22 @@ row_t*row_new(int num_inputs);
 void row_destroy(row_t*row);
 
 /* a dictionary maps identifiers (textual categories) to numerical category ids */
-typedef struct _dictionary {
+typedef struct _wordmap {
     void*internal;
-} dictionary_t;
+} wordmap_t;
 
-dictionary_t* dictionary_new();
-category_t dictionary_find_word(const char*word);
-category_t dictionary_find_or_add_word(const char*word);
-const char* dictionary_find_category(category_t c);
-void dictionary_destroy(dictionary_t*dict);
+wordmap_t* wordmap_new();
+category_t wordmap_find_word(wordmap_t*dict, const char*word);
+category_t wordmap_find_or_add_word(wordmap_t*dict, const char*word);
+const char* wordmap_find_category(wordmap_t*dict, category_t c);
+void wordmap_destroy(wordmap_t*dict);
 
 /* a single "row" in the data, combining a single known output with
    the corresponding inputs */
 typedef struct _example {
     int num_inputs;
     struct _example*previous;
-    category_t desired_output; // TODO: make this variable_t
+    variable_t desired_output;
     variable_t inputs[0];
 } example_t;
 
@@ -63,13 +63,12 @@ typedef struct _dataset {
 
 dataset_t* dataset_new();
 void dataset_add(dataset_t*d, example_t*e);
-void dataset_check_format(dataset_t*dataset);
 void dataset_print(dataset_t*dataset);
 void dataset_destroy(dataset_t*dataset);
 
 typedef struct _model {
     int num_inputs;
-    dictionary_t*word2category;
+    wordmap_t*wordmap;
     columntype_t*column_types;
     void*code;
 } model_t;

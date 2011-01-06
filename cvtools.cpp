@@ -1,18 +1,17 @@
 #include "cvtools.h"
 #include "dataset.h"
 
-CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
+CvMLDataFromExamples::CvMLDataFromExamples(sanitized_dataset_t*dataset)
     :CvMLData()
 {
-    example_t**examples = example_list_to_array(dataset);
-    int input_columns = examples[0]->num_inputs;
+    int input_columns = dataset->num_columns;
     int response_idx = input_columns;
     int total_columns = input_columns+1;
 
     /* train on half the examples */
-    int train_sample_count = (dataset->num_examples+1)>>1;
+    int train_sample_count = (dataset->num_rows+1)>>1;
 
-    this->values = cvCreateMat(dataset->num_examples, total_columns, CV_32FC1);
+    this->values = cvCreateMat(dataset->num_rows, total_columns, CV_32FC1);
     cvZero(this->values);
     this->var_idx_mask = cvCreateMat( 1, total_columns, CV_8UC1);
     cvSet(var_idx_mask, cvRealScalar(1), 0);
@@ -27,25 +26,23 @@ CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
     int i,j;
 
     for(j=0;j<input_columns;j++) {
-        if(examples[0]->inputs[j].type == CATEGORICAL) {
+        if(dataset->columns[j]->is_categorical) {
             this->change_var_type(j, CV_VAR_CATEGORICAL);
         }
     }
 
-    for(i=0;i<dataset->num_examples;i++) {
+    for(i=0;i<dataset->num_rows;i++) {
         float* ddata = values->data.fl + total_columns*i;
         for(j=0;j<input_columns;j++) {
-            variable_t*v = &examples[i]->inputs[j];
-
-            ddata[j] = v->type == CATEGORICAL ?
-                    v->category :
-                    v->value;
+            column_t*c = dataset->columns[j];
+            ddata[j] = c->is_categorical?
+                    c->entries[i].c :
+                    c->entries[i].f;
         }
-        ddata[response_idx] = examples[i]->desired_output;
+        ddata[response_idx] = dataset->desired_output[i];
     }
 
-    train_sample_count = dataset->num_examples;
-    free(examples);
+    train_sample_count = dataset->num_rows;
 }
 
 CvMLDataFromExamples::~CvMLDataFromExamples()

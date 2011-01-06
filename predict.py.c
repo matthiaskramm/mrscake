@@ -125,10 +125,8 @@ example_t* pylist_to_example(PyObject*input)
             e->inputs[t] = variable_make_categorical(PyInt_AS_LONG(item));
         } else if(PyFloat_Check(item)) {
             e->inputs[t] = variable_make_continuous(PyFloat_AS_DOUBLE(item));
-/*          FIXME
         } else if(PyString_Check(item)) {
             e->inputs[t] = variable_make_text(PyString_AsString(item));
-*/
         } else {
             return PY_ERROR("bad object %s in list", item->ob_type->tp_name);
         }
@@ -265,7 +263,7 @@ static PyObject* py_dataset_train(PyObject * _self, PyObject* args, PyObject* kw
     if(!PyInt_Check(output)) {
         return PY_ERROR("output parameter must be an integer");
     }
-    e->desired_output = PyInt_AS_LONG(output);
+    e->desired_output = variable_make_categorical(PyInt_AS_LONG(output));
 
     dataset_add(self->dataset, e);
     return PY_NONE;
@@ -286,7 +284,6 @@ static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* 
         return PY_ERROR("No training data given. Can't build a model from no data.");
     }
 
-    dataset_check_format(self->dataset);
     model_t* model = model_select(self->dataset);
 
     ModelObject*ret = PyObject_New(ModelObject, &ModelClass);

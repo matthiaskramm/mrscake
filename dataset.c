@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
+#include <assert.h>
 #include "model.h"
 #include "dataset.h"
 
@@ -16,7 +17,7 @@ void dataset_add(dataset_t*d, example_t*e)
     d->examples = e;
     d->num_examples++;
 }
-void dataset_check_format(dataset_t*dataset)
+bool dataset_check_format(dataset_t*dataset)
 {
     int t;
     example_t*last_example = dataset->examples;
@@ -26,17 +27,21 @@ void dataset_check_format(dataset_t*dataset)
     for(e=dataset->examples;e;e=e->previous) {
         if(last_example->num_inputs != e->num_inputs) {
             fprintf(stderr, "Bad configuration: row %d has %d inputs, row %d has %d.\n", t, last_example->num_inputs, 0, e->num_inputs);
+            return false;
         }
         int s;
         for(s=0;s<e->num_inputs;s++) {
-            if(last_example->inputs[s].type != e->inputs[s].type)
+            if(last_example->inputs[s].type != e->inputs[s].type) {
                 fprintf(stderr, "Bad configuration: item %d,%d is %d, item %d,%d is %d\n",
                          pos, s,            e->inputs[s].type,
                         last, s, last_example->inputs[s].type
                         );
+                return false;
+            }
         }
         pos--;
     }
+    return true;
 }
 void dataset_print(dataset_t*dataset)
 {
@@ -50,7 +55,7 @@ void dataset_print(dataset_t*dataset)
             } else if(v.type == CONTINUOUS) {
                 printf("%.2f\t", v.value);
             } else if(v.type == TEXT) {
-                printf("\"%s\"\t", v.value);
+                printf("\"%s\"\t", v.text);
             }
         }
         printf("\n");
@@ -78,8 +83,96 @@ example_t**example_list_to_array(dataset_t*d)
     }
     return examples;
 }
+column_t*column_new(int num_rows, bool is_categorical)
+{
+    column_t*c = malloc(sizeof(column_t)+sizeof(c->entries[0])*num_rows);
+    c->is_categorical = is_categorical;
+    return c;
+}
+void column_destroy(column_t*c)
+{
+    free(c);
+}
+void sanitized_dataset_destroy(sanitized_dataset_t*s)
+{
+    int t;
+    for(t=0;t<s->num_columns;t++) {
+        column_destroy(s->columns[t]);
+    }
+    free(s->desired_output);
+    free(s->columns);
+    if(s->wordmap) {
+        wordmap_destroy(s->wordmap);
+        s->wordmap = 0;
+    }
+    free(s);
+}
 sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
 {
-    return 0;
-}
+    sanitized_dataset_t*s = malloc(sizeof(sanitized_dataset_t));
 
+    if(!dataset_check_format(dataset))
+        return 0;
+    s->num_columns = dataset->examples->num_inputs;
+    s->num_rows = dataset->num_examples;
+    s->wordmap = wordmap_new();
+    s->columns = malloc(sizeof(column_t)*s->num_columns);
+    s->desired_output = malloc(sizeof(category_t)*s->num_rows);
+    example_t*last_row = dataset->examples;
+    int x;
+    for(x=0;x<s->num_columns;x++) {
+        columntype_t ltype = last_row->inputs[x].type;
+        bool is_categorical = ltype != CONTINUOUS;
+        s->columns[x] = column_new(s->num_rows, is_categorical);
+        int y;
+        example_t*example = dataset->examples;
+        for(y=s->num_rows-1;y>=0;y--) {
+            category_t c;
+            columntype_t type = example->inputs[x].type;
+            if(is_categorical) {
+                assert(type == TEXT || type == CATEGORICAL);
+                if(type == TEXT) {
+                    c = wordmap_find_or_add_word(s->wordmap, example->inputs[x].text);
+                } else {
+                    c = example->inputs[x].category;
+                }
+                s->columns[x]->entries[y].c = c;
+            } else {
+                assert(type == CONTINUOUS);
+                s->columns[x]->entries[y].f = example->inputs[x].value;
+            }
+            example = example->previous;
+        }
+    }
+    example_t*example = dataset->examples;
+    int y;
+    for(y=s->num_rows-1;y>=0;y--) {
+        columntype_t type = example->desired_output.type;
+        category_t c;
+        if(type == TEXT) {
+            c = wordmap_find_or_add_word(s->wordmap, example->inputs[x].text);
+        } else if(type == CATEGORICAL) {
+            c = example->desired_output.category;
+        } else {
+            c = example->desired_output.value;
+        }
+        s->desired_output[y] = c;
+        example = example->previous;
+    }
+    sanitized_dataset_print(s);
+    return s;
+}
+void sanitized_dataset_print(sanitized_dataset_t*s)
+{
+    int x,y;
+    for(y=0;y<s->num_rows;y++) {
+        for(x=0;x<s->num_columns;x++) {
+            if(s->columns[x]->is_categorical) {
+                printf("C%d\t", s->columns[x]->entries[y].c);
+            } else {
+                printf("%.2f\t", s->columns[x]->entries[y].f);
+            }
+        }
+        printf("\n");
+    }
+}

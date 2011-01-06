@@ -18,11 +18,11 @@ variable_t variable_make_continuous(float f)
     v.value = f;
     return v;
 }
-variable_t variable_make_text(char*s)
+variable_t variable_make_text(const char*s)
 {
     variable_t v;
     v.type = TEXT;
-    v.text = s;
+    v.text = strdup(s);
     return v;
 }
 variable_t variable_make_missing()
@@ -31,6 +31,23 @@ variable_t variable_make_missing()
     v.type = MISSING;
     v.value = __builtin_nan("");
     return v;
+}
+void variable_print(variable_t*v)
+{
+    switch(v->type) {
+        case CATEGORICAL:
+            printf("C%d\n", v->category);
+        break;
+        case CONTINUOUS:
+            printf("%.2f\n", v->value);
+        break;
+        case TEXT:
+            printf("\"%s\"\n", v->text);
+        break;
+        default:
+            printf("INVALID TYPE %d\n", v->type);
+        break;
+    }
 }
 double variable_value(variable_t*v)
 {
@@ -59,6 +76,14 @@ row_t*row_new(int num_inputs)
     r->num_inputs = num_inputs;
     return r;
 }
+void row_print(row_t*row)
+{
+    int t;
+    for(t=0;t<row->num_inputs;t++) {
+        printf("%d) ", t);
+        variable_print(&row->inputs[t]);
+    }
+}
 void row_destroy(row_t*row)
 {
     free(row);
@@ -72,6 +97,9 @@ category_t model_predict(model_t*m, row_t*row)
 {
     environment_t e;
     e.row = row;
+    if(m->wordmap) {
+        wordmap_convert_row(m->wordmap, row);
+    }
     node_t*code = (node_t*)m->code;
     constant_t c = node_eval(code, &e);
     return AS_CATEGORY(c);

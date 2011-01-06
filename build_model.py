@@ -114,6 +114,7 @@ for inputs,output in examples:
     dataset.train(inputs, output=output)
 
 model = dataset.get_model()
+print model
 
 correct = 0
 wrong = 0

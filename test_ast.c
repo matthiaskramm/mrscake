@@ -47,7 +47,7 @@ void test_if()
     END_CODE;
 
     node_print(node);
-    
+
     node = test_serialization(node);
 
     environment_t env = test_environment();

@@ -2,15 +2,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <string.h>
 #include "constant.h"
 
-#define TYPE_FLOAT 1
-#define TYPE_CATEGORY 2
-#define TYPE_INT 3
-#define TYPE_BOOL 4
-#define TYPE_MISSING 5
-#define TYPE_ARRAY 6
-char*type_name[] = {"undefined","float","category","int","bool","missing","array"};
+char*type_name[] = {"undefined","float","category","int","bool","missing","array","string"};
 
 array_t* array_new(int size)
 {
@@ -39,64 +34,71 @@ void array_destroy(array_t*a)
 constant_t bool_constant(bool b)
 {
     constant_t v;
-    v.type = TYPE_BOOL;
+    v.type = CONSTANT_BOOL;
     v.b = b;
     return v;
 }
 constant_t float_constant(float f)
 {
     constant_t v;
-    v.type = TYPE_FLOAT;
+    v.type = CONSTANT_FLOAT;
     v.f = f;
     return v;
 }
 constant_t missing_constant()
 {
     constant_t v;
-    v.type = TYPE_MISSING;
+    v.type = CONSTANT_MISSING;
     return v;
 }
 constant_t category_constant(category_t c)
 {
     constant_t v;
-    v.type = TYPE_CATEGORY;
+    v.type = CONSTANT_CATEGORY;
     v.c = c;
     return v;
 }
 constant_t int_constant(int i)
 {
     constant_t v;
-    v.type = TYPE_INT;
+    v.type = CONSTANT_INT;
     v.i = i;
     return v;
 }
 constant_t array_constant(array_t*a)
 {
     constant_t v;
-    v.type = TYPE_ARRAY;
+    v.type = CONSTANT_ARRAY;
     v.a = a;
+    return v;
+}
+constant_t string_constant(const char*s)
+{
+    constant_t v;
+    v.type = CONSTANT_STRING;
+    v.s = strdup(s);
     return v;
 }
 void constant_print(constant_t*v)
 {
     int t;
     switch(v->type) {
-        case TYPE_FLOAT:
+        case CONSTANT_FLOAT:
             printf("%.2f", v->f);
         break;
-        case TYPE_INT:
+        case CONSTANT_INT:
             printf("%d", v->i);
         break;
-        case TYPE_CATEGORY:
+        case CONSTANT_CATEGORY:
             printf("C%d", v->c);
         break;
-        case TYPE_BOOL:
+        case CONSTANT_BOOL:
             printf("%s", v->b?"true":"false");
         break;
-        case TYPE_MISSING:
+        case CONSTANT_MISSING:
             printf("<missing>");
         break;
-        case TYPE_ARRAY:
+        case CONSTANT_ARRAY:
             printf("[");
             array_t*a = AS_ARRAY(*v);
             for(t=0;t<a->size;t++) {
@@ -114,9 +116,13 @@ void constant_print(constant_t*v)
 void constant_clear(constant_t*v)
 {
     switch(v->type) {
-        case TYPE_ARRAY:
+        case CONSTANT_ARRAY:
             free(v->a);
             v->a = 0;
+        break;
+        case CONSTANT_STRING:
+            free(v->s);
+            v->s = 0;
         break;
     }
 }
