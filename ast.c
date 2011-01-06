@@ -186,20 +186,10 @@ constant_t node_in_eval(node_t*n, environment_t* locals)
 {
     EVAL_HEADER_2(left,right);
     int i;
-    if(left.type == CONSTANT_STRING) {
-        char*s = AS_STRING(left);
-        array_t* a = AS_ARRAY(right);
-        for(i=0;i<a->size;i++) {
-            if(!strcmp(AS_STRING(a->entries[i]), s))
-                return bool_constant(true);
-        }
-    } else {
-        int c = AS_CATEGORY(left);
-        array_t* a = AS_ARRAY(right);
-        for(i=0;i<a->size;i++) {
-            if(AS_CATEGORY(a->entries[i]) == c)
-                return bool_constant(true);
-        }
+    array_t* a = AS_ARRAY(right);
+    for(i=0;i<a->size;i++) {
+        if(constant_equals(&left, &a->entries[i]))
+            return bool_constant(true);
     }
     return bool_constant(false);
 }
@@ -419,7 +409,8 @@ bool node_is_primitive(node_t*n)
 {
     return(n->type == &node_category ||
            n->type == &node_array ||
-           n->type == &node_float
+           n->type == &node_float ||
+           n->type == &node_string
            );
 }
 

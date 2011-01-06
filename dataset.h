@@ -17,10 +17,11 @@ typedef struct _sanitized_dataset {
     wordmap_t*wordmap;
     column_t**columns;
     category_t*desired_output;
+    bool output_is_text;
 } sanitized_dataset_t;
 
 struct _column {
-    bool is_categorical;
+    columntype_t type;
     union {
         float f;
         category_t c;

@@ -41,6 +41,7 @@ constant_t int_constant(int i);
 constant_t array_constant(array_t*a);
 constant_t string_constant(const char*s);
 
+bool constant_equals(constant_t*c1, constant_t*c2);
 void constant_print(constant_t*v);
 void constant_clear(constant_t*v);
 

@@ -155,11 +155,13 @@ void node_print(node_t*n);
 #define IN NODE_BEGIN(&node_in)
 #define VAR(i) NODE_BEGIN(&node_var, i)
 #define RETURN(n) do {VERIFY_INT(n);NODE_BEGIN(&node_category, n)}while(0);
+#define RETURN_STRING(s) do {VERIFY_STRING(s);NODE_BEGIN(&node_string, s)}while(0);
 #define FLOAT_CONSTANT(f) NODE_BEGIN(&node_float, f)
 #define STRING_CONSTANT(s) NODE_BEGIN(&node_string, s)
 #define ARRAY_CONSTANT(args...) NODE_BEGIN(&node_array, ##args)
 
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)
+#define VERIFY_STRING(s) do{if(0){(s)[0];};}while(0)
 
 #ifdef __cplusplus
 }

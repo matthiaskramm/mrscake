@@ -26,7 +26,7 @@ class CodeGeneratingDTree: public CvDTree
         return to-from;
     }
 
-    array_t*parse_bitfield(int ci, int subset[2]) const
+    array_t*parse_bitfield(int column, int ci, int subset[2]) const
     {
         /* FIXME: We have a maximum of 64 categories, seperated into "left" and "right"
                   ones. There's the case of an input category not occuring in that
@@ -47,7 +47,10 @@ class CodeGeneratingDTree: public CvDTree
         for(s=0;s<num_categories;s++) {
             if(CV_DTREE_CAT_DIR(s,subset)<0) {
                 int c = map_category_back(ci, s);
-                if(dataset->wordmap && wordmap_find_category(dataset->wordmap, c)) {
+                if(dataset->columns[column]->type == TEXT &&
+                   dataset->wordmap &&
+                   wordmap_find_category(dataset->wordmap, c))
+                {
                     a->entries[count++] = string_constant(wordmap_find_category(dataset->wordmap, c));
                 } else {
                     a->entries[count++] = category_constant(c);
@@ -62,7 +65,12 @@ class CodeGeneratingDTree: public CvDTree
         const int*vtype = data->var_type->data.i;
 
         if(node->Tn <= pruned_tree_idx || !node->left) {
-            RETURN((int)floor(node->value+FLT_EPSILON));
+            category_t c = (int)floor(node->value+FLT_EPSILON);
+            if(!dataset->output_is_text) {
+                RETURN(c);
+            } else {
+                RETURN_STRING(wordmap_find_category(dataset->wordmap, c));
+            }
             return;
         }
 
@@ -86,7 +94,7 @@ class CodeGeneratingDTree: public CvDTree
                         FLOAT_CONSTANT(split->ord.c);
                     END;
             } else { //categorical
-                array_t*a = parse_bitfield(ci, split->subset);
+                array_t*a = parse_bitfield(split->var_idx, ci, split->subset);
                     IN
                         VAR(split->var_idx);
                         ARRAY_CONSTANT(a);
@@ -159,8 +167,8 @@ static model_t*dtree_train(dataset_t*dataset)
     dtree.train(&data, cvd_params);
 
     model_t*m = (model_t*)malloc(sizeof(model_t));
-    m->wordmap = d->wordmap;d->wordmap=0;
     m->code = dtree.get_program();
+    m->wordmap = d->wordmap;d->wordmap=0;
 
 #ifdef VERIFY
     verify(dataset, m, &dtree);

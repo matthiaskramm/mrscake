@@ -184,11 +184,16 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
     if(!e)
         return NULL;
     row_t*row = example_to_row(e);
-    category_t i = model_predict(self->model, row);
+    variable_t i = model_predict(self->model, row);
     row_destroy(row);
     example_destroy(e);
 
-    return pyint_fromlong(i);
+    if(i.type == TEXT)
+        return PyString_FromString(i.text);
+    else if(i.type == CATEGORICAL)
+        return pyint_fromlong(i.category);
+    else 
+        return PY_NONE;
 }
 PyDoc_STRVAR(model_load_doc, \
 "load_model()\n\n"
@@ -260,10 +265,13 @@ static PyObject* py_dataset_train(PyObject * _self, PyObject* args, PyObject* kw
     example_t*e = pylist_to_example(input);
     if(!e)
         return NULL;
-    if(!PyInt_Check(output)) {
-        return PY_ERROR("output parameter must be an integer");
+    if(PyInt_Check(output)) {
+        e->desired_output = variable_make_categorical(PyInt_AS_LONG(output));
+    } else if(PyString_Check(output)) {
+        e->desired_output = variable_make_text(PyString_AsString(output));
+    } else {
+        return PY_ERROR("output parameter must be an integer or a string");
     }
-    e->desired_output = variable_make_categorical(PyInt_AS_LONG(output));
 
     dataset_add(self->dataset, e);
     return PY_NONE;

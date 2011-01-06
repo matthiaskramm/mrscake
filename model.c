@@ -93,7 +93,25 @@ void model_print(model_t*m)
 {
     node_print((node_t*)m->code);
 }
-category_t model_predict(model_t*m, row_t*row)
+variable_t constant_to_variable(constant_t* c)
+{
+    switch(c->type) {
+        case CONSTANT_STRING:
+            return variable_make_text(c->s);
+        break;
+        case CONSTANT_CATEGORY:
+            return variable_make_categorical(c->c);
+        break;
+        case CONSTANT_FLOAT:
+            return variable_make_continuous(c->f);
+        break;
+        default:
+            fprintf(stderr, "Can't convert constant type %d to variable\n", c->type);
+        break;
+    }
+}
+
+variable_t model_predict(model_t*m, row_t*row)
 {
     environment_t e;
     e.row = row;
@@ -102,7 +120,7 @@ category_t model_predict(model_t*m, row_t*row)
     }
     node_t*code = (node_t*)m->code;
     constant_t c = node_eval(code, &e);
-    return AS_CATEGORY(c);
+    return constant_to_variable(&c);
 }
 void model_destroy(model_t*m)
 {

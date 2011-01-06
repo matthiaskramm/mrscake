@@ -79,6 +79,31 @@ constant_t string_constant(const char*s)
     v.s = strdup(s);
     return v;
 }
+bool constant_equals(constant_t*c1, constant_t*c2)
+{
+    if(c1->type != c2->type)
+        return false;
+    switch(c1->type) {
+        case CONSTANT_FLOAT:
+            return c1->f == c2->f;
+        case CONSTANT_INT:
+            return c1->i == c2->i;
+        case CONSTANT_CATEGORY:
+            return c1->c == c2->c;
+        case CONSTANT_BOOL:
+            return c1->b == c2->b;
+        case CONSTANT_STRING:
+            return !strcmp(c1->s, c2->s);
+        case CONSTANT_MISSING:
+            return true;
+        case CONSTANT_ARRAY:
+            fprintf(stderr,"FIXME: array comparison not implemented yet");
+            return false;
+        default:
+            fprintf(stderr, "Can't compare types %s\n", type_name[c1->type]);
+            return false;
+    }
+}
 void constant_print(constant_t*v)
 {
     int t;
@@ -94,6 +119,9 @@ void constant_print(constant_t*v)
         break;
         case CONSTANT_BOOL:
             printf("%s", v->b?"true":"false");
+        break;
+        case CONSTANT_STRING:
+            printf("\"%s\"", v->s);
         break;
         case CONSTANT_MISSING:
             printf("<missing>");
@@ -131,6 +159,7 @@ int constant_check_type(constant_t v, uint8_t type)
 {
     if(v.type!=type) {
         fprintf(stderr, "expected %s, got %s\n", type_name[type], type_name[v.type]);
+        *(int*)0=0;
     }
     assert(v.type == type);
     return 0;

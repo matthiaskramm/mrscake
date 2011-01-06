@@ -58,6 +58,11 @@ void dataset_print(dataset_t*dataset)
                 printf("\"%s\"\t", v.text);
             }
         }
+        if(e->desired_output.type == TEXT) {
+            printf("|\t\"%s\"", e->desired_output.text);
+        } else {
+            printf("|\tC%d", e->desired_output.category);
+        }
         printf("\n");
     }
 }
@@ -83,10 +88,10 @@ example_t**example_list_to_array(dataset_t*d)
     }
     return examples;
 }
-column_t*column_new(int num_rows, bool is_categorical)
+column_t*column_new(int num_rows, columntype_t type)
 {
     column_t*c = malloc(sizeof(column_t)+sizeof(c->entries[0])*num_rows);
-    c->is_categorical = is_categorical;
+    c->type = type;
     return c;
 }
 void column_destroy(column_t*c)
@@ -122,15 +127,16 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
     int x;
     for(x=0;x<s->num_columns;x++) {
         columntype_t ltype = last_row->inputs[x].type;
-        bool is_categorical = ltype != CONTINUOUS;
-        s->columns[x] = column_new(s->num_rows, is_categorical);
+        /* FIXME: deal with MISSING */
+        s->columns[x] = column_new(s->num_rows, ltype);
         int y;
         example_t*example = dataset->examples;
         for(y=s->num_rows-1;y>=0;y--) {
             category_t c;
             columntype_t type = example->inputs[x].type;
-            if(is_categorical) {
+            if(ltype == TEXT || ltype == CATEGORICAL) {
                 assert(type == TEXT || type == CATEGORICAL);
+                assert(type == ltype);
                 if(type == TEXT) {
                     c = wordmap_find_or_add_word(s->wordmap, example->inputs[x].text);
                 } else {
@@ -150,7 +156,8 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
         columntype_t type = example->desired_output.type;
         category_t c;
         if(type == TEXT) {
-            c = wordmap_find_or_add_word(s->wordmap, example->inputs[x].text);
+            c = wordmap_find_or_add_word(s->wordmap, example->desired_output.text);
+            s->output_is_text = 1;
         } else if(type == CATEGORICAL) {
             c = example->desired_output.category;
         } else {
@@ -159,7 +166,6 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
         s->desired_output[y] = c;
         example = example->previous;
     }
-    sanitized_dataset_print(s);
     return s;
 }
 void sanitized_dataset_print(sanitized_dataset_t*s)
@@ -167,12 +173,16 @@ void sanitized_dataset_print(sanitized_dataset_t*s)
     int x,y;
     for(y=0;y<s->num_rows;y++) {
         for(x=0;x<s->num_columns;x++) {
-            if(s->columns[x]->is_categorical) {
+            if(s->columns[x]->type == CATEGORICAL) {
                 printf("C%d\t", s->columns[x]->entries[y].c);
+            } else if(s->columns[x]->type == TEXT) {
+                const char*text = wordmap_find_category(s->wordmap, s->columns[x]->entries[y].c);
+                printf("\"%s\"\t", text);
             } else {
                 printf("%.2f\t", s->columns[x]->entries[y].f);
             }
         }
+        printf("| C%d", s->desired_output[y]);
         printf("\n");
     }
 }

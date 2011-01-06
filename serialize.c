@@ -17,6 +17,34 @@ static nodetype_t* opcode_to_node(uint8_t opcode)
     }
 }
 
+constant_t constant_read(reader_t*reader)
+{
+    constant_t c;
+    c.type = read_uint8(reader);
+    switch(c.type) {
+        case CONSTANT_CATEGORY: {
+            c.c = read_uint8(reader);
+            break;
+        }
+        case CONSTANT_FLOAT: {
+            c.f = read_float(reader);
+            break;
+        }
+        case CONSTANT_INT: {
+            c.i = read_uint8(reader);
+            break;
+        }
+        case CONSTANT_STRING: {
+            c.s = read_string(reader);
+            break;
+        }
+        default:
+            fprintf(stderr, "Can't deserialize constant type %d\n", c.type);
+            exit(1);
+    }
+    return c;
+}
+
 node_t* node_read(reader_t*reader)
 {
     uint8_t opcode_root = read_uint8(reader);
@@ -33,7 +61,7 @@ node_t* node_read(reader_t*reader)
                 int t;
                 array_t*a = array_new(len);
                 for(t=0;t<len;t++) {
-                    a->entries[t] = category_constant(read_uint8(reader));
+                    a->entries[t] = constant_read(reader);
                 }
                 NODE_BEGIN(type, a);
             } else if(type==&node_category) {
@@ -45,6 +73,9 @@ node_t* node_read(reader_t*reader)
             } else if(type==&node_var) {
                 int var_index = read_uint8(reader);
                 NODE_BEGIN(type, var_index);
+            } else if(type==&node_string) {
+                char*s = read_string(reader);
+                NODE_BEGIN(type, s);
             } else {
                 fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, opcode);
                 return 0;
@@ -60,6 +91,36 @@ node_t* node_read(reader_t*reader)
     return root;
 }
 
+static void constant_write(constant_t*value, writer_t*writer)
+{
+    write_uint8(writer, value->type);
+    switch(value->type) {
+        case CONSTANT_CATEGORY: {
+            category_t c = AS_CATEGORY(*value);
+            write_uint8(writer, c);
+            break;
+        }
+        case CONSTANT_FLOAT: {
+            float f = AS_FLOAT(*value);
+            write_float(writer, f);
+            break;
+        }
+        case CONSTANT_INT: {
+            int var_index = AS_INT(*value);
+            write_uint8(writer, var_index);
+            break;
+        }
+        case CONSTANT_STRING: {
+            char*s = AS_STRING(*value);
+            write_string(writer, s);
+            break;
+        }
+        default:
+            fprintf(stderr, "Can't serialize constant type %d\n", value->type);
+            exit(1);
+    }
+}
+
 static void node_write_internal_data(node_t*node, writer_t*writer)
 {
     if(node->type==&node_array) {
@@ -68,9 +129,7 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
         write_uint8(writer, a->size);
         int t;
         for(t=0;t<a->size;t++) {
-            category_t c = AS_CATEGORY(a->entries[t]);
-            assert(c <= 255);
-            write_uint8(writer, c);
+            constant_write(&a->entries[t], writer);
         }
     } else if(node->type==&node_category) {
         category_t c = AS_CATEGORY(node->value);
@@ -78,6 +137,9 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
     } else if(node->type==&node_float) {
         float f = AS_FLOAT(node->value);
         write_float(writer, f);
+    } else if(node->type==&node_string) {
+        char*s = AS_STRING(node->value);
+        write_string(writer, s);
     } else if(node->type==&node_var) {
         int var_index = AS_INT(node->value);
         write_uint8(writer, var_index);

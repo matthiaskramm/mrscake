@@ -75,7 +75,7 @@ typedef struct _model {
 
 model_t* dataset_get_model(dataset_t*dataset);
 
-category_t model_predict(model_t*m, row_t*row);
+variable_t model_predict(model_t*m, row_t*row);
 model_t* model_load(const char*filename);
 void model_save(model_t*m, const char*filename);
 void model_print(model_t*m);
