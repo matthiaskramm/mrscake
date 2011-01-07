@@ -66,9 +66,9 @@ class CodeGeneratingDTree: public CvDTree
 
         if(node->Tn <= pruned_tree_idx || !node->left) {
             category_t c = (int)floor(node->value+FLT_EPSILON);
-            if(!dataset->output_is_text) {
+            if(dataset->desired_response->type == CATEGORICAL) {
                 RETURN(c);
-            } else {
+            } else { // desired_output->type == TEXT
                 RETURN_STRING(wordmap_find_category(dataset->wordmap, c));
             }
             return;

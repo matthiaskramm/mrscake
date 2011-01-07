@@ -58,10 +58,10 @@ void dataset_print(dataset_t*dataset)
                 printf("\"%s\"\t", v.text);
             }
         }
-        if(e->desired_output.type == TEXT) {
-            printf("|\t\"%s\"", e->desired_output.text);
+        if(e->desired_response.type == TEXT) {
+            printf("|\t\"%s\"", e->desired_response.text);
         } else {
-            printf("|\tC%d", e->desired_output.category);
+            printf("|\tC%d", e->desired_response.category);
         }
         printf("\n");
     }
@@ -88,10 +88,10 @@ example_t**example_list_to_array(dataset_t*d)
     }
     return examples;
 }
-column_t*column_new(int num_rows, columntype_t type)
+column_t*column_new(int num_rows, bool is_categorical)
 {
     column_t*c = malloc(sizeof(column_t)+sizeof(c->entries[0])*num_rows);
-    c->type = type;
+    c->is_categorical = is_categorical;
     return c;
 }
 void column_destroy(column_t*c)
@@ -104,7 +104,7 @@ void sanitized_dataset_destroy(sanitized_dataset_t*s)
     for(t=0;t<s->num_columns;t++) {
         column_destroy(s->columns[t]);
     }
-    free(s->desired_output);
+    free(s->desired_response);
     free(s->columns);
     if(s->wordmap) {
         wordmap_destroy(s->wordmap);
@@ -112,6 +112,69 @@ void sanitized_dataset_destroy(sanitized_dataset_t*s)
     }
     free(s);
 }
+
+typedef struct _columnbuilder {
+    column_t*column;
+    int category_memsize;
+    dict_t*string2pos;
+    dict_t*int2pos;
+} columnbuilder_t;
+
+columnbuilder_t*columnbuilder_new(column_t*column)
+{
+    columnbuilder_t*builder = (columnbuilder_t*)malloc(sizeof(columnbuilder_t));
+    builder->column = column;
+    builder->category_memsize = 0;
+    builder->string2pos = dict_new(&charptr_type);
+    builder->int2pos = dict_new(&int_type);
+    return builder;
+}
+void columnbuilder_add(columnbuilder_t*builder, constant_t*e)
+{
+    row_t*row = builder->row;
+    int pos = 0;
+    if(e->type == CONSTANT_STRING) {
+        pos = dict_lookup(builder->string2category(e->s)) - 1;
+    } else if(e->type == CONSTANT_INT) {
+        pos = dict_lookup(builder->int2pos(e->s)) - 1;
+    }
+    if(pos<0) {
+        pos = builder->row->num_categories++;
+        if(builder->category_memsize <= pos) {
+            builder->category_memsize++;
+            builder->category_memsize*=2;
+            row
+        }
+    }
+/*
+    columntype_t type = example->inputs[x].type;
+    if(is_categorical) {
+        assert(type == TEXT || type == CATEGORICAL);
+        constant_t entry = variable_to_constant(&example->inputs[x]);
+        category_t c = find_or_add_constant(wordmap, row, &entry);
+        s->columns[x]->entries[y].c = c;
+    } else {
+        assert(type == CONTINUOUS);
+        s->columns[x]->entries[y].f = example->inputs[x].value;
+    }
+    category_t c;
+    if(type == TEXT) {
+        c = wordmap_find_or_add_word(s->wordmap, example->desired_response.text);
+    } else if(type == CATEGORICAL) {
+        c = example->desired_response.category;
+    } else {
+        c = example->desired_response.value;
+    }
+    s->desired_response->entries[y].c = c;
+    */
+}
+void columnbuilder_destroy(columnbuilder_t*builder)
+{
+    dict_destroy(builder->string2category);
+    dict_destroy(builder->int2category);
+    free(builder);
+}
+
 sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
 {
     sanitized_dataset_t*s = malloc(sizeof(sanitized_dataset_t));
@@ -120,52 +183,36 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
         return 0;
     s->num_columns = dataset->examples->num_inputs;
     s->num_rows = dataset->num_examples;
-    s->wordmap = wordmap_new();
     s->columns = malloc(sizeof(column_t)*s->num_columns);
-    s->desired_output = malloc(sizeof(category_t)*s->num_rows);
     example_t*last_row = dataset->examples;
+
+    /* copy columns from the old to the new dataset, mapping categories
+       to numbers */
     int x;
     for(x=0;x<s->num_columns;x++) {
-        columntype_t ltype = last_row->inputs[x].type;
-        /* FIXME: deal with MISSING */
-        s->columns[x] = column_new(s->num_rows, ltype);
+        bool is_categorical = ltype!=CONTINUOUS;
+        s->columns[x] = column_new(s->num_rows, is_categorical);
+        
+        columnbuilder_t*builder = columnbuilder_new(s->columns[x]);
         int y;
         example_t*example = dataset->examples;
         for(y=s->num_rows-1;y>=0;y--) {
-            category_t c;
-            columntype_t type = example->inputs[x].type;
-            if(ltype == TEXT || ltype == CATEGORICAL) {
-                assert(type == TEXT || type == CATEGORICAL);
-                assert(type == ltype);
-                if(type == TEXT) {
-                    c = wordmap_find_or_add_word(s->wordmap, example->inputs[x].text);
-                } else {
-                    c = example->inputs[x].category;
-                }
-                s->columns[x]->entries[y].c = c;
-            } else {
-                assert(type == CONTINUOUS);
-                s->columns[x]->entries[y].f = example->inputs[x].value;
-            }
+            columnbuilder_add(builder,y,variable_to_constant(&examples->inputs[x]));
             example = example->previous;
         }
+        columnbuilder_destroy(builder);
     }
+   
+    /* copy response column to the new dataset */
+    s->desired_response = column_new(s->num_rows, CATEGORICAL);
+    columnbuilder_t*builder = columnbuilder_new(s->desired_response);
     example_t*example = dataset->examples;
     int y;
     for(y=s->num_rows-1;y>=0;y--) {
-        columntype_t type = example->desired_output.type;
-        category_t c;
-        if(type == TEXT) {
-            c = wordmap_find_or_add_word(s->wordmap, example->desired_output.text);
-            s->output_is_text = 1;
-        } else if(type == CATEGORICAL) {
-            c = example->desired_output.category;
-        } else {
-            c = example->desired_output.value;
-        }
-        s->desired_output[y] = c;
+        columnbuilder_add(builder,y,variable_to_constant(&examples->inputs[x]));
         example = example->previous;
     }
+    columnbuilder_destroy(builder);
     return s;
 }
 void sanitized_dataset_print(sanitized_dataset_t*s)
@@ -182,7 +229,7 @@ void sanitized_dataset_print(sanitized_dataset_t*s)
                 printf("%.2f\t", s->columns[x]->entries[y].f);
             }
         }
-        printf("| C%d", s->desired_output[y]);
+        printf("| C%d", s->desired_response[y]);
         printf("\n");
     }
 }

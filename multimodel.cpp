@@ -334,7 +334,7 @@ int main()
     CvMat*response_map;
     //CvMat*ordered_response = cvPreprocessCategoricalResponses(response, var_idx, response->rows, &response_map, 0);
     int num_classes = response_map->cols;
-    
+   
     CvDTree dtree;
     printf("======DTREE=====\n");
     CvDTreeParams cvd_params( 10, 1, 0, false, 16, 0, false, false, 0);

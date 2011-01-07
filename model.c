@@ -49,6 +49,22 @@ void variable_print(variable_t*v)
         break;
     }
 }
+bool variable_equals(variable_t*v1, variable_t*v2)
+{
+    if(v1->type != v2->type)
+        return false;
+
+    switch(v1->type) {
+        case CATEGORICAL:
+            return v1->category==v2->category;
+        case CONTINUOUS:
+            return v1->value==v2->value;
+        case TEXT:
+            return !strcmp(v1->text, v2->text);
+        default:
+            return false;
+    }
+}
 double variable_value(variable_t*v)
 {
     return (v->type == CATEGORICAL) ? v->category : v->value;

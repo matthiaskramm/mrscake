@@ -266,9 +266,9 @@ static PyObject* py_dataset_train(PyObject * _self, PyObject* args, PyObject* kw
     if(!e)
         return NULL;
     if(PyInt_Check(output)) {
-        e->desired_output = variable_make_categorical(PyInt_AS_LONG(output));
+        e->desired_response = variable_make_categorical(PyInt_AS_LONG(output));
     } else if(PyString_Check(output)) {
-        e->desired_output = variable_make_text(PyString_AsString(output));
+        e->desired_response = variable_make_text(PyString_AsString(output));
     } else {
         return PY_ERROR("output parameter must be an integer or a string");
     }

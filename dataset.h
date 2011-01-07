@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "model.h"
+#include "ast.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,14 +15,17 @@ typedef struct _column column_t;
 typedef struct _sanitized_dataset {
     int num_columns;
     int num_rows;
-    wordmap_t*wordmap;
     column_t**columns;
-    category_t*desired_output;
-    bool output_is_text;
+
+    column_t*desired_response;
 } sanitized_dataset_t;
 
 struct _column {
-    columntype_t type;
+    bool is_categorical;
+
+    int num_classes;
+    constant_t*classes;
+    
     union {
         float f;
         category_t c;

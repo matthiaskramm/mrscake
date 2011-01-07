@@ -4,7 +4,7 @@ CC=gcc -g -fPIC
 CXX=g++ -g -fPIC
 
 LIBS=-lz -lpthread -lrt
-MODELS=model_cv_dtree.o
+MODELS=model_cv_dtree.o model_cv_ann.o
 OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o wordmap.o dict.o dataset.o
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
@@ -46,7 +46,10 @@ io.o: io.c io.h Makefile
 cvtools.o: cvtools.cpp lib/ml.hpp Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h Makefile
+model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h cvtools.h Makefile
+	$(CXX) -Ilib $< -c -o $@
+
+model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
 test_model.o: test_model.c model.h model.h Makefile

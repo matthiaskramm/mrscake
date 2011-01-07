@@ -1,6 +1,7 @@
 #ifndef __model_h__
 #define __model_h__
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,6 +25,7 @@ variable_t variable_make_continuous(float v);
 variable_t variable_make_text(const char*s);
 variable_t variable_make_missing();
 double variable_value(variable_t*v);
+bool variable_equals(variable_t*v1, variable_t*v2);
 
 typedef struct _row {
     int num_inputs;
@@ -49,7 +51,7 @@ void wordmap_destroy(wordmap_t*dict);
 typedef struct _example {
     int num_inputs;
     struct _example*previous;
-    variable_t desired_output;
+    variable_t desired_response;
     variable_t inputs[0];
 } example_t;
 

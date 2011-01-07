@@ -20,4 +20,9 @@ class CvMLDataFromExamples: public CvMLData
 
 CvMat*cvmat_from_row(row_t*row, bool add_one);
 
+void cvmSetI(CvMat*m, int y, int x, int v);
+void cvmSetF(CvMat*m, int y, int x, float f);
+int cvmGetI(const CvMat*m, int y, int x);
+float cvmGetF(const CvMat*m, int y, int x);
+
 #endif // __CVTOOLS_H__

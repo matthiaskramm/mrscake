@@ -1,6 +1,25 @@
 #include "cvtools.h"
 #include "dataset.h"
 
+void cvmSetI(CvMat*m, int y, int x, int v)
+{
+    int*e = (int*)(CV_MAT_ELEM_PTR(*m, y, x));
+    *e = v;
+}
+void cvmSetF(CvMat*m, int y, int x, float f)
+{
+    float*e = (float*)(CV_MAT_ELEM_PTR(*m, y, x));
+    *e = f;
+}
+int cvmGetI(const CvMat*m, int y, int x)
+{
+    return CV_MAT_ELEM((*m), int, y, x);
+}
+float cvmGetF(const CvMat*m, int y, int x)
+{
+    return CV_MAT_ELEM((*m), float, y, x);
+}
+
 CvMLDataFromExamples::CvMLDataFromExamples(sanitized_dataset_t*dataset)
     :CvMLData()
 {
@@ -40,7 +59,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(sanitized_dataset_t*dataset)
                     c->entries[i].f :
                     c->entries[i].c;
         }
-        ddata[response_idx] = dataset->desired_output[i];
+        ddata[response_idx] = dataset->desired_response->entries[i].c;
     }
 
     train_sample_count = dataset->num_rows;
