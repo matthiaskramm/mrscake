@@ -68,8 +68,8 @@ predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
 
 # ------------ old test code -----------------
 
-multimodel: multimodel.o lib/libml.a Makefile 
-	$(CXX) multimodel.o -o $@ lib/libml.a -lz -lpthread -lrt
+multimodel: multimodel.o lib/libml.a $(OBJECTS) Makefile 
+	$(CXX) multimodel.o $(OBJECTS) lib/libml.a -o $@ -lz -lpthread -lrt
 
 svm.o: svm.cpp Makefile
 	$(CXX) -Ilib $< -c -o $@

@@ -44,17 +44,11 @@ class CodeGeneratingDTree: public CvDTree
         }
         array_t* a = array_new(count);
         count = 0;
+        assert(dataset->columns[column]->is_categorical);
         for(s=0;s<num_categories;s++) {
             if(CV_DTREE_CAT_DIR(s,subset)<0) {
                 int c = map_category_back(ci, s);
-                if(dataset->columns[column]->type == TEXT &&
-                   dataset->wordmap &&
-                   wordmap_find_category(dataset->wordmap, c))
-                {
-                    a->entries[count++] = string_constant(wordmap_find_category(dataset->wordmap, c));
-                } else {
-                    a->entries[count++] = category_constant(c);
-                }
+                a->entries[count++] = dataset->columns[column]->classes[c];
             }
         }
         return a;
@@ -65,11 +59,12 @@ class CodeGeneratingDTree: public CvDTree
         const int*vtype = data->var_type->data.i;
 
         if(node->Tn <= pruned_tree_idx || !node->left) {
+            assert(dataset->desired_response->is_categorical);
             category_t c = (int)floor(node->value+FLT_EPSILON);
-            if(dataset->desired_response->type == CATEGORICAL) {
-                RETURN(c);
-            } else { // desired_output->type == TEXT
-                RETURN_STRING(wordmap_find_category(dataset->wordmap, c));
+            if(c<0 || c>=dataset->desired_response->num_classes) {
+                RETURN(missing_constant());
+            } else {
+                RETURN(dataset->desired_response->classes[c]);
             }
             return;
         }
@@ -168,7 +163,6 @@ static model_t*dtree_train(dataset_t*dataset)
 
     model_t*m = (model_t*)malloc(sizeof(model_t));
     m->code = dtree.get_program();
-    m->wordmap = d->wordmap;d->wordmap=0;
 
 #ifdef VERIFY
     verify(dataset, m, &dtree);

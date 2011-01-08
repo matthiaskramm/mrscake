@@ -8,8 +8,10 @@
 
 /* FIXME- these should come from opencv's include files */
 CVAPI(CvMat*) cvCreateMat( int rows, int cols, int type );
-CVAPI(CvMat*) cvPreprocessCategoricalResponses( const CvMat* responses, const CvMat* sample_idx, int sample_all, CvMat** out_response_map, CvMat** class_counts);
 CVAPI(void) cvSet(void* arr, CvScalar value, const void* maskarr);
+CvMat* cv_preprocess_categories( const CvMat* responses,
+    const CvMat* sample_idx, int sample_all,
+    CvMat** out_response_map, CvMat** class_counts );
 
 class CvMLDataFromExamples: public CvMLData
 {

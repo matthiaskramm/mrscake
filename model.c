@@ -121,6 +121,9 @@ variable_t constant_to_variable(constant_t* c)
         case CONSTANT_FLOAT:
             return variable_make_continuous(c->f);
         break;
+        case CONSTANT_MISSING:
+            return variable_make_missing();
+        break;
         default:
             fprintf(stderr, "Can't convert constant type %d to variable\n", c->type);
         break;

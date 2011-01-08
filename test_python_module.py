@@ -15,3 +15,4 @@ print model.predict([3,2.0,7,1.0,"A",1])
 print model.predict([3,2.0,7,1.0,"B",1])
 print model.predict([3,2.0,7,0.0,"C",1])
 print model.predict([3,2.0,7,0.0,"D",1])
+

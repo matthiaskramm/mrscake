@@ -37,7 +37,7 @@ static int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows)
 {
     int y;
     int x = 0;
-    if(column->type == CONTINUOUS) {
+    if(!column->is_categorical) {
         for(y=0;y<rows;y++) {
             float*e = (float*)(CV_MAT_ELEM_PTR(*mat, y, xpos+x));
             *e =  column->entries[y].f;
@@ -65,7 +65,7 @@ static int count_multiclass_columns(sanitized_dataset_t*d)
     int x;
     int width = 0;
     for(x=0;x<d->num_columns;x++) {
-        if(d->columns[x]->type != CONTINUOUS) {
+        if(!d->columns[x]->is_categorical) {
             width += d->columns[x]->num_classes;
         } else {
             width++;
@@ -107,7 +107,6 @@ static model_t*ann_train(dataset_t*dataset)
 
     model_t*m = (model_t*)malloc(sizeof(model_t));
     m->code = ann.get_program();
-    m->wordmap = d->wordmap;d->wordmap=0;
 
     sanitized_dataset_destroy(d);
     return m;

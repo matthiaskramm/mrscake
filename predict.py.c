@@ -192,8 +192,10 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
         return PyString_FromString(i.text);
     else if(i.type == CATEGORICAL)
         return pyint_fromlong(i.category);
-    else 
+    else if(i.type == MISSING)
         return PY_NONE;
+    else
+        return PY_ERROR("internal error: bad variable type %d", i.type);
 }
 PyDoc_STRVAR(model_load_doc, \
 "load_model()\n\n"

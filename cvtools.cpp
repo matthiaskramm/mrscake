@@ -45,8 +45,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(sanitized_dataset_t*dataset)
     int i,j;
 
     for(j=0;j<input_columns;j++) {
-        if(dataset->columns[j]->type == CATEGORICAL ||
-           dataset->columns[j]->type == TEXT) {
+        if(dataset->columns[j]->is_categorical) {
             this->change_var_type(j, CV_VAR_CATEGORICAL);
         }
     }
@@ -55,9 +54,9 @@ CvMLDataFromExamples::CvMLDataFromExamples(sanitized_dataset_t*dataset)
         float* ddata = values->data.fl + total_columns*i;
         for(j=0;j<input_columns;j++) {
             column_t*c = dataset->columns[j];
-            ddata[j] = c->type == CONTINUOUS?
-                    c->entries[i].f :
-                    c->entries[i].c;
+            ddata[j] = c->is_categorical?
+                    c->entries[i].c :
+                    c->entries[i].f;
         }
         ddata[response_idx] = dataset->desired_response->entries[i].c;
     }

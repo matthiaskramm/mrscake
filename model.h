@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-typedef uint32_t category_t;
+typedef int32_t category_t;
 typedef enum {CATEGORICAL,CONTINUOUS,TEXT,MISSING} columntype_t;
 
 /* input variable (a.k.a. "free" variable) */

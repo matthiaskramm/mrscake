@@ -238,10 +238,12 @@ void CvANN_MLP::create( const CvMat* _layer_sizes, int _activ_func,
     for( i = 0; i < l_count; i++ )
     {
         int n = l_src[i*l_step];
-        if( n < 1 + (0 < i && i < l_count-1))
+        if( n < 1 + (0 < i && i < l_count-1)) {
+            printf("n=%d i=%d l_count=%d\n", n, i, l_count);
             CV_ERROR( CV_StsOutOfRange,
             "there should be at least one input and one output "
             "and every hidden layer must have more than 1 neuron" );
+        }
         l_dst[i] = n;
         max_count = MAX( max_count, n );
         if( i > 0 )

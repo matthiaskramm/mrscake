@@ -33,9 +33,9 @@ struct _constant {
     uint8_t type;
 };
 
+constant_t missing_constant();
 constant_t bool_constant(bool b);
 constant_t float_constant(float f);
-constant_t missing_constant();
 constant_t category_constant(category_t c);
 constant_t int_constant(int i);
 constant_t array_constant(array_t*a);

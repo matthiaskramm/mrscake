@@ -68,25 +68,6 @@ double knearest_calc_error(const CvMat*values, const CvMat*response, const CvMat
         return error * 100 / total;
 }
 
-static void cvmSetI(CvMat*m, int y, int x, int v)
-{
-    int*e = (int*)(CV_MAT_ELEM_PTR(*m, y, x));
-    *e = v;
-}
-static void cvmSetF(CvMat*m, int y, int x, float f)
-{
-    float*e = (float*)(CV_MAT_ELEM_PTR(*m, y, x));
-    *e = f;
-}
-static int cvmGetI(const CvMat*m, int y, int x)
-{
-    return CV_MAT_ELEM((*m), int, y, x);
-}
-static float cvmGetF(const CvMat*m, int y, int x)
-{
-    return CV_MAT_ELEM((*m), float, y, x);
-}
-
 static CvMat cvmat_new_int(int rows, int columns) 
 {
     return cvMat(rows, columns, CV_32SC1, calloc(1, sizeof(int)*rows*columns));
@@ -332,9 +313,9 @@ int main()
     const CvMat* train_sidx = data.get_train_sample_idx();
     const CvMat* var_idx = data.get_var_idx();
     CvMat*response_map;
-    //CvMat*ordered_response = cvPreprocessCategoricalResponses(response, var_idx, response->rows, &response_map, 0);
+    CvMat*ordered_response = cv_preprocess_categories(response, var_idx, response->rows, &response_map, NULL);
     int num_classes = response_map->cols;
-   
+    
     CvDTree dtree;
     printf("======DTREE=====\n");
     CvDTreeParams cvd_params( 10, 1, 0, false, 16, 0, false, false, 0);

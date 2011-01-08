@@ -279,6 +279,21 @@ min_args:0,
 max_args:0,
 };
 
+// ---------------------- constant -------------------------------------
+
+constant_t node_constant_eval(node_t*n, environment_t* locals)
+{
+    return n->value;
+}
+nodetype_t node_constant =
+{
+name:"constant",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_constant_eval,
+min_args:0,
+max_args:0,
+};
+
 // ======================== node list ==================================
 
 nodetype_t* nodes[] = {
@@ -331,6 +346,8 @@ node_t* node_new(nodetype_t*t,...)
 	n->value = array_constant(array);
     } else if(n->type == &node_string) {
 	n->value = string_constant(va_arg(arglist,char*));
+    } else if(n->type == &node_constant) {
+	n->value = va_arg(arglist,constant_t);
     }
     va_end(arglist);
     return n;
@@ -450,6 +467,10 @@ void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
         fprintf(fi, "%s%s (%d)\n", p1, n->type->name, n->value.i);
     /*} else if(n->type == &node_category) {
         fprintf(fi, "%s%s (%d)\n", p1, n->type->name, n->value.c);*/
+    } else if(n->type == &node_constant) {
+        fprintf(fi, "%s%s (", p1, n->type->name);
+        constant_print(&n->value);
+        fprintf(fi, ")\n");
     } else if(node_is_primitive(n)) {
         fprintf(fi, "%s%s (", p1, n->type->name);
         constant_print(&n->value);

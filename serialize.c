@@ -38,6 +38,9 @@ constant_t constant_read(reader_t*reader)
             c.s = read_string(reader);
             break;
         }
+        case CONSTANT_MISSING: {
+            break;
+        }
         default:
             fprintf(stderr, "Can't deserialize constant type %d\n", c.type);
             exit(1);
@@ -76,6 +79,9 @@ node_t* node_read(reader_t*reader)
             } else if(type==&node_string) {
                 char*s = read_string(reader);
                 NODE_BEGIN(type, s);
+            } else if(type==&node_constant) {
+                constant_t c = constant_read(reader);
+                NODE_BEGIN(type, c);
             } else {
                 fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, opcode);
                 return 0;
@@ -115,6 +121,19 @@ static void constant_write(constant_t*value, writer_t*writer)
             write_string(writer, s);
             break;
         }
+        case CONSTANT_ARRAY: {
+            array_t*a = AS_ARRAY(*value);
+            int t;
+            assert(a->size <= 255);
+            write_uint8(writer, a->size);
+            for(t=0;t<a->size;t++) {
+                constant_write(&a->entries[t], writer);
+            }
+            break;
+        }
+        case CONSTANT_MISSING: {
+            break;
+        }
         default:
             fprintf(stderr, "Can't serialize constant type %d\n", value->type);
             exit(1);
@@ -143,6 +162,8 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
     } else if(node->type==&node_var) {
         int var_index = AS_INT(node->value);
         write_uint8(writer, var_index);
+    } else if(node->type==&node_constant) {
+        constant_write(&node->value, writer);
     }
 }
 

@@ -1885,4 +1885,11 @@ void icvFindClusterLabels( const CvMat* probs, float outlier_thresh, float r,
     cvReleaseMat( &counts );
 } // End of icvFindClusterLabels
 
+CvMat* cv_preprocess_categories( const CvMat* responses,
+    const CvMat* sample_idx, int sample_all,
+    CvMat** out_response_map, CvMat** class_counts )
+{
+    return cvPreprocessCategoricalResponses(responses, sample_idx, sample_all, out_response_map, class_counts);
+}
+
 /* End of file */
