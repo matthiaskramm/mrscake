@@ -9,3 +9,4 @@ multimodel
 model
 test
 tags
+*.dSYM
