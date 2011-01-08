@@ -94,6 +94,7 @@ column_t*column_new(int num_rows, bool is_categorical)
     column_t*c = malloc(sizeof(column_t)+sizeof(c->entries[0])*num_rows);
     c->is_categorical = is_categorical;
     c->classes = 0;
+    c->num_classes = 0;
     return c;
 }
 void column_destroy(column_t*c)
@@ -146,7 +147,8 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
 {
     column_t*column = builder->column;
 
-    if(e.type == CONSTANT_FLOAT) {
+    if(!column->is_categorical) {
+        assert(e.type == CONSTANT_FLOAT);
         column->entries[y].f = e.f;
         return;
     }
@@ -179,29 +181,9 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
         } else if(e.type == CONSTANT_INT) {
             dict_put(builder->string2pos, INT_TO_PTR(e.i), INT_TO_PTR(pos));
         }
+        column->classes[pos] = e;
     }
     column->entries[y].c = pos;
-/*
-    columntype_t type = example->inputs[x].type;
-    if(is_categorical) {
-        assert(type == TEXT || type == CATEGORICAL);
-        constant_t entry = variable_to_constant(&example->inputs[x]);
-        category_t c = find_or_add_constant(wordmap, row, &entry);
-        s->columns[x]->entries[y].c = c;
-    } else {
-        assert(type == CONTINUOUS);
-        s->columns[x]->entries[y].f = example->inputs[x].value;
-    }
-    category_t c;
-    if(type == TEXT) {
-        c = wordmap_find_or_add_word(s->wordmap, example->desired_response.text);
-    } else if(type == CATEGORICAL) {
-        c = example->desired_response.category;
-    } else {
-        c = example->desired_response.value;
-    }
-    s->desired_response->entries[y].c = c;
-    */
 }
 void columnbuilder_destroy(columnbuilder_t*builder)
 {
@@ -259,12 +241,15 @@ void sanitized_dataset_print(sanitized_dataset_t*s)
             column_t*column = s->columns[x];
             if(column->is_categorical) {
                 constant_t c = column->classes[column->entries[y].c];
-                printf("C%d\t", c);
+                constant_print(&c);
+                printf("\t");
             } else {
                 printf("%.2f\t", column->entries[y].f);
             }
         }
-        printf("| C%d", s->desired_response[y]);
+        printf("| ");
+        constant_t c = s->desired_response->classes[s->desired_response->entries[y].c];
+        constant_print(&c);
         printf("\n");
     }
 }
