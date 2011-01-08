@@ -177,9 +177,11 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
             column->classes = malloc(alloc_size);
 
         if(e.type == CONSTANT_STRING) {
-            dict_put(builder->string2pos, e.s, INT_TO_PTR(pos));
+            dict_put(builder->string2pos, e.s, INT_TO_PTR(pos + 1));
         } else if(e.type == CONSTANT_INT) {
-            dict_put(builder->string2pos, INT_TO_PTR(e.i), INT_TO_PTR(pos));
+            dict_put(builder->int2pos, INT_TO_PTR(e.i), INT_TO_PTR(pos + 1));
+	} else if(e.type == CONSTANT_CATEGORY) {
+            dict_put(builder->int2pos, INT_TO_PTR(e.c), INT_TO_PTR(pos + 1));
         }
         column->classes[pos] = e;
     }
@@ -241,8 +243,9 @@ void sanitized_dataset_print(sanitized_dataset_t*s)
             column_t*column = s->columns[x];
             if(column->is_categorical) {
                 constant_t c = column->classes[column->entries[y].c];
+                printf("%d(", column->entries[y].c);
                 constant_print(&c);
-                printf("\t");
+                printf(")\t");
             } else {
                 printf("%.2f\t", column->entries[y].f);
             }
