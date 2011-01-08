@@ -3,7 +3,13 @@ all: multimodel svm ann ast model predict.so
 CC=gcc -g -fPIC
 CXX=g++ -g -fPIC
 
-LIBS=-lz -lpthread -lrt
+IS_MACOS:=$(shell test -d /Library && echo macos)
+
+LIBS=-lz -lpthread
+ifeq ($(IS_MACOS),)
+    LIBS=-lz -lpthread -lrt
+endif
+
 MODELS=model_cv_dtree.o model_cv_ann.o
 OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o wordmap.o dict.o dataset.o
 
@@ -56,10 +62,10 @@ test_model.o: test_model.c model.h model.h Makefile
 	$(CC) -c $< -o $@
 
 ast: test_ast.o $(OBJECTS) lib/libml.a Makefile
-	$(CXX) test_ast.o $(OBJECTS) lib/libml.a -o $@ -lz -lpthread -lrt
+	$(CXX) test_ast.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 model: test_model.o $(OBJECTS) lib/libml.a Makefile 
-	$(CXX) test_model.o $(OBJECTS) lib/libml.a -o $@ -lz -lpthread -lrt
+	$(CXX) test_model.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 # ------------ python interface --------------
 
@@ -69,7 +75,7 @@ predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
 # ------------ old test code -----------------
 
 multimodel: multimodel.o lib/libml.a $(OBJECTS) Makefile 
-	$(CXX) multimodel.o $(OBJECTS) lib/libml.a -o $@ -lz -lpthread -lrt
+	$(CXX) multimodel.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 svm.o: svm.cpp Makefile
 	$(CXX) -Ilib $< -c -o $@
@@ -78,10 +84,10 @@ ann.o: ann.cpp Makefile
 	$(CXX) -Ilib $< -c -o $@
 
 svm: svm.o lib/libml.a Makefile 
-	$(CXX) svm.o -o $@ lib/libml.a -lz -lpthread -lrt
+	$(CXX) svm.o -o $@ lib/libml.a $(LIBS)
 
 ann: ann.o lib/libml.a Makefile 
-	$(CXX) ann.o -o $@ lib/libml.a -lz -lpthread -lrt
+	$(CXX) ann.o -o $@ lib/libml.a $(LIBS)
 
 
 test: predict.so
@@ -91,4 +97,4 @@ clean:
 	rm -f svm test ast ann multimodel *.o
 
 
-.PHONY: clean
+.PHONY: clean all

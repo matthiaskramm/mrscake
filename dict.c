@@ -248,9 +248,9 @@ void dict_dump(dict_t*h, FILE*fi, const char*prefix)
         dictentry_t*e = h->slots[t];
         while(e) {
             if(h->key_type!=&charptr_type) {
-                fprintf(fi, "%s%08x=%08x\n", prefix, (int)e->key, (int)e->data);
+                fprintf(fi, "%s%p=%p\n", prefix, e->key, e->data);
             } else {
-                fprintf(fi, "%s%s=%08x\n", prefix, (char*)e->key, (int)e->data);
+                fprintf(fi, "%s%s=%p\n", prefix, (char*)e->key, e->data);
             }
             e = e->next;
         }
