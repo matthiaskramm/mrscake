@@ -1,3 +1,24 @@
+/* model.c
+   Data prediction top level interface implementation.
+
+   Part of the data prediction package.
+   
+   Copyright (c) 2010-2011 Matthias Kramm <kramm@quiss.org> 
+ 
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+
 #include <stdlib.h>
 #include <memory.h>
 #include "model.h"
@@ -134,9 +155,6 @@ variable_t model_predict(model_t*m, row_t*row)
 {
     environment_t e;
     e.row = row;
-    if(m->wordmap) {
-        wordmap_convert_row(m->wordmap, row);
-    }
     node_t*code = (node_t*)m->code;
     constant_t c = node_eval(code, &e);
     return constant_to_variable(&c);
