@@ -83,13 +83,6 @@ void model_save(model_t*m, const char*filename);
 void model_print(model_t*m);
 void model_destroy(model_t*m);
 
-typedef struct _model_factory {
-    const char*name;
-    model_t*(*train)(dataset_t*dataset);
-    void*internal;
-} model_factory_t;
-
-extern model_factory_t dtree_model_factory;
 model_t* model_select(dataset_t*dataset);
 
 #ifdef __cplusplus

@@ -2,6 +2,7 @@
 #include "model.h"
 #include "dataset.h"
 #include "ast.h"
+#include "model_select.h"
 
 //#define VERIFY 1
 

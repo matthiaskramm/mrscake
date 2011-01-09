@@ -5,6 +5,7 @@
 #include "lib/core_c.h"
 #include "model.h"
 #include "dataset.h"
+#include "lib/internal.hpp"
 
 /* FIXME- these should come from opencv's include files */
 CVAPI(CvMat*) cvCreateMat( int rows, int cols, int type );
