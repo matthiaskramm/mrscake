@@ -24,24 +24,25 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <assert.h>
+#include <math.h>
 #include "ast.h"
 
 #define EVAL_HEADER_1(v) \
-    constant_t v = n->child[0]->type->eval(n->child[0],locals); \
+    constant_t v = n->child[0]->type->eval(n->child[0],env); \
     constant_t r;
 
 #define EVAL_HEADER_2_LR(v1,v2) \
-    constant_t v1 = n->child[0]->type->eval(n->child[0],locals);\
-    constant_t v2 = n->child[1]->type->eval(n->child[1],locals);\
+    constant_t v1 = n->child[0]->type->eval(n->child[0],env);\
+    constant_t v2 = n->child[1]->type->eval(n->child[1],env);\
     constant_t r;
 
 #define EVAL_HEADER_2(v1,v2) EVAL_HEADER_2_LR(v1,v2)
 
-#define EVAL_CHILD(i) ((n)->child[(i)]->type->eval((n)->child[(i)],locals))
+#define EVAL_CHILD(i) ((n)->child[(i)]->type->eval((n)->child[(i)],env))
 
 // -------------------------- root node -------------------------------
 
-constant_t node_root_eval(node_t*n, environment_t* locals)
+constant_t node_root_eval(node_t*n, environment_t* env)
 {
     return EVAL_CHILD(0);
 }
@@ -56,10 +57,14 @@ max_args:1,
 
 // -------------------------- x + y -----------------------------------
 
-constant_t node_add_eval(node_t*n, environment_t* locals)
+constant_t node_add_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
-    return float_constant(AS_FLOAT(left) + AS_FLOAT(right));
+    double sum = 0;
+    int t;
+    for(t=0;t<n->num_children;t++) {
+	sum += AS_FLOAT(EVAL_CHILD(t));
+    }
+    return float_constant(sum);
 }
 nodetype_t node_add =
 {
@@ -67,28 +72,92 @@ name:"add",
 flags:NODE_FLAG_HAS_CHILDREN,
 eval:node_add_eval,
 min_args:2,
-max_args:2,
+max_args:INT_MAX,
 };
 
 // -------------------------- x - y -----------------------------------
 
-constant_t node_minus_eval(node_t*n, environment_t* locals)
+constant_t node_sub_eval(node_t*n, environment_t* env)
 {
     EVAL_HEADER_2(left,right);
     return float_constant(AS_FLOAT(left) - AS_FLOAT(right));
 }
-nodetype_t node_minus =
+nodetype_t node_sub =
 {
 name:"minus",
 flags:NODE_FLAG_HAS_CHILDREN,
-eval: node_minus_eval,
+eval: node_sub_eval,
 min_args:2,
 max_args:2,
 };
 
+// -------------------------- x * y -----------------------------------
+
+constant_t node_mul_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_2(left,right);
+    return float_constant(AS_FLOAT(left) * AS_FLOAT(right));
+}
+nodetype_t node_mul =
+{
+name:"mul",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_mul_eval,
+min_args:2,
+max_args:2,
+};
+
+// -------------------------- x / y -----------------------------------
+
+constant_t node_div_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_2(left,right);
+    return float_constant(AS_FLOAT(left) / AS_FLOAT(right));
+}
+nodetype_t node_div =
+{
+name:"div",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_div_eval,
+min_args:2,
+max_args:2,
+};
+
+// -------------------------- exp x ----------------------------------
+
+constant_t node_exp_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_1(v);
+    return float_constant(exp(AS_FLOAT(v)));
+}
+nodetype_t node_exp =
+{
+name:"exp",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_exp_eval,
+min_args:1,
+max_args:1,
+};
+
+// -------------------------- sqr x ----------------------------------
+
+constant_t node_sqr_eval(node_t*n, environment_t* env)
+{
+    double v = AS_FLOAT(EVAL_CHILD(0));
+    return float_constant(v*v);
+}
+nodetype_t node_sqr =
+{
+name:"sqr",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_sqr_eval,
+min_args:1,
+max_args:1,
+};
+
 // -------------------------- not x ----------------------------------
 
-constant_t node_not_eval(node_t*n, environment_t* locals)
+constant_t node_not_eval(node_t*n, environment_t* env)
 {
     EVAL_HEADER_1(condition);
     return bool_constant(!AS_BOOL(condition));
@@ -104,7 +173,7 @@ max_args:1,
 
 // -------------------------- x < y -----------------------------------
 
-constant_t node_lt_eval(node_t*n, environment_t* locals)
+constant_t node_lt_eval(node_t*n, environment_t* env)
 {
     EVAL_HEADER_2(left,right);
     return bool_constant(AS_FLOAT(left) < AS_FLOAT(right));
@@ -120,7 +189,7 @@ max_args:2,
 
 // -------------------------- x <= y -----------------------------------
 
-constant_t node_lte_eval(node_t*n, environment_t* locals)
+constant_t node_lte_eval(node_t*n, environment_t* env)
 {
     EVAL_HEADER_2(left,right);
     return bool_constant(AS_FLOAT(left) <= AS_FLOAT(right));
@@ -136,7 +205,7 @@ max_args:2,
 
 // -------------------------- x > y -----------------------------------
 
-constant_t node_gt_eval(node_t*n, environment_t* locals)
+constant_t node_gt_eval(node_t*n, environment_t* env)
 {
     EVAL_HEADER_2(left,right);
     return bool_constant(AS_FLOAT(left) > AS_FLOAT(right));
@@ -152,7 +221,7 @@ max_args:2,
 
 // -------------------------- array ------------------------------------
 
-constant_t node_array_eval(node_t*n, environment_t* locals)
+constant_t node_array_eval(node_t*n, environment_t* env)
 {
     return n->value;
 }
@@ -167,7 +236,7 @@ max_args:0,
 
 // -------------------------- float ------------------------------------
 
-constant_t node_float_eval(node_t*n, environment_t* locals)
+constant_t node_float_eval(node_t*n, environment_t* env)
 {
     return n->value;
 }
@@ -182,7 +251,7 @@ max_args:0,
 
 // -------------------------- x in y ----------------------------------
 
-constant_t node_in_eval(node_t*n, environment_t* locals)
+constant_t node_in_eval(node_t*n, environment_t* env)
 {
     EVAL_HEADER_2(left,right);
     int i;
@@ -204,7 +273,7 @@ max_args:2,
 
 // -------------------- if(x) then y else z ----------------------------
 
-constant_t node_if_eval(node_t*n, environment_t* locals)
+constant_t node_if_eval(node_t*n, environment_t* env)
 {
     bool condition = AS_BOOL(EVAL_CHILD(0));
     if(condition == true) {
@@ -224,10 +293,10 @@ max_args:3,
 
 // ---------------------- var i ---------------------------------------
 
-constant_t node_var_eval(node_t*n, environment_t* locals)
+constant_t node_var_eval(node_t*n, environment_t* env)
 {
-    assert(n->value.i >= 0 && n->value.i < locals->row->num_inputs);
-    variable_t v = locals->row->inputs[n->value.i];
+    assert(n->value.i >= 0 && n->value.i < env->row->num_inputs);
+    variable_t v = env->row->inputs[n->value.i];
     if(v.type == CATEGORICAL) {
 	return category_constant(v.category);
     } else if(v.type == CONTINUOUS) {
@@ -249,9 +318,45 @@ min_args:0,
 max_args:0,
 };
 
+// ---------------------- setlocal i ----------------------------------
+
+constant_t node_setlocal_eval(node_t*n, environment_t* env)
+{
+    int index = n->value.i;
+    constant_t value = EVAL_CHILD(0);
+    assert(index >= 0 && index < env->num_locals);
+    env->locals[index] = value;
+    return value;
+}
+nodetype_t node_setlocal =
+{
+name:"setlocal",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_setlocal_eval,
+min_args:1,
+max_args:1,
+};
+
+// ---------------------- getlocal i ----------------------------------
+
+constant_t node_getlocal_eval(node_t*n, environment_t* env)
+{
+    int index = n->value.i;
+    assert(index >= 0 && index < env->num_locals);
+    return env->locals[index];
+}
+nodetype_t node_getlocal =
+{
+name:"getlocal",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_getlocal_eval,
+min_args:0,
+max_args:0,
+};
+
 // ---------------------- category i (return i) -------------------------
 
-constant_t node_category_eval(node_t*n, environment_t* locals)
+constant_t node_category_eval(node_t*n, environment_t* env)
 {
     return category_constant(n->value.c);
 }
@@ -266,7 +371,7 @@ max_args:0,
 
 // ---------------------- text s ------------- -------------------------
 
-constant_t node_string_eval(node_t*n, environment_t* locals)
+constant_t node_string_eval(node_t*n, environment_t* env)
 {
     return n->value;
 }
@@ -281,7 +386,7 @@ max_args:0,
 
 // ---------------------- constant -------------------------------------
 
-constant_t node_constant_eval(node_t*n, environment_t* locals)
+constant_t node_constant_eval(node_t*n, environment_t* env)
 {
     return n->value;
 }
@@ -326,11 +431,7 @@ node_t* node_new(nodetype_t*t,...)
     node_t*n = (node_t*)malloc(sizeof(node_t));
     n->type = t;
     n->parent = 0;
-    assert(t->max_args < INT_MAX);
     n->child = 0;
-    if(t->max_args) {
-	n->child = (node_t**)malloc(sizeof(node_t*)*t->max_args);
-    }
     n->num_children = 0;
 
     va_list arglist;
@@ -348,17 +449,34 @@ node_t* node_new(nodetype_t*t,...)
 	n->value = string_constant(va_arg(arglist,char*));
     } else if(n->type == &node_constant) {
 	n->value = va_arg(arglist,constant_t);
+    } else if(n->type == &node_setlocal || n->type == &node_getlocal) {
+	n->value = int_constant(va_arg(arglist,int));
     }
     va_end(arglist);
     return n;
 }
 
-node_t* node_extend(node_t*n, node_t*add)
+void node_append_child(node_t*n, node_t*child)
 {
-    n->child = realloc(n->child, (n->num_children+1)*sizeof(node_t*));
-    n->child[n->num_children] = add;
-    n->num_children++;
-    return n;
+    if(!n->num_children) {
+	// first child
+	n->child = malloc(1*sizeof(node_t*));
+	n->child[0] = child;
+	n->num_children++;
+	return;
+    }
+
+    int size = n->num_children;
+    int highest_bit;
+    do {
+	highest_bit = size;
+	size = size&(size-1);
+    } while(size);
+
+    if(n->num_children == highest_bit) {
+	n->child = realloc(n->child, (highest_bit<<1)*sizeof(node_t*));
+    }
+    n->child[n->num_children++] = child;
 }
 
 node_t* node_new1(nodetype_t*t, node_t*node)

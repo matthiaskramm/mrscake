@@ -83,9 +83,9 @@ class CodeGeneratingANN: public CvANN_MLP
 		ADD
 		    MUL
 			VAR(j)
-			FLOAT(w[j*2])
+			FLOAT_CONSTANT(w[j*2])
 		    END;
-		    FLOAT(w[j*2+1])
+		    FLOAT_CONSTANT(w[j*2+1])
 		END;
 	}
 
@@ -106,13 +106,13 @@ class CodeGeneratingANN: public CvANN_MLP
 		    for(y=0;y<w_rows;y++) {
 			MUL
 			    GETLOCAL(var_offset[j]+y);
-			    FLOAT(w[w_cols*y+x]);
+			    FLOAT_CONSTANT(w[w_cols*y+x]);
 			END;
 		    }
 		    END;
 	    }
 	    const double*bias = w + w_rows*w_cols;
-	    int o = var_offset[j+1]
+	    int o = var_offset[j+1];
 	    for(x=0;x<w_cols;x++) {
 		double scale2 = f_param2;
 		switch( activ_func )
@@ -121,21 +121,21 @@ class CodeGeneratingANN: public CvANN_MLP
 			SETLOCAL(o+x)
 			    ADD
 				GETLOCAL(o+x)
-				FLOAT(bias[x]);
+				FLOAT_CONSTANT(bias[x]);
 			    END;
 			END;
 			break;
 		    }
 		    case SIGMOID_SYM: {
-			scale = -f_param1;
+			double scale = -f_param1;
 			SETLOCAL(o+x)
 			    EXP
 				MUL
 				    ADD
 					GETLOCAL(o+x)
-					FLOAT(bias[x]);
+					FLOAT_CONSTANT(bias[x]);
 				    END;
-				    FLOAT(scale);
+				    FLOAT_CONSTANT(scale);
 				END;
 			    END;
 			END;
@@ -143,34 +143,34 @@ class CodeGeneratingANN: public CvANN_MLP
 			    MUL
 				DIV
 				    SUB
-					FLOAT(1.0);
+					FLOAT_CONSTANT(1.0);
 					GETLOCAL(o+x)
 				    END;
 				    ADD	
-					FLOAT(1.0);
+					FLOAT_CONSTANT(1.0);
 					GETLOCAL(o+x)
 				    END;
 				END;
-				FLOAT(scale2);
+				FLOAT_CONSTANT(scale2);
 			    END;
 			END;
 			break;
 		    }
 		    case GAUSSIAN: {
-			scale = -f_param1*f_param1;
+			double scale = -f_param1*f_param1;
 			MUL
 			    EXP
 				MUL
 				    SQR
 					ADD 
 					    GETLOCAL(o+x);
-					    FLOAT(bias[x]);
+					    FLOAT_CONSTANT(bias[x]);
 					END;
 				    END;
-				    FLOAT(scale);
+				    FLOAT_CONSTANT(scale);
 				END;
 			    END;
-			    FLOAT(scale2);
+			    FLOAT_CONSTANT(scale2);
 			END;
 			break;
 		    }
@@ -184,9 +184,9 @@ class CodeGeneratingANN: public CvANN_MLP
 		ADD
 		    MUL
 			GETLOCAL(var_offset[l_count]+j);
-			FLOAT(w[j*2]);
+			FLOAT_CONSTANT(w[j*2]);
 		    END;
-		    FLOAT(w[j*2+1]);
+		    FLOAT_CONSTANT(w[j*2+1]);
 		END;
 	    END;
 	}
@@ -196,6 +196,8 @@ class CodeGeneratingANN: public CvANN_MLP
 
     sanitized_dataset_t*dataset;
     int*var_offset;
+    int input_size;
+    int output_size;
 };
 
 static int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows)
@@ -261,7 +263,7 @@ static model_t*ann_train(dataset_t*dataset)
     CvMat* layers = cvCreateMat( 1, num_layers, CV_32SC1);
     int input_width = count_multiclass_columns(d);
     int output_width = d->desired_response->num_classes;
-    cvmSetI(layers, 0, 0, width);
+    cvmSetI(layers, 0, 0, input_width);
     cvmSetI(layers, 0, 1, output_width);
     cvmSetI(layers, 0, 2, output_width);
     CvANN_MLP_TrainParams ann_params;
