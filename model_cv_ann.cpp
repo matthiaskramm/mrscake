@@ -37,6 +37,40 @@ class CodeGeneratingANN: public CvANN_MLP
 	const double* w = weights[0];
     }
 
+    /*
+       def predict(f,cls):
+	   # initialize classes
+           a = f
+	   b = int(cls=="A")
+	   c = int(cls=="B")
+
+	   # input scaling
+           a = a*0.3+0.5	
+           b = b*0.3+0.5	
+           c = c*0.3+0.5
+	   # layer0 -> layer1
+	   l0 = a*0.9 + b*0.2 + c*0.5
+	   l1 = a*0.1 + b*0.3 + c*0.1
+	   l2 = a*0.2 + b*0.6 + c*0.9
+	   l0 = exp(l0*0.7 + 0.9)
+	   l0 = (1-l0)/(1+l0)*0.1
+	   l1 = exp(l0*0.7 + 0.9)
+	   l1 = (1-l0)/(1+l0)*0.1
+	   l2 = exp(l0*0.7 + 0.9)
+	   l2 = (1-l0)/(1+l0)*0.1
+	   # layer1 -> layer2
+	   l3 = l0*0.9 + l1*0.2 + l2*0.5
+	   l4 = l0*0.1 + l1*0.3 + l2*0.1
+	   l5 = l0*0.2 + l1*0.6 + l2*0.9
+	    ...
+	   # output scaling
+	   r0 = l6*0.3 + 0.7
+	   r1 = l7*0.1 + 0.2
+	   r2 = l8*0.9 + 0.5
+
+	   return ["A","B","C"][[r0,r1,r2].index(max([r0,r1,r2]))]
+     */
+
     node_t* get_program() const
     {
         START_CODE(program);
