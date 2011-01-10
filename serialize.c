@@ -183,7 +183,7 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
     } else if(node->type==&node_var) {
         int var_index = AS_INT(node->value);
         write_uint8(writer, var_index);
-    } else if(node->type==&node_constant) {
+    } else if(node->type->flags&NODE_FLAG_HAS_VALUE) {
         constant_write(&node->value, writer);
     }
 }
@@ -206,7 +206,6 @@ model_t* model_load(const char*filename)
     model_t*m = (model_t*)malloc(sizeof(model_t));
     reader_t *r = filereader_new2(filename);
     m->code = (void*)node_read(r);
-    m->wordmap = 0;
     r->dealloc(r);
     return m;
 }

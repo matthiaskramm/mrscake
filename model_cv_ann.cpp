@@ -87,6 +87,7 @@ class CodeGeneratingANN: public CvANN_MLP
 		    END;
 		    FLOAT_CONSTANT(w[j*2+1])
 		END;
+	    END;
 	}
 
 	int cols = input_size;
@@ -110,6 +111,7 @@ class CodeGeneratingANN: public CvANN_MLP
 			END;
 		    }
 		    END;
+		END;
 	    }
 	    const double*bias = w + w_rows*w_cols;
 	    int o = var_offset[j+1];

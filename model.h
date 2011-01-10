@@ -56,17 +56,6 @@ typedef struct _row {
 row_t*row_new(int num_inputs);
 void row_destroy(row_t*row);
 
-/* a dictionary maps identifiers (textual categories) to numerical category ids */
-typedef struct _wordmap {
-    void*internal;
-} wordmap_t;
-
-wordmap_t* wordmap_new();
-category_t wordmap_find_word(wordmap_t*dict, const char*word);
-category_t wordmap_find_or_add_word(wordmap_t*dict, const char*word);
-const char* wordmap_find_category(wordmap_t*dict, category_t c);
-void wordmap_destroy(wordmap_t*dict);
-
 /* a single "row" in the data, combining a single known output with
    the corresponding inputs */
 typedef struct _example {
@@ -91,7 +80,6 @@ void dataset_destroy(dataset_t*dataset);
 
 typedef struct _model {
     int num_inputs;
-    wordmap_t*wordmap;
     columntype_t*column_types;
     void*code;
 } model_t;

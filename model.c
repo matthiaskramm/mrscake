@@ -153,10 +153,10 @@ variable_t constant_to_variable(constant_t* c)
 
 variable_t model_predict(model_t*m, row_t*row)
 {
-    environment_t e;
-    e.row = row;
     node_t*code = (node_t*)m->code;
-    constant_t c = node_eval(code, &e);
+    environment_t*e = environment_new(code, row);
+    constant_t c = node_eval(code, e);
+    environment_destroy(e);
     return constant_to_variable(&c);
 }
 void model_destroy(model_t*m)

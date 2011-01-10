@@ -44,7 +44,11 @@
 
 constant_t node_root_eval(node_t*n, environment_t* env)
 {
-    return EVAL_CHILD(0);
+    int t;
+    for(t=0;t<n->num_children-1;t++) {
+	EVAL_CHILD(t);
+    }
+    return EVAL_CHILD(n->num_children-1);
 }
 nodetype_t node_root =
 {
@@ -52,7 +56,7 @@ name:"root",
 flags:NODE_FLAG_HAS_CHILDREN,
 eval:node_root_eval,
 min_args:1,
-max_args:1,
+max_args:INT_MAX,
 };
 
 // -------------------------- x + y -----------------------------------
@@ -331,7 +335,7 @@ constant_t node_setlocal_eval(node_t*n, environment_t* env)
 nodetype_t node_setlocal =
 {
 name:"setlocal",
-flags:NODE_FLAG_HAS_VALUE,
+flags:NODE_FLAG_HAS_CHILDREN|NODE_FLAG_HAS_VALUE,
 eval: node_setlocal_eval,
 min_args:1,
 max_args:1,
@@ -581,21 +585,29 @@ void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
         free(o2);
         free(o3);
         free(o4);
-    } else if(n->type == &node_var) {
-        fprintf(fi, "%s%s (%d)\n", p1, n->type->name, n->value.i);
-    /*} else if(n->type == &node_category) {
-        fprintf(fi, "%s%s (%d)\n", p1, n->type->name, n->value.c);*/
-    } else if(n->type == &node_constant) {
-        fprintf(fi, "%s%s (", p1, n->type->name);
-        constant_print(&n->value);
-        fprintf(fi, ")\n");
-    } else if(node_is_primitive(n)) {
+    } else if(n->type->flags & NODE_FLAG_HAS_VALUE) {
         fprintf(fi, "%s%s (", p1, n->type->name);
         constant_print(&n->value);
         fprintf(fi, ")\n");
     } else {
         fprintf(fi, "%s%s\n", p1, n->type->name);
     }
+}
+
+int node_highest_local(node_t*node)
+{
+    int max = 0;
+    if(node->type == &node_setlocal ||
+       node->type == &node_getlocal) {
+	max = node->value.i;
+    }
+    int t;
+    for(t=0;t<node->num_children;t++) {
+	int l = node_highest_local(node->child[t]);
+	if(l>max)
+	    max = l;
+    }
+    return max;
 }
 
 void node_print(node_t*n)

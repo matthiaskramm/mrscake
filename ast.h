@@ -23,8 +23,8 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include "model.h"
 #include "constant.h"
+#include "environment.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,16 +32,9 @@ extern "C" {
 
 typedef struct _node node_t;
 typedef struct _nodetype nodetype_t;
-typedef struct _environment environment_t;
 
 #define NODE_FLAG_HAS_CHILDREN 1
 #define NODE_FLAG_HAS_VALUE 2
-
-struct _environment {
-    row_t* row;
-    constant_t* locals;
-    int num_locals;
-};
 
 struct _nodetype {
     char*name;
@@ -55,13 +48,11 @@ struct _nodetype {
 struct _node {
     nodetype_t*type;
     node_t*parent;
-    union {
-        struct {
-            node_t**child;
-            int num_children;
-        };
-	constant_t value;
+    struct {
+	node_t**child;
+	int num_children;
     };
+    constant_t value;
 };
 
 /* all known node types & opcodes */
@@ -100,6 +91,7 @@ node_t* node_new(nodetype_t*t, ...);
 void node_append_child(node_t*n, node_t*child);
 void node_free(node_t*n);
 constant_t node_eval(node_t*n,environment_t* e);
+int node_highest_local(node_t*node);
 void node_print(node_t*n);
 
 
@@ -127,8 +119,9 @@ void node_print(node_t*n);
 		    assert(current_node->type); \
 		    assert(current_node->type->name); \
 		    if(current_node->num_children >= current_node->type->max_args) { \
-			fprintf(stderr, "Too many arguments (%d) to node (max %d args)\n", \
+			fprintf(stderr, "Too many arguments (%d) to node %s (max %d args)\n", \
 				current_node->num_children, \
+				current_node->type->name, \
 				current_node->type->max_args); \
 		    } \
 		    assert(current_node->num_children < current_node->type->max_args); \

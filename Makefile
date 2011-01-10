@@ -11,7 +11,7 @@ ifeq ($(IS_MACOS),)
 endif
 
 MODELS=model_cv_dtree.o model_cv_ann.o
-OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o wordmap.o dict.o dataset.o
+OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -31,7 +31,7 @@ ast.o: ast.c ast.h model.h Makefile
 constant.o: constant.c constant.h model.h Makefile
 	$(CC) -c $< -o $@
 
-wordmap.o: wordmap.c wordmap.h model.h Makefile
+environment.o: environment.c environment.h model.h Makefile
 	$(CC) -c $< -o $@
 
 dataset.o: dataset.c dataset.h model.h Makefile
