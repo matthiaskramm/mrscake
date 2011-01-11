@@ -40,9 +40,9 @@
 
 #define EVAL_CHILD(i) ((n)->child[(i)]->type->eval((n)->child[(i)],env))
 
-// -------------------------- root node -------------------------------
+// -------------------------- block node -------------------------------
 
-constant_t node_root_eval(node_t*n, environment_t* env)
+constant_t node_block_eval(node_t*n, environment_t* env)
 {
     int t;
     for(t=0;t<n->num_children-1;t++) {
@@ -50,11 +50,11 @@ constant_t node_root_eval(node_t*n, environment_t* env)
     }
     return EVAL_CHILD(n->num_children-1);
 }
-nodetype_t node_root =
+nodetype_t node_block =
 {
-name:"root",
+name:"block",
 flags:NODE_FLAG_HAS_CHILDREN,
-eval:node_root_eval,
+eval:node_block_eval,
 min_args:1,
 max_args:INT_MAX,
 };
@@ -175,6 +175,22 @@ min_args:1,
 max_args:1,
 };
 
+// -------------------------- float(b) ----------------------------------
+
+constant_t node_bool_to_float_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_1(b);
+    return float_constant(AS_BOOL(b));
+}
+nodetype_t node_bool_to_float =
+{
+name:"bool_to_float",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_bool_to_float_eval,
+min_args:1,
+max_args:1,
+};
+
 // -------------------------- x < y -----------------------------------
 
 constant_t node_lt_eval(node_t*n, environment_t* env)
@@ -219,6 +235,79 @@ nodetype_t node_gt =
 name:"gt",
 flags:NODE_FLAG_HAS_CHILDREN,
 eval: node_gt_eval,
+min_args:2,
+max_args:2,
+};
+
+// -------------------------- x >= y -----------------------------------
+
+constant_t node_gte_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_2(left,right);
+    return bool_constant(AS_FLOAT(left) >= AS_FLOAT(right));
+}
+nodetype_t node_gte =
+{
+name:"gte",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_gte_eval,
+min_args:2,
+max_args:2,
+};
+
+// -------------------------- x == y -----------------------------------
+
+constant_t node_equals_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_2(left,right);
+    return bool_constant(constant_equals(&left,&right));
+}
+nodetype_t node_equals =
+{
+name:"equals",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_equals_eval,
+min_args:2,
+max_args:2,
+};
+
+// -------------------------- max_arg ------------------------------------
+
+constant_t node_max_arg_eval(node_t*n, environment_t* env)
+{
+    float max = AS_FLOAT(EVAL_CHILD(0));
+    int index = 0;
+    int t;
+    for(t=1;t<n->num_children;t++) {
+        float c = AS_FLOAT(EVAL_CHILD(t));
+        if(c>max) {
+            max = c;
+            index = t;
+        }
+    }
+    return int_constant(index);
+}
+nodetype_t node_max_arg =
+{
+name:"max_arg",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_max_arg_eval,
+min_args:1,
+max_args:INT_MAX,
+};
+
+// -------------------------- array_at_pos ------------------------------
+
+constant_t node_array_at_pos_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_2(array,index);
+    return AS_ARRAY(array)->entries[AS_INT(index)];
+}
+nodetype_t node_array_at_pos =
+{
+name:"array_at_pos",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_array_at_pos_eval,
 min_args:2,
 max_args:2,
 };
@@ -347,6 +436,8 @@ constant_t node_getlocal_eval(node_t*n, environment_t* env)
 {
     int index = n->value.i;
     assert(index >= 0 && index < env->num_locals);
+    bool local_is_not_undefined = env->locals[index].type != 0;
+    assert(local_is_not_undefined);
     return env->locals[index];
 }
 nodetype_t node_getlocal =
@@ -468,6 +559,17 @@ node_t* node_new_with_args(nodetype_t*t,...)
 
 void node_append_child(node_t*n, node_t*child)
 {
+    assert(n);
+    assert(n->type);
+    assert(n->type->name);
+    if(n->num_children >= n->type->max_args) { \
+        fprintf(stderr, "Too many arguments (%d) to node %s (max %d args)\n", \
+                n->num_children, \
+                n->type->name, \
+                n->type->max_args); \
+    }
+    assert(n->num_children < n->type->max_args);
+
     if(!n->num_children) {
 	// first child
 	n->child = malloc(1*sizeof(node_t*));
@@ -533,8 +635,14 @@ bool node_is_primitive(node_t*n)
 */
 void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
 {
-    if(n->type->flags&NODE_FLAG_HAS_CHILDREN) {
+    if(n->type->flags & NODE_FLAG_HAS_VALUE) {
+        fprintf(fi, "%s%s (", p1, n->type->name);
+        constant_print(&n->value);
+        fprintf(fi, ")\n");
+    } else {
         fprintf(fi, "%s%s\n", p1, n->type->name);
+    }
+    if(n->type->flags&NODE_FLAG_HAS_CHILDREN) {
         int t;
         char*o2 = malloc(strlen(p2)+3);
         strcpy(o2, p2);strcat(o2, "| ");
@@ -550,12 +658,6 @@ void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
         free(o2);
         free(o3);
         free(o4);
-    } else if(n->type->flags & NODE_FLAG_HAS_VALUE) {
-        fprintf(fi, "%s%s (", p1, n->type->name);
-        constant_print(&n->value);
-        fprintf(fi, ")\n");
-    } else {
-        fprintf(fi, "%s%s\n", p1, n->type->name);
     }
 }
 

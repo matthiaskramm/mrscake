@@ -61,9 +61,9 @@ void test_if()
 		VAR(2)
 	    END;
 	THEN
-	    RETURN(int_constant(1))
+	    RETURN(category_constant(1))
 	ELSE
-	    RETURN(int_constant(2))
+	    RETURN(category_constant(2))
 	END;
     END_CODE;
 
@@ -96,9 +96,9 @@ void test_array()
 		ARRAY_CONSTANT(array_create(3, 1,2,3));
 	    END;
 	THEN
-	    RETURN(int_constant(1))
+	    RETURN(category_constant(1))
 	ELSE
-	    RETURN(int_constant(2))
+	    RETURN(category_constant(2))
 	END;
     END_CODE;
 

@@ -57,7 +57,7 @@ struct _node {
 
 /* all known node types & opcodes */
 #define LIST_NODES \
-    NODE(0x71, node_root) \
+    NODE(0x71, node_block) \
     NODE(0x01, node_if) \
     NODE(0x02, node_add) \
     NODE(0x03, node_sub) \
@@ -66,18 +66,23 @@ struct _node {
     NODE(0x06, node_lt) \
     NODE(0x07, node_lte) \
     NODE(0x08, node_gt) \
-    NODE(0x09, node_in) \
-    NODE(0x0a, node_not) \
-    NODE(0x0b, node_exp) \
-    NODE(0x0c, node_sqr) \
-    NODE(0x0d, node_var) \
-    NODE(0x0e, node_constant) \
-    NODE(0x0f, node_category) \
-    NODE(0x10, node_array) \
-    NODE(0x11, node_float) \
-    NODE(0x12, node_string) \
-    NODE(0x13, node_getlocal)  \
-    NODE(0x14, node_setlocal)
+    NODE(0x09, node_gte) \
+    NODE(0x0a, node_in) \
+    NODE(0x0b, node_not) \
+    NODE(0x0c, node_exp) \
+    NODE(0x0d, node_sqr) \
+    NODE(0x0e, node_var) \
+    NODE(0x0f, node_constant) \
+    NODE(0x10, node_category) \
+    NODE(0x11, node_array) \
+    NODE(0x12, node_float) \
+    NODE(0x13, node_string) \
+    NODE(0x14, node_getlocal)  \
+    NODE(0x15, node_setlocal) \
+    NODE(0x16, node_bool_to_float) \
+    NODE(0x17, node_equals) \
+    NODE(0x18, node_max_arg) \
+    NODE(0x19, node_array_at_pos)
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES
@@ -116,39 +121,40 @@ void node_print(node_t*n);
 #define NODE_BEGIN(new_type,args...) \
 	    do { \
 		node_t* new_node = node_new_with_args(new_type,##args); \
-		if(current_node) { \
-		    assert(current_node->type); \
-		    assert(current_node->type->name); \
-		    if(current_node->num_children >= current_node->type->max_args) { \
-			fprintf(stderr, "Too many arguments (%d) to node %s (max %d args)\n", \
-				current_node->num_children, \
-				current_node->type->name, \
-				current_node->type->max_args); \
-		    } \
-		    assert(current_node->num_children < current_node->type->max_args); \
-		    node_append_child(current_node, new_node); \
-		} \
+                if(current_node) { \
+                    node_append_child(current_node, (new_node)); \
+                } else { \
+                    if(current_program) { \
+                        (*current_program) = new_node; \
+                    } \
+                } \
 		if((new_node->type->flags) & NODE_FLAG_HAS_CHILDREN) { \
 		    new_node->parent = current_node; \
 		    current_node = new_node; \
 		} \
 	    } while(0);
 
+#define INSERT_NODE(new_node) \
+            do { \
+                node_append_child(current_node, (new_node)); \
+            } while(0);
+
 #define NODE_CLOSE do {assert(current_node->num_children >= current_node->type->min_args && \
                            current_node->num_children <= current_node->type->max_args);\
-                    current_node = current_node->parent; \
+                       current_node = current_node->parent; \
                    } while(0)
 
 #define START_CODE(program) \
 	node_t* program; \
 	{ \
-	    node_t*current_node = program = node_new(&node_root); \
-	    program = current_node;
+	    node_t*current_node = 0; \
+            node_t**current_program = &program;
 
 #define END_CODE \
 	}
 
 #define END NODE_CLOSE
+#define END_BLOCK NODE_CLOSE
 #define IF NODE_BEGIN(&node_if)
 #define NOT NODE_BEGIN(&node_not)
 #define THEN assert(current_node && current_node->type == &node_if && current_node->num_children == 1);
@@ -165,12 +171,18 @@ void node_print(node_t*n);
 #define SQR NODE_BEGIN(&node_sqr)
 #define VAR(i) NODE_BEGIN(&node_var, i)
 #define RETURN(c) do {NODE_BEGIN(&node_constant, c)}while(0);
+#define CONSTANT(c) do {NODE_BEGIN(&node_constant, c)}while(0);
 #define RETURN_STRING(s) do {VERIFY_STRING(s);NODE_BEGIN(&node_string, string_constant(s))}while(0);
 #define FLOAT_CONSTANT(f) NODE_BEGIN(&node_float, f)
 #define STRING_CONSTANT(s) NODE_BEGIN(&node_string, s)
 #define ARRAY_CONSTANT(args...) NODE_BEGIN(&node_array, ##args)
 #define SETLOCAL(i) NODE_BEGIN(&node_setlocal, i)
 #define GETLOCAL(i) NODE_BEGIN(&node_getlocal, i)
+#define BOOL_TO_FLOAT NODE_BEGIN(&node_bool_to_float)
+#define EQUALS NODE_BEGIN(&node_equals)
+#define BLOCK NODE_BEGIN(&node_block)
+#define MAX_ARG NODE_BEGIN(&node_max_arg)
+#define ARRAY_AT_POS NODE_BEGIN(&node_array_at_pos)
 
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)
 #define VERIFY_STRING(s) do{if(0){(s)[0];};}while(0)

@@ -58,6 +58,7 @@ class CodeGeneratingDTree: public CvDTree
     void walk(CvDTreeNode*node, node_t*current_node) const
     {
         const int*vtype = data->var_type->data.i;
+        node_t**current_program = 0;
 
         if(node->Tn <= pruned_tree_idx || !node->left) {
             assert(dataset->desired_response->is_categorical);
@@ -128,7 +129,9 @@ class CodeGeneratingDTree: public CvDTree
         }
 
         START_CODE(code);
-        walk(root,code);
+          BLOCK
+            walk(root,code);
+          END;
         END_CODE;
         return code;
     }

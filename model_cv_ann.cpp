@@ -70,25 +70,60 @@ class CodeGeneratingANN: public CvANN_MLP
 
 	   return ["A","B","C"][[r0,r1,r2].index(max([r0,r1,r2]))]
      */
+    node_t* parameter(int num) const
+    {
+        int t;
+        int pos = 0;
+        int x;
+        for(x=0;x<this->dataset->num_columns;x++) {
+            if(!this->dataset->columns[x]->is_categorical) {
+                if(pos == num) {
+                    return node_new_with_args(&node_var, x);
+                }
+                pos++;
+            } else {
+                int c;
+                for(c=0;c<this->dataset->columns[x]->num_classes;c++) {
+                    if(pos == num) {
+                        START_CODE(program);
+                            BOOL_TO_FLOAT
+                                EQUALS
+                                    VAR(x);
+                                    CONSTANT(this->dataset->columns[x]->classes[c]);
+                                END;
+                            END;
+                        END_CODE;
+                        return program;
+                    }
+                    pos++;
+                }
+            }
+        }
+        assert(0);
+        return 0;
+    }
 
     node_t* get_program() const
     {
         START_CODE(program);
+        BLOCK
 	int l_count = layer_sizes->cols;
 
 	const double* w = weights[0];
 	int j;
-	for(j=0;j<input_size;j++) {
+        int pos = 0;
+        for(j=0;j<input_size;j++) {
 	    SETLOCAL(var_offset[0]+j)
 		ADD
 		    MUL
-			VAR(j)
+                        INSERT_NODE(parameter(j));
 			FLOAT_CONSTANT(w[j*2])
 		    END;
 		    FLOAT_CONSTANT(w[j*2+1])
 		END;
 	    END;
 	}
+
 
 	int cols = input_size;
 	for( j = 1; j < l_count; j++ )
@@ -100,13 +135,14 @@ class CodeGeneratingANN: public CvANN_MLP
 	    int w_rows = layer_in_cols;
 	    int w_cols = layer_out_cols;
 	    int x,y;
+	    int o = var_offset[j];
 	    w = weights[j];
 	    for(x=0;x<w_cols;x++) {
-		SETLOCAL(var_offset[j+1]+x)
+		SETLOCAL(o+x)
 		    ADD
 		    for(y=0;y<w_rows;y++) {
 			MUL
-			    GETLOCAL(var_offset[j]+y);
+			    GETLOCAL(var_offset[j-1]+y);
 			    FLOAT_CONSTANT(w[w_cols*y+x]);
 			END;
 		    }
@@ -114,7 +150,6 @@ class CodeGeneratingANN: public CvANN_MLP
 		END;
 	    }
 	    const double*bias = w + w_rows*w_cols;
-	    int o = var_offset[j+1];
 	    for(x=0;x<w_cols;x++) {
 		double scale2 = f_param2;
 		switch( activ_func )
@@ -148,7 +183,7 @@ class CodeGeneratingANN: public CvANN_MLP
 					FLOAT_CONSTANT(1.0);
 					GETLOCAL(o+x)
 				    END;
-				    ADD	
+				    ADD
 					FLOAT_CONSTANT(1.0);
 					GETLOCAL(o+x)
 				    END;
@@ -160,38 +195,58 @@ class CodeGeneratingANN: public CvANN_MLP
 		    }
 		    case GAUSSIAN: {
 			double scale = -f_param1*f_param1;
-			MUL
-			    EXP
-				MUL
-				    SQR
-					ADD 
-					    GETLOCAL(o+x);
-					    FLOAT_CONSTANT(bias[x]);
-					END;
-				    END;
-				    FLOAT_CONSTANT(scale);
-				END;
-			    END;
-			    FLOAT_CONSTANT(scale2);
-			END;
+			SETLOCAL(o+x)
+                            MUL
+                                EXP
+                                    MUL
+                                        SQR
+                                            ADD 
+                                                GETLOCAL(o+x);
+                                                FLOAT_CONSTANT(bias[x]);
+                                            END;
+                                        END;
+                                        FLOAT_CONSTANT(scale);
+                                    END;
+                                END;
+                                FLOAT_CONSTANT(scale2);
+                            END;
+                        END;
 			break;
 		    }
 		}
 	    }
 	}
-    
+
+        int final = var_offset[l_count-1];
 	w = weights[l_count];
 	for(j=0;j<output_size;j++) {
-	    SETLOCAL(var_offset[l_count]+j)
+	    SETLOCAL(final+j)
 		ADD
 		    MUL
-			GETLOCAL(var_offset[l_count]+j);
+			GETLOCAL(final+j);
 			FLOAT_CONSTANT(w[j*2]);
 		    END;
 		    FLOAT_CONSTANT(w[j*2+1]);
 		END;
 	    END;
 	}
+
+        array_t*classes = array_new(dataset->desired_response->num_classes);
+        int t;
+        for(t=0;t<classes->size;t++) {
+            classes->entries[t] = dataset->desired_response->classes[t];
+        }
+
+        ARRAY_AT_POS
+            ARRAY_CONSTANT(classes);
+            MAX_ARG
+                for(j=0;j<output_size;j++) {
+                    GETLOCAL(final+j);
+                }
+            END;
+        END;
+
+        END_BLOCK;
 	END_CODE;
 	return program;
     }

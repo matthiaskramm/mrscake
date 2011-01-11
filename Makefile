@@ -58,7 +58,10 @@ model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h cvtools.h Makefile
 model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-test_model.o: test_model.c model.h model.h Makefile
+test_model.o: test_model.c model.h Makefile
+	$(CC) -c $< -o $@
+
+test_ast.o: test_ast.c model.h ast.h Makefile
 	$(CC) -c $< -o $@
 
 ast: test_ast.o $(OBJECTS) lib/libml.a Makefile
