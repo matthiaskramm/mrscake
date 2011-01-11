@@ -192,6 +192,8 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
         return PyString_FromString(i.text);
     else if(i.type == CATEGORICAL)
         return pyint_fromlong(i.category);
+    else if(i.type == CONTINUOUS)
+        return PyFloat_FromDouble(i.value);
     else if(i.type == MISSING)
         return PY_NONE;
     else

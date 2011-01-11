@@ -36,6 +36,7 @@ typedef struct _column column_t;
 typedef struct _sanitized_dataset {
     int num_columns;
     int num_rows;
+    int expanded_num_columns;
     column_t**columns;
 
     column_t*desired_response;
@@ -53,10 +54,15 @@ struct _column {
     } entries[0];
 };
 
-void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
-example_t**example_list_to_array(dataset_t*d);
 sanitized_dataset_t* dataset_sanitize(dataset_t*dataset);
+
 void sanitized_dataset_print(sanitized_dataset_t*s);
+constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int i);
+
+void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
+
+
+example_t**example_list_to_array(dataset_t*d);
 
 #ifdef __cplusplus
 }

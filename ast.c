@@ -75,7 +75,7 @@ nodetype_t node_add =
 name:"add",
 flags:NODE_FLAG_HAS_CHILDREN,
 eval:node_add_eval,
-min_args:2,
+min_args:1,
 max_args:INT_MAX,
 };
 

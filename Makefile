@@ -1,7 +1,9 @@
 all: multimodel svm ann ast model predict.so
 
-CC=gcc -g -fPIC
-CXX=g++ -g -fPIC
+CC=gcc -pg -g -fPIC
+CXX=g++ -pg -g -fPIC
+PYTHON_LIB=-lpython2.6
+PYTHON_INCLUDE=-I/usr/include/python2.6
 
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
@@ -73,8 +75,10 @@ model: test_model.o $(OBJECTS) lib/libml.a Makefile
 # ------------ python interface --------------
 
 predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
-	$(CC) -shared -I/usr/include/python2.6/ predict.py.c $(OBJECTS) lib/libml.a -o predict.so $(LIBS) -lpython2.6 -lstdc++
+	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o predict.so $(LIBS) $(PYTHON_LIB) -lstdc++
 
+mypython: mypython.c Makefile
+	$(CC) $(PYTHON_INCLUDE) mypython.c -o mypython $(PYTHON_LIB)
 # ------------ old test code -----------------
 
 multimodel: multimodel.o lib/libml.a $(OBJECTS) Makefile 

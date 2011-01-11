@@ -53,20 +53,20 @@ variable_t variable_make_missing()
     v.value = __builtin_nan("");
     return v;
 }
-void variable_print(variable_t*v)
+void variable_print(variable_t*v, FILE*stream)
 {
     switch(v->type) {
         case CATEGORICAL:
-            printf("C%d\n", v->category);
+            fprintf(stream, "C%d", v->category);
         break;
         case CONTINUOUS:
-            printf("%.2f\n", v->value);
+            fprintf(stream, "%.2f", v->value);
         break;
         case TEXT:
-            printf("\"%s\"\n", v->text);
+            fprintf(stream, "\"%s\"", v->text);
         break;
         default:
-            printf("INVALID TYPE %d\n", v->type);
+            fprintf(stream, "<INVALID TYPE %d>", v->type);
         break;
     }
 }
@@ -118,7 +118,8 @@ void row_print(row_t*row)
     int t;
     for(t=0;t<row->num_inputs;t++) {
         printf("%d) ", t);
-        variable_print(&row->inputs[t]);
+        variable_print(&row->inputs[t], stdout);
+        puts("\n");
     }
 }
 void row_destroy(row_t*row)
@@ -129,26 +130,6 @@ void row_destroy(row_t*row)
 void model_print(model_t*m)
 {
     node_print((node_t*)m->code);
-}
-variable_t constant_to_variable(constant_t* c)
-{
-    switch(c->type) {
-        case CONSTANT_STRING:
-            return variable_make_text(c->s);
-        break;
-        case CONSTANT_CATEGORY:
-            return variable_make_categorical(c->c);
-        break;
-        case CONSTANT_FLOAT:
-            return variable_make_continuous(c->f);
-        break;
-        case CONSTANT_MISSING:
-            return variable_make_missing();
-        break;
-        default:
-            fprintf(stderr, "Can't convert constant type %d to variable\n", c->type);
-        break;
-    }
 }
 
 variable_t model_predict(model_t*m, row_t*row)

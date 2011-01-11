@@ -251,11 +251,51 @@ class CodeGeneratingANN: public CvANN_MLP
 	return program;
     }
 
+    constant_t predict(row_t*row, bool debug) const
+    {
+        CvMat* matrix_row = cvmat_from_row(dataset, row, true, false);
+        CvMat* output = cvCreateMat(1, dataset->desired_response->num_classes, CV_32FC1);
+        if(debug)
+            cvmat_print(matrix_row);
+        CvANN_MLP::predict(matrix_row, output);
+        int index = cvmat_get_max_index(output);
+        cvReleaseMat(&matrix_row);
+        cvReleaseMat(&output);
+        return sanitized_dataset_map_response_class(dataset, index);
+    }
+
     sanitized_dataset_t*dataset;
     int*var_offset;
     int input_size;
     int output_size;
 };
+
+#ifdef VERIFY
+void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
+{
+    example_t*e = dataset->first_example;
+    int t;
+    while(e) {
+        row_t* r = example_to_row(e);
+        constant_t p = ann->predict(r, false);
+        variable_t c1 = constant_to_variable(&p);
+        variable_t c2 = model_predict(m, r);
+
+        variable_print(&c1, stdout);
+        printf(" <-> ");
+        variable_print(&c2, stdout);
+        printf("\n");
+
+        if(!variable_equals(&c1, &c2)) {
+            ann->predict(r, true);
+        }
+        assert(variable_equals(&c1, &c2));
+        row_destroy(r);
+        e = e->next;
+    }
+    free(e);
+}
+#endif
 
 static int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows)
 {
@@ -333,6 +373,10 @@ static model_t*ann_train(dataset_t*dataset)
 
     model_t*m = (model_t*)malloc(sizeof(model_t));
     m->code = ann.get_program();
+
+#ifdef VERIFY
+    verify(dataset, m, &ann);
+#endif
 
     sanitized_dataset_destroy(d);
     return m;

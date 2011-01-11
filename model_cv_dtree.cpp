@@ -113,15 +113,15 @@ class CodeGeneratingDTree: public CvDTree
     {
         this->dataset = dataset;
     }
-#ifdef VERIFY
-    category_t predict(row_t*row)
+
+    constant_t predict(row_t*row)
     {
-        CvMat* matrix_row = cvmat_from_row(row, 1);
-        category_t c = (int)floor(CvDTree::predict(matrix_row, NULL, false)->value + FLT_EPSILON);
+        CvMat* matrix_row = cvmat_from_row(dataset, row, false, true);
+        int i = (int)floor(CvDTree::predict(matrix_row, NULL, false)->value + FLT_EPSILON);
         cvReleaseMat(&matrix_row);
-        return c;
+        return sanitized_dataset_map_response_class(dataset, i);
     }
-#endif
+
     node_t* get_program() const
     {
         if( !root ) {

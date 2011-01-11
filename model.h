@@ -21,6 +21,7 @@
 
 #ifndef __model_h__
 #define __model_h__
+#include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -47,6 +48,7 @@ variable_t variable_make_text(const char*s);
 variable_t variable_make_missing();
 double variable_value(variable_t*v);
 bool variable_equals(variable_t*v1, variable_t*v2);
+void variable_print(variable_t*v, FILE*stream);
 
 typedef struct _row {
     int num_inputs;
@@ -60,7 +62,8 @@ void row_destroy(row_t*row);
    the corresponding inputs */
 typedef struct _example {
     int num_inputs;
-    struct _example*previous;
+    struct _example*prev;
+    struct _example*next;
     variable_t desired_response;
     variable_t inputs[0];
 } example_t;
@@ -69,7 +72,8 @@ example_t*example_new(int num_inputs);
 row_t*example_to_row(example_t*e);
 
 typedef struct _dataset {
-    example_t*examples;
+    example_t*first_example;
+    example_t*last_example;
     int num_examples;
 } dataset_t;
 

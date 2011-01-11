@@ -75,6 +75,8 @@ array_t* array_create(int size, ...);
 void array_destroy(array_t*a);
 
 int constant_check_type(constant_t v, uint8_t type);
+constant_t variable_to_constant(variable_t*v);
+variable_t constant_to_variable(constant_t* c);
 
 #define AS_FLOAT(v) (constant_check_type((v),CONSTANT_FLOAT),(v).f)
 #define AS_INT(v) (constant_check_type((v),CONSTANT_INT),(v).i)

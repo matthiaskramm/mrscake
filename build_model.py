@@ -1,6 +1,8 @@
 import sys
 import re
 
+VERBOSE = 0
+
 def is_float(s):
     try:
         int(s)
@@ -93,6 +95,12 @@ target_variable_is_last_column = \
    (last_column_floats == first_column_floats and \
     len(first_column_values) < len(last_column_values))
 
+if VERBOSE:
+    if target_variable_is_last_column:
+        print "The last column is the target variable"
+    else:
+        print "The first column is the target variable"
+
 examples = []
 for i in range(len(data)):
     row = data[i]
@@ -115,6 +123,8 @@ for inputs,output in examples:
 
 model = dataset.get_model()
 print model
+
+model.save("test.model")
 
 correct = 0
 wrong = 0

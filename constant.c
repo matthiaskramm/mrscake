@@ -185,3 +185,41 @@ int constant_check_type(constant_t v, uint8_t type)
     return 0;
 }
 
+constant_t variable_to_constant(variable_t*v)
+{
+    switch(v->type) {
+        case CATEGORICAL:
+            return category_constant(v->category);
+        case CONTINUOUS:
+            return float_constant(v->value);
+        case TEXT:
+            return string_constant(v->text);
+        default:
+            fprintf(stderr, "invalid variable type %d\n", v->type);
+            assert(0);
+    }
+}
+
+variable_t constant_to_variable(constant_t* c)
+{
+    switch(c->type) {
+        case CONSTANT_STRING:
+            return variable_make_text(c->s);
+        break;
+        case CONSTANT_CATEGORY:
+            return variable_make_categorical(c->c);
+        break;
+        case CONSTANT_FLOAT:
+            return variable_make_continuous(c->f);
+        break;
+        case CONSTANT_MISSING:
+            return variable_make_missing();
+        break;
+        default:
+            fprintf(stderr, "Can't convert constant type %d to variable\n", c->type);
+        break;
+    }
+}
+
+
+

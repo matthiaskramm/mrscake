@@ -68,13 +68,70 @@ CvMLDataFromExamples::~CvMLDataFromExamples()
 {
 }
 
-CvMat*cvmat_from_row(row_t*row, bool add_one)
+int cvmat_get_max_index(CvMat*mat)
 {
-    CvMat* matrix_row = cvCreateMat(1, row->num_inputs+(add_one?1:0), CV_32FC1);
+    assert(CV_MAT_TYPE(mat->type) == CV_32FC1);
+    int elements = mat->cols * mat->rows;
+    float max = mat->data.fl[0];
+    int c = 0;
     int t;
-    for(t=0;t<row->num_inputs;t++) {
-        matrix_row->data.fl[t] = variable_value(&row->inputs[t]);
+    for(t=1;t<elements;t++) {
+        if(mat->data.fl[t] > max) {
+            max = mat->data.fl[t];
+            c = t;
+        }
     }
+    return c;
+}
+void cvmat_print(CvMat*mat)
+{
+    assert(CV_MAT_TYPE(mat->type) == CV_32FC1);
+    int x,y;
+    float*p = mat->data.fl;
+    for(y=0;y<mat->rows;y++) {
+        for(x=0;x<mat->cols;x++) {
+            printf("%f\n", *p++);
+        }
+        printf("\n");
+    }
+}
+
+CvMat*cvmat_from_row(sanitized_dataset_t*dataset, row_t*row, bool expand_categories, bool add_one)
+{
+    int width = !expand_categories ? dataset->num_columns : dataset->expanded_num_columns;
+    if(add_one)
+        width++;
+
+    CvMat* matrix_row = cvCreateMat(1, width, CV_32FC1);
+    
+    if(!expand_categories) {
+        int t;
+        for(t=0;t<row->num_inputs;t++) {
+            matrix_row->data.fl[t] = variable_value(&row->inputs[t]);
+        }
+    } else {
+        int t;
+        int pos = 0;
+        for(t=0;t<row->num_inputs;t++) {
+            variable_t*v = &row->inputs[t];
+            if(!dataset->columns[t]->is_categorical) {
+                matrix_row->data.fl[pos++] = variable_value(v);
+            } else {
+                constant_t c = variable_to_constant(v);
+                int s;
+                for(s=0;s<dataset->columns[t]->num_classes;s++) {
+                    if(constant_equals(&c, &dataset->columns[t]->classes[s])) {
+                        matrix_row->data.fl[pos] = 1.0;
+                    } else {
+                        matrix_row->data.fl[pos] = 0.0;
+                    }
+                    pos++;
+                }
+            }
+        }
+        assert(pos == dataset->expanded_num_columns);
+    }
+
     if(add_one)
         matrix_row->data.fl[row->num_inputs] = 0;
     return matrix_row;

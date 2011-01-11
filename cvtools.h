@@ -42,7 +42,9 @@ class CvMLDataFromExamples: public CvMLData
     ~CvMLDataFromExamples();
 };
 
-CvMat*cvmat_from_row(row_t*row, bool add_one);
+CvMat*cvmat_from_row(sanitized_dataset_t*dataset, row_t*row, bool expand_categories, bool add_one);
+int cvmat_get_max_index(CvMat*mat);
+void cvmat_print(CvMat*mat);
 
 void cvmSetI(CvMat*m, int y, int x, int v);
 void cvmSetF(CvMat*m, int y, int x, float f);

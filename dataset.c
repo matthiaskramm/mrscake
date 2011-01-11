@@ -34,29 +34,34 @@ dataset_t* dataset_new()
 }
 void dataset_add(dataset_t*d, example_t*e)
 {
-    /* TODO: preprocess categories */
-    e->previous = d->examples;
-    d->examples = e;
+    e->prev = d->last_example;
+    if(d->last_example) {
+        d->last_example->next = e;
+    }
+    d->last_example = e;
+    e->next = 0;
+    if(!d->first_example) {
+        d->first_example = e;
+    }
     d->num_examples++;
 }
 bool dataset_check_format(dataset_t*dataset)
 {
     int t;
-    example_t*last_example = dataset->examples;
     example_t*e;
     int last = dataset->num_examples-1;
     int pos = dataset->num_examples-1;
-    for(e=dataset->examples;e;e=e->previous) {
-        if(last_example->num_inputs != e->num_inputs) {
-            fprintf(stderr, "Bad configuration: row %d has %d inputs, row %d has %d.\n", t, last_example->num_inputs, 0, e->num_inputs);
+    for(e=dataset->first_example;e;e=e->next) {
+        if(dataset->first_example->num_inputs != e->num_inputs) {
+            fprintf(stderr, "Bad configuration: row %d has %d inputs, row %d has %d.\n", t, dataset->first_example->num_inputs, 0, e->num_inputs);
             return false;
         }
         int s;
         for(s=0;s<e->num_inputs;s++) {
-            if(last_example->inputs[s].type != e->inputs[s].type) {
+            if(dataset->first_example->inputs[s].type != e->inputs[s].type) {
                 fprintf(stderr, "Bad configuration: item %d,%d is %d, item %d,%d is %d\n",
-                         pos, s,            e->inputs[s].type,
-                        last, s, last_example->inputs[s].type
+                         pos, s,                      e->inputs[s].type,
+                        last, s, dataset->first_example->inputs[s].type
                         );
                 return false;
             }
@@ -68,7 +73,7 @@ bool dataset_check_format(dataset_t*dataset)
 void dataset_print(dataset_t*dataset)
 {
     example_t*e;
-    for(e=dataset->examples;e;e=e->previous) {
+    for(e=dataset->first_example;e;e=e->next) {
         int s;
         for(s=0;s<e->num_inputs;s++) {
             variable_t v = e->inputs[s];
@@ -90,11 +95,11 @@ void dataset_print(dataset_t*dataset)
 }
 void dataset_destroy(dataset_t*dataset)
 {
-    example_t*e = dataset->examples;
+    example_t*e = dataset->first_example;
     while(e) {
-        example_t*prev = e->previous;
+        example_t*next = e->next;
         example_destroy(e);
-        e = prev;
+        e = next;
     }
     free(dataset);
 }
@@ -102,11 +107,11 @@ void dataset_destroy(dataset_t*dataset)
 example_t**example_list_to_array(dataset_t*d)
 {
     example_t**examples = (example_t**)malloc(sizeof(example_t*)*d->num_examples);
-    int pos = d->num_examples;
-    example_t*i = d->examples;
+    int pos = 0;
+    example_t*i = d->first_example;
     while(i) {
-        examples[--pos] = i;
-        i = i->previous;
+        examples[pos++] = i;
+        i = i->next;
     }
     return examples;
 }
@@ -131,21 +136,6 @@ void sanitized_dataset_destroy(sanitized_dataset_t*s)
     free(s->desired_response);
     free(s->columns);
     free(s);
-}
-
-constant_t variable_to_constant(variable_t*v)
-{
-    switch(v->type) {
-        case CATEGORICAL:
-            return category_constant(v->category);
-        case CONTINUOUS:
-            return float_constant(v->value);
-        case TEXT:
-            return string_constant(v->text);
-        default:
-            fprintf(stderr, "invalid variable type %d\n", v->type);
-            assert(0);
-    }
 }
 
 typedef struct _columnbuilder {
@@ -221,10 +211,11 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
 
     if(!dataset_check_format(dataset))
         return 0;
-    s->num_columns = dataset->examples->num_inputs;
+    s->num_columns = dataset->first_example->num_inputs;
     s->num_rows = dataset->num_examples;
     s->columns = malloc(sizeof(column_t)*s->num_columns);
-    example_t*last_row = dataset->examples;
+    s->expanded_num_columns = 0;
+    example_t*last_row = dataset->first_example;
 
     /* copy columns from the old to the new dataset, mapping categories
        to numbers */
@@ -236,22 +227,26 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
 
         columnbuilder_t*builder = columnbuilder_new(s->columns[x]);
         int y;
-        example_t*example = dataset->examples;
-        for(y=s->num_rows-1;y>=0;y--) {
+        example_t*example = dataset->first_example;
+        for(y=0;y<s->num_rows;y++) {
             columnbuilder_add(builder,y,variable_to_constant(&example->inputs[x]));
-            example = example->previous;
+            example = example->next;
         }
         columnbuilder_destroy(builder);
+
+        s->expanded_num_columns += 
+            is_categorical ? s->columns[x]->num_classes
+                           : 1;
     }
 
     /* copy response column to the new dataset */
     s->desired_response = column_new(s->num_rows, true);
     columnbuilder_t*builder = columnbuilder_new(s->desired_response);
-    example_t*example = dataset->examples;
+    example_t*example = dataset->first_example;
     int y;
-    for(y=s->num_rows-1;y>=0;y--) {
+    for(y=0;y<s->num_rows;y++) {
         columnbuilder_add(builder,y,variable_to_constant(&example->desired_response));
-        example = example->previous;
+        example = example->next;
     }
     columnbuilder_destroy(builder);
     return s;
@@ -275,5 +270,14 @@ void sanitized_dataset_print(sanitized_dataset_t*s)
         constant_t c = s->desired_response->classes[s->desired_response->entries[y].c];
         constant_print(&c);
         printf("\n");
+    }
+}
+
+constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int i)
+{
+    if(i>=0 && i<dataset->desired_response->num_classes) {
+        return dataset->desired_response->classes[i];
+    } else {
+        return missing_constant();
     }
 }
