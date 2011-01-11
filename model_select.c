@@ -19,11 +19,91 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
+#include <limits.h>
 #include "model.h"
 #include "model_select.h"
+#include "ast.h"
+#include "io.h"
+
+#define NUM(l) (sizeof(l)/sizeof((l)[0]))
+
+extern model_factory_t* ann_models[];
+extern int num_ann_models;
+
+extern model_factory_t* dtree_models[];
+extern int num_dtree_models;
+
+typedef struct _model_collection {
+    model_factory_t**models;
+    int* num_models;
+} model_collection_t;
+
+model_collection_t collections[] = {
+    {ann_models, &num_ann_models},
+    {dtree_models, &num_dtree_models},
+};
 
 model_t* model_select(dataset_t*dataset)
 {
+    model_t*best = 0;
+    model_factory_t*best_factory = 0;
+    int best_score = INT_MAX;
+
+    int t;
+    int s;
+    for(s=0;s<NUM(collections);s++) {
+        model_collection_t*collection = &collections[s];
+        for(t=0;t<*collection->num_models;t++) {
+            model_factory_t*factory = collection->models[t];
+            printf("Trying %s... ", factory->name);fflush(stdout);
+            model_t*m = factory->train(factory, dataset);
+            int size = model_size(m);
+            int errors = model_errors(m, dataset);
+            int score = size + errors;
+            printf("score %d (%d errors)\n", score, errors);fflush(stdout);
+            if(score < best_score) {
+                best_score = score;
+                best_factory = factory;
+                best = m;
+            }
+        }
+    }
+    printf("Using %s.\n", best_factory->name);
+    return best;
     //return dtree_model_factory.train(dataset);
-    return ann_model_factory.train(dataset);
+    //return ann_gaussian_model_factory.train(dataset);
+}
+
+int model_errors(model_t*m, dataset_t*d)
+{
+    example_t*e = d->first_example;
+    node_t*node = m->code;
+    int t;
+    int error = 0;
+    while(e) {
+        row_t* r = example_to_row(e);
+        variable_t prediction = model_predict(m, r);
+
+        if(!variable_equals(&prediction, &e->desired_response)) {
+            error++;
+        }
+        row_destroy(r);
+        e = e->next;
+    }
+    return error;
+}
+
+int model_size(model_t*m)
+{
+    node_t*node = m->code;
+    writer_t *w = nullwriter_new();
+    node_write(node, w);
+    int size = w->pos;
+    w->finish(w);
+    return size;
+}
+
+int model_score(model_t*m, dataset_t*d)
+{
+    return model_size(m) + model_errors(m, d);
 }

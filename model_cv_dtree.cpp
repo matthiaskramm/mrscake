@@ -6,6 +6,10 @@
 
 //#define VERIFY 1
 
+typedef struct _dtree_model_factory {
+    model_factory_t head;
+} dtree_model_factory_t;
+
 class CodeGeneratingDTree: public CvDTree
 {
     int map_category_back(int ci, int i) const
@@ -155,7 +159,7 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
 }
 #endif
 
-static model_t*dtree_train(dataset_t*dataset)
+static model_t*dtree_train(model_factory_t*factory, dataset_t*dataset)
 {
     sanitized_dataset_t*d = dataset_sanitize(dataset);
 
@@ -175,9 +179,15 @@ static model_t*dtree_train(dataset_t*dataset)
     return m;
 }
 
-model_factory_t dtree_model_factory = {
-    name: "dtree",
-    train: dtree_train,
-    internal: 0,
+static dtree_model_factory_t dtree_model_factory = {
+    {
+        name: "dtree",
+        train: dtree_train,
+    }
 };
 
+model_factory_t* dtree_models[] =
+{
+    (model_factory_t*)&dtree_model_factory,
+};
+int num_dtree_models = sizeof(dtree_models) / sizeof(dtree_models[0]);

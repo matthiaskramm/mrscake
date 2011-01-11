@@ -6,6 +6,12 @@
 
 //#define VERIFY 1
 
+typedef struct _ann_model_factory {
+    model_factory_t head;
+    int activation_function;
+    int num_layers;
+} ann_model_factory_t;
+
 class CodeGeneratingANN: public CvANN_MLP
 {
     public:
@@ -293,7 +299,6 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
         row_destroy(r);
         e = e->next;
     }
-    free(e);
 }
 #endif
 
@@ -352,19 +357,25 @@ void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out)
     set_column_in_matrix(d->desired_response, *out, 0, d->num_rows);
 }
 
-static model_t*ann_train(dataset_t*dataset)
+static model_t*ann_train(ann_model_factory_t*factory, dataset_t*dataset)
 {
     sanitized_dataset_t*d = dataset_sanitize(dataset);
 
-    int num_layers = 3;
+    int num_layers = factory->num_layers;
+
     CvMat* layers = cvCreateMat( 1, num_layers, CV_32SC1);
     int input_width = count_multiclass_columns(d);
     int output_width = d->desired_response->num_classes;
-    cvmSetI(layers, 0, 0, input_width);
-    cvmSetI(layers, 0, 1, output_width);
-    cvmSetI(layers, 0, 2, output_width);
+    int t;
+    for(t=0;t<num_layers;t++) {
+        int size = (input_width+output_width)/2;
+        if(t==0) size = input_width;
+        if(t==num_layers-1) size = output_width;
+        cvmSetI(layers, 0, t, size);
+    }
+
     CvANN_MLP_TrainParams ann_params;
-    CodeGeneratingANN ann(d, input_width, output_width, layers, CvANN_MLP::SIGMOID_SYM, 0.0, 0.0);
+    CodeGeneratingANN ann(d, input_width, output_width, layers, factory->activation_function, 0.0, 0.0);
     CvMLDataFromExamples data(d);
     CvMat* ann_input;
     CvMat* ann_response;
@@ -382,9 +393,67 @@ static model_t*ann_train(dataset_t*dataset)
     return m;
 }
 
-model_factory_t ann_model_factory = {
-    name: "neuronal network",
-    train: ann_train,
-    internal: 0,
+static ann_model_factory_t ann_2sigmoid_model_factory = {
+    head: {
+        name: "neuronal network (sigmoid) with 2 layers",
+        train: (training_function_t)ann_train,
+    },
+    activation_function: CvANN_MLP::SIGMOID_SYM,
+    num_layers: 2,
 };
 
+static ann_model_factory_t ann_2gaussian_model_factory = {
+    head: {
+        name: "neuronal network (gaussian) with 2 layers",
+        train: (training_function_t)ann_train,
+    },
+    activation_function: CvANN_MLP::GAUSSIAN,
+    num_layers: 2,
+};
+
+static ann_model_factory_t ann_2identity_model_factory = {
+    head: {
+        name: "neuronal network (id) with 2 layers",
+        train: (training_function_t)ann_train,
+    },
+    activation_function: CvANN_MLP::IDENTITY,
+    num_layers: 2,
+};
+
+static ann_model_factory_t ann_3sigmoid_model_factory = {
+    head: {
+        name: "neuronal network (sigmoid) with 3 layers",
+        train: (training_function_t)ann_train,
+    },
+    activation_function: CvANN_MLP::SIGMOID_SYM,
+    num_layers: 3,
+};
+
+static ann_model_factory_t ann_3gaussian_model_factory = {
+    head: {
+        name: "neuronal network (gaussian) with 3 layers",
+        train: (training_function_t)ann_train,
+    },
+    activation_function: CvANN_MLP::GAUSSIAN,
+    num_layers: 3,
+};
+
+static ann_model_factory_t ann_3identity_model_factory = {
+    head: {
+        name: "neuronal network (id) with 3 layers",
+        train: (training_function_t)ann_train,
+    },
+    activation_function: CvANN_MLP::IDENTITY,
+    num_layers: 3,
+};
+
+model_factory_t* ann_models[] =
+{
+    (model_factory_t*)&ann_2sigmoid_model_factory,
+    (model_factory_t*)&ann_2gaussian_model_factory,
+    (model_factory_t*)&ann_2identity_model_factory,
+    (model_factory_t*)&ann_3sigmoid_model_factory,
+    (model_factory_t*)&ann_3gaussian_model_factory,
+    (model_factory_t*)&ann_3identity_model_factory,
+};
+int num_ann_models = sizeof(ann_models) / sizeof(ann_models[0]);
