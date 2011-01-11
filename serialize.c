@@ -44,7 +44,7 @@ constant_t constant_read(reader_t*reader)
     c.type = read_uint8(reader);
     switch(c.type) {
         case CONSTANT_CATEGORY: {
-            c.c = read_uint8(reader);
+            c.c = read_compressed_uint(reader);
             break;
         }
         case CONSTANT_FLOAT: {
@@ -52,7 +52,7 @@ constant_t constant_read(reader_t*reader)
             break;
         }
         case CONSTANT_INT: {
-            c.i = read_uint8(reader);
+            c.i = read_compressed_uint(reader);
             break;
         }
         case CONSTANT_STRING: {
@@ -73,7 +73,7 @@ void node_read_internal_data(node_t*node, reader_t*reader)
 {
     nodetype_t*type = node->type;
     if(type==&node_array) {
-        uint8_t len = read_uint8(reader);
+        uint32_t len = read_compressed_uint(reader);
         int t;
         array_t*a = array_new(len);
         for(t=0;t<len;t++) {
@@ -81,13 +81,13 @@ void node_read_internal_data(node_t*node, reader_t*reader)
         }
         node->value = array_constant(a);
     } else if(type==&node_category) {
-        category_t c = read_uint8(reader);
+        category_t c = read_compressed_uint(reader);
         node->value = category_constant(c);
     } else if(type==&node_float) {
         float f = read_float(reader);
         node->value = float_constant(f);
     } else if(type==&node_var) {
-        int var_index = read_uint8(reader);
+        int var_index = read_compressed_uint(reader);
         node->value = int_constant(var_index);
     } else if(type==&node_string) {
         char*s = read_string(reader);
@@ -137,7 +137,7 @@ node_t* node_read(reader_t*reader)
             node_read_internal_data(node, reader);
         }
         if(type->flags&NODE_FLAG_HAS_CHILDREN) {
-            stack->num_children = read_uint8(reader);
+            stack->num_children = read_compressed_uint(reader);
         }
         if(stack->prev) {
             node_t*prev_node = stack->prev->node;
@@ -158,7 +158,7 @@ static void constant_write(constant_t*value, writer_t*writer)
     switch(value->type) {
         case CONSTANT_CATEGORY: {
             category_t c = AS_CATEGORY(*value);
-            write_uint8(writer, c);
+            write_compressed_uint(writer, c);
             break;
         }
         case CONSTANT_FLOAT: {
@@ -168,7 +168,7 @@ static void constant_write(constant_t*value, writer_t*writer)
         }
         case CONSTANT_INT: {
             int var_index = AS_INT(*value);
-            write_uint8(writer, var_index);
+            write_compressed_uint(writer, var_index);
             break;
         }
         case CONSTANT_STRING: {
@@ -180,7 +180,7 @@ static void constant_write(constant_t*value, writer_t*writer)
             array_t*a = AS_ARRAY(*value);
             int t;
             assert(a->size <= 255);
-            write_uint8(writer, a->size);
+            write_compressed_uint(writer, a->size);
             for(t=0;t<a->size;t++) {
                 constant_write(&a->entries[t], writer);
             }
@@ -200,14 +200,14 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
     if(node->type==&node_array) {
         array_t*a = node->value.a;
         assert(a->size <= 255);
-        write_uint8(writer, a->size);
+        write_compressed_uint(writer, a->size);
         int t;
         for(t=0;t<a->size;t++) {
             constant_write(&a->entries[t], writer);
         }
     } else if(node->type==&node_category) {
         category_t c = AS_CATEGORY(node->value);
-        write_uint8(writer, c);
+        write_compressed_uint(writer, c);
     } else if(node->type==&node_float) {
         float f = AS_FLOAT(node->value);
         write_float(writer, f);
@@ -216,7 +216,7 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
         write_string(writer, s);
     } else if(node->type==&node_var) {
         int var_index = AS_INT(node->value);
-        write_uint8(writer, var_index);
+        write_compressed_uint(writer, var_index);
     } else if(node->type->flags&NODE_FLAG_HAS_VALUE) {
         constant_write(&node->value, writer);
     }
@@ -230,7 +230,7 @@ void node_write(node_t*node, writer_t*writer)
 
     if(node->type->flags & NODE_FLAG_HAS_CHILDREN) {
         int t;
-        write_uint8(writer, node->num_children);
+        write_compressed_uint(writer, node->num_children);
         for(t=0;t<node->num_children;t++) {
             node_write(node->child[t], writer);
         }

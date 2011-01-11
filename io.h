@@ -84,6 +84,8 @@ float read_float(reader_t*r);
 double read_double(reader_t*r);
 char*read_string(reader_t*r);
 
+uint32_t read_compressed_uint(reader_t*r);
+
 void writer_resetbits(writer_t*w);
 void writer_writebit(writer_t*w, int bit);
 void writer_writebits(writer_t*w, unsigned int data, int bits);
@@ -94,6 +96,8 @@ void write_uint32(writer_t*w, uint32_t v);
 void write_float(writer_t*w, float f);
 void write_double(writer_t*w, double f);
 void write_string(writer_t*w, const char*s);
+
+void write_compressed_uint(writer_t*w, uint32_t b);
 
 /* standard readers / writers */
 

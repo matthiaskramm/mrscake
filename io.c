@@ -818,6 +818,17 @@ uint32_t read_uint32(reader_t*r)
 	fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
     return b1|b2<<8|b3<<16|b4<<24;
 }
+uint32_t read_compressed_uint(reader_t*r)
+{
+    uint32_t u = 0;
+    int pos;
+    uint32_t b;
+    do {
+        b = read_uint8(r);
+        u = u<<7|b&0x7f;
+    } while(b&0x80);
+    return u;
+}
 
 float read_float(reader_t*r)
 {
@@ -891,4 +902,28 @@ void write_double(writer_t*w, double f)
 {
     w->write(w, &f, 8);
     return;
+}
+void write_compressed_uint(writer_t*w, uint32_t u)
+{
+    if(u<0x80) {
+        write_uint8(w, u);
+    } else if(u<0x4000) {
+        write_uint8(w, u>>7|0x80);
+        write_uint8(w, u&0x7f);
+    } else if(u<0x200000) {
+        write_uint8(w, u>>14|0x80);
+        write_uint8(w, u>>7|0x80);
+        write_uint8(w, u&0x7f);
+    } else if(u<0x10000000) {
+        write_uint8(w, u>>21|0x80);
+        write_uint8(w, u>>14|0x80);
+        write_uint8(w, u>>7|0x80);
+        write_uint8(w, u&0x7f);
+    } else {
+        write_uint8(w, u>>28|0x80);
+        write_uint8(w, u>>21|0x80);
+        write_uint8(w, u>>14|0x80);
+        write_uint8(w, u>>7|0x80);
+        write_uint8(w, u&0x7f);
+    }
 }

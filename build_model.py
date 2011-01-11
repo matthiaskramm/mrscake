@@ -122,8 +122,6 @@ for inputs,output in examples:
     dataset.train(inputs, output=output)
 
 model = dataset.get_model()
-print model
-
 model.save("test.model")
 
 correct = 0
