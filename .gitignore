@@ -6,6 +6,7 @@ svm
 ann
 ast
 multimodel
+python_interpreter
 model
 test
 tags
