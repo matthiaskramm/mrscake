@@ -9,5 +9,4 @@ multimodel
 model
 test
 tags
-mypython*
 *.dSYM

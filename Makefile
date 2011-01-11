@@ -77,8 +77,8 @@ model: test_model.o $(OBJECTS) lib/libml.a Makefile
 predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
 	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o predict.so $(LIBS) $(PYTHON_LIB) -lstdc++
 
-mypython: mypython.c Makefile
-	$(CC) $(PYTHON_INCLUDE) mypython.c -o mypython $(PYTHON_LIB)
+python_interpreter: python_interpreter.c Makefile
+	$(CC) $(PYTHON_INCLUDE) python_interpreter.c -o python_interpreter $(PYTHON_LIB)
 # ------------ old test code -----------------
 
 multimodel: multimodel.o lib/libml.a $(OBJECTS) Makefile 
