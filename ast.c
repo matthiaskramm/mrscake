@@ -430,14 +430,20 @@ uint8_t node_get_opcode(node_t*n)
 
 // ======================== node handling ==============================
 
-node_t* node_new(nodetype_t*t,...)
+node_t* node_new(nodetype_t*t)
 {
     node_t*n = (node_t*)malloc(sizeof(node_t));
     n->type = t;
     n->parent = 0;
     n->child = 0;
     n->num_children = 0;
+    n->value = missing_constant();
+    return n;
+}
 
+node_t* node_new_with_args(nodetype_t*t,...)
+{
+    node_t*n = node_new(t);
     va_list arglist;
     va_start(arglist, t);
     if(n->type == &node_var) {
@@ -481,47 +487,6 @@ void node_append_child(node_t*n, node_t*child)
 	n->child = realloc(n->child, (highest_bit<<1)*sizeof(node_t*));
     }
     n->child[n->num_children++] = child;
-}
-
-node_t* node_new1(nodetype_t*t, node_t*node)
-{
-    node_t*n = (node_t*)malloc(sizeof(node_t)+sizeof(node_t*)*2);
-    node_t**x = (node_t**)&n[1];
-    n->type = t;
-    n->parent = 0;
-    n->child = x;
-    n->num_children = 1;
-    x[0] = node;
-    x[1] = 0;
-    return n;
-};
-
-node_t* node_new2(nodetype_t*t, node_t*left, node_t*right)
-{
-    node_t*n = (node_t*)malloc(sizeof(node_t)+sizeof(node_t*)*3);
-    node_t**x = (node_t**)&n[1];
-    n->type = t;
-    n->parent = 0;
-    n->child = x;
-    n->num_children = 2;
-    x[0] = left;
-    x[1] = right;
-    x[2] = 0;
-    return n;
-}
-node_t* node_new3(nodetype_t*t, node_t*one, node_t*two, node_t*three)
-{
-    node_t*n = (node_t*)malloc(sizeof(node_t)+sizeof(node_t*)*4);
-    node_t**x = (node_t**)&n[1];
-    n->type = t;
-    n->parent = 0;
-    n->child = x;
-    n->num_children = 3;
-    x[0] = one;
-    x[1] = two;
-    x[2] = three;
-    x[3] = 0;
-    return n;
 }
 
 void node_destroy(node_t*n)

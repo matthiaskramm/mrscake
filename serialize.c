@@ -69,53 +69,87 @@ constant_t constant_read(reader_t*reader)
     return c;
 }
 
+void node_read_internal_data(node_t*node, reader_t*reader)
+{
+    nodetype_t*type = node->type;
+    if(type==&node_array) {
+        uint8_t len = read_uint8(reader);
+        int t;
+        array_t*a = array_new(len);
+        for(t=0;t<len;t++) {
+            a->entries[t] = constant_read(reader);
+        }
+        node->value = array_constant(a);
+    } else if(type==&node_category) {
+        category_t c = read_uint8(reader);
+        node->value = category_constant(c);
+    } else if(type==&node_float) {
+        float f = read_float(reader);
+        node->value = float_constant(f);
+    } else if(type==&node_var) {
+        int var_index = read_uint8(reader);
+        node->value = int_constant(var_index);
+    } else if(type==&node_string) {
+        char*s = read_string(reader);
+        node->value = string_constant(s);
+    } else if(type==&node_constant || type==&node_setlocal || type==&node_getlocal) {
+        node->value = constant_read(reader);
+    } else {
+        fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, type->opcode);
+        return;
+    }
+}
+
+typedef struct _stack {
+    struct _stack*prev;
+    node_t*node;
+    int num_children;
+} stack_t;
+
+stack_t*stack_new(node_t*node, stack_t*prev)
+{
+    stack_t*d = malloc(sizeof(stack_t));
+    d->node = node;
+    d->num_children = 0;
+    d->prev = prev;
+    return d;
+}
+stack_t*stack_pop(stack_t*stack)
+{
+    stack_t*old = stack;
+    stack = stack->prev;
+    free(old);
+    return stack;
+}
+
 node_t* node_read(reader_t*reader)
 {
-    uint8_t opcode_root = read_uint8(reader);
-    assert(opcode_root == node_root.opcode);
-    START_CODE(root)
+    stack_t*stack = 0;
+    node_t*top_node = 0;
 
     do {
         uint8_t opcode = read_uint8(reader);
         nodetype_t*type = opcode_to_node(opcode);
         assert(type);
+        node_t*node = node_new(type);
+        stack = stack_new(node, stack);
         if(type->flags & NODE_FLAG_HAS_VALUE) {
-            if(type==&node_array) {
-                uint8_t len = read_uint8(reader);
-                int t;
-                array_t*a = array_new(len);
-                for(t=0;t<len;t++) {
-                    a->entries[t] = constant_read(reader);
-                }
-                NODE_BEGIN(type, a);
-            } else if(type==&node_category) {
-                category_t c = read_uint8(reader);
-                NODE_BEGIN(type, c);
-            } else if(type==&node_float) {
-                float f = read_float(reader);
-                NODE_BEGIN(type, f);
-            } else if(type==&node_var) {
-                int var_index = read_uint8(reader);
-                NODE_BEGIN(type, var_index);
-            } else if(type==&node_string) {
-                char*s = read_string(reader);
-                NODE_BEGIN(type, s);
-            } else if(type==&node_constant) {
-                constant_t c = constant_read(reader);
-                NODE_BEGIN(type, c);
-            } else {
-                fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, opcode);
-                return 0;
-            }
-        } else {
-            NODE_BEGIN(type);
+            node_read_internal_data(node, reader);
         }
-        while(current_node && current_node->num_children == current_node->type->max_args) {
-            NODE_CLOSE;
+        if(type->flags&NODE_FLAG_HAS_CHILDREN) {
+            stack->num_children = read_uint8(reader);
         }
-    } while(current_node);
-    END_CODE;
-    return root;
+        if(stack->prev) {
+            node_t*prev_node = stack->prev->node;
+            node_append_child(prev_node, node);
+        }
+        while(stack && stack->num_children == stack->node->num_children) {
+            top_node = stack->node;
+            stack = stack_pop(stack);
+        }
+    } while(stack);
+
+    return top_node;
 }
 
 static void constant_write(constant_t*value, writer_t*writer)
@@ -196,6 +230,7 @@ void node_write(node_t*node, writer_t*writer)
 
     if(node->type->flags & NODE_FLAG_HAS_CHILDREN) {
         int t;
+        write_uint8(writer, node->num_children);
         for(t=0;t<node->num_children;t++) {
             node_write(node->child[t], writer);
         }

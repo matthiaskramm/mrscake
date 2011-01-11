@@ -87,7 +87,8 @@ extern nodetype_t* nodelist[];
 void nodelist_init();
 uint8_t node_get_opcode(node_t*n);
 
-node_t* node_new(nodetype_t*t, ...);
+node_t* node_new(nodetype_t*t);
+node_t* node_new_with_args(nodetype_t*t,...);
 void node_append_child(node_t*n, node_t*child);
 void node_free(node_t*n);
 constant_t node_eval(node_t*n,environment_t* e);
@@ -114,7 +115,7 @@ void node_print(node_t*n);
 */
 #define NODE_BEGIN(new_type,args...) \
 	    do { \
-		node_t* new_node = node_new(new_type,##args); \
+		node_t* new_node = node_new_with_args(new_type,##args); \
 		if(current_node) { \
 		    assert(current_node->type); \
 		    assert(current_node->type->name); \

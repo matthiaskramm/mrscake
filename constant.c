@@ -180,7 +180,6 @@ int constant_check_type(constant_t v, uint8_t type)
 {
     if(v.type!=type) {
         fprintf(stderr, "expected %s, got %s\n", type_name[type], type_name[v.type]);
-        *(int*)0=0;
     }
     assert(v.type == type);
     return 0;
