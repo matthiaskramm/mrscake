@@ -45,7 +45,7 @@ model_collection_t collections[] = {
 
 model_t* model_select(dataset_t*dataset)
 {
-    model_t*best = 0;
+    model_t*best_model = 0;
     model_factory_t*best_factory = 0;
     int best_score = INT_MAX;
 
@@ -62,14 +62,19 @@ model_t* model_select(dataset_t*dataset)
             int score = size + errors;
             printf("score %d (%d errors)\n", score, errors);fflush(stdout);
             if(score < best_score) {
+                if(best_model) {
+                    model_destroy(best_model);
+                }
                 best_score = score;
                 best_factory = factory;
-                best = m;
+                best_model = m;
+            } else {
+                model_destroy(m);
             }
         }
     }
     printf("Using %s.\n", best_factory->name);
-    return best;
+    return best_model;
     //return dtree_model_factory.train(dataset);
     //return ann_gaussian_model_factory.train(dataset);
 }

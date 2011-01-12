@@ -35,7 +35,7 @@ class CodeGeneratingANN: public CvANN_MLP
     }
     ~CodeGeneratingANN() 
     {
-	delete var_offset;
+	delete[] var_offset;
     }
 
     void scale_input()
@@ -389,6 +389,9 @@ static model_t*ann_train(ann_model_factory_t*factory, dataset_t*dataset)
     verify(dataset, m, &ann);
 #endif
 
+    cvReleaseMat(&layers);
+    cvReleaseMat(&ann_input);
+    cvReleaseMat(&ann_response);
     sanitized_dataset_destroy(d);
     return m;
 }

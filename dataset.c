@@ -125,6 +125,9 @@ column_t*column_new(int num_rows, bool is_categorical)
 }
 void column_destroy(column_t*c)
 {
+    if(c->classes) {
+        free(c->classes);
+    }
     free(c);
 }
 void sanitized_dataset_destroy(sanitized_dataset_t*s)
@@ -133,8 +136,8 @@ void sanitized_dataset_destroy(sanitized_dataset_t*s)
     for(t=0;t<s->num_columns;t++) {
         column_destroy(s->columns[t]);
     }
-    free(s->desired_response);
     free(s->columns);
+    column_destroy(s->desired_response);
     free(s);
 }
 
