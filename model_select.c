@@ -33,12 +33,16 @@ extern int num_ann_models;
 extern model_factory_t* dtree_models[];
 extern int num_dtree_models;
 
+extern model_factory_t* svm_models[];
+extern int num_svm_models;
+
 typedef struct _model_collection {
     model_factory_t**models;
     int* num_models;
 } model_collection_t;
 
 model_collection_t collections[] = {
+    {svm_models, &num_svm_models},
     {ann_models, &num_ann_models},
     {dtree_models, &num_dtree_models},
 };
@@ -48,7 +52,6 @@ model_t* model_select(dataset_t*dataset)
     model_t*best_model = 0;
     model_factory_t*best_factory = 0;
     int best_score = INT_MAX;
-
     int t;
     int s;
     for(s=0;s<NUM(collections);s++) {
@@ -57,26 +60,29 @@ model_t* model_select(dataset_t*dataset)
             model_factory_t*factory = collection->models[t];
             printf("Trying %s... ", factory->name);fflush(stdout);
             model_t*m = factory->train(factory, dataset);
-            int size = model_size(m);
-            int errors = model_errors(m, dataset);
-            int score = size + errors;
-            printf("score %d (%d errors)\n", score, errors);fflush(stdout);
-            if(score < best_score) {
-                if(best_model) {
-                    model_destroy(best_model);
+            if(m) {
+                int size = model_size(m);
+                int errors = model_errors(m, dataset);
+                int score = size + errors;
+                printf("score %d (%d errors)", score, errors);fflush(stdout);
+                if(score < best_score) {
+                    if(best_model) {
+                        model_destroy(best_model);
+                    }
+                    best_score = score;
+                    best_factory = factory;
+                    best_model = m;
+                } else {
+                    model_destroy(m);
                 }
-                best_score = score;
-                best_factory = factory;
-                best_model = m;
             } else {
-                model_destroy(m);
+                printf("failed");
             }
+            printf("\n");
         }
     }
     printf("Using %s.\n", best_factory->name);
     return best_model;
-    //return dtree_model_factory.train(dataset);
-    //return ann_gaussian_model_factory.train(dataset);
 }
 
 int model_errors(model_t*m, dataset_t*d)

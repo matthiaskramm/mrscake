@@ -12,7 +12,7 @@ ifeq ($(IS_MACOS),)
     LIBS=-lz -lpthread -lrt
 endif
 
-MODELS=model_cv_dtree.o model_cv_ann.o
+MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o
 OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
@@ -55,6 +55,9 @@ cvtools.o: cvtools.cpp lib/ml.hpp Makefile
 	$(CXX) -Ilib $< -c -o $@
 
 model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h cvtools.h Makefile
+	$(CXX) -Ilib $< -c -o $@
+
+model_cv_svm.o: model_cv_svm.cpp model.h ast.h cvtools.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
 model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h Makefile

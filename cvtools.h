@@ -22,7 +22,7 @@
 #ifndef __CVTOOLS_H__
 #define __CVTOOLS_H__
 
-#include "ml.hpp"
+#include "lib/ml.hpp"
 #include "lib/core_c.h"
 #include "model.h"
 #include "dataset.h"
