@@ -10,4 +10,5 @@ python_interpreter
 model
 test
 tags
+gmon.out
 *.dSYM
