@@ -72,7 +72,7 @@ test_ast.o: test_ast.c model.h ast.h Makefile
 ast: test_ast.o $(OBJECTS) lib/libml.a Makefile
 	$(CXX) test_ast.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
-model: test_model.o $(OBJECTS) lib/libml.a Makefile 
+model: test_model.o $(OBJECTS) lib/libml.a Makefile
 	$(CXX) test_model.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 # ------------ python interface --------------
@@ -82,9 +82,10 @@ predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
 
 python_interpreter: python_interpreter.c Makefile
 	$(CC) $(PYTHON_INCLUDE) python_interpreter.c -o python_interpreter $(PYTHON_LIB)
+
 # ------------ old test code -----------------
 
-multimodel: multimodel.o lib/libml.a $(OBJECTS) Makefile 
+multimodel: multimodel.o lib/libml.a $(OBJECTS) Makefile
 	$(CXX) multimodel.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 svm.o: svm.cpp Makefile
@@ -93,10 +94,10 @@ svm.o: svm.cpp Makefile
 ann.o: ann.cpp Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-svm: svm.o lib/libml.a Makefile 
+svm: svm.o lib/libml.a Makefile
 	$(CXX) svm.o -o $@ lib/libml.a $(LIBS)
 
-ann: ann.o lib/libml.a Makefile 
+ann: ann.o lib/libml.a Makefile
 	$(CXX) ann.o -o $@ lib/libml.a $(LIBS)
 
 
