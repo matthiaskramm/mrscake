@@ -100,23 +100,23 @@ void node_read_internal_data(node_t*node, reader_t*reader)
     }
 }
 
-typedef struct _stack {
-    struct _stack*prev;
+typedef struct _nodestack {
+    struct _nodestack*prev;
     node_t*node;
     int num_children;
-} stack_t;
+} nodestack_t;
 
-stack_t*stack_new(node_t*node, stack_t*prev)
+nodestack_t*stack_new(node_t*node, nodestack_t*prev)
 {
-    stack_t*d = malloc(sizeof(stack_t));
+    nodestack_t*d = malloc(sizeof(nodestack_t));
     d->node = node;
     d->num_children = 0;
     d->prev = prev;
     return d;
 }
-stack_t*stack_pop(stack_t*stack)
+nodestack_t*stack_pop(nodestack_t*stack)
 {
-    stack_t*old = stack;
+    nodestack_t*old = stack;
     stack = stack->prev;
     free(old);
     return stack;
@@ -124,7 +124,7 @@ stack_t*stack_pop(stack_t*stack)
 
 node_t* node_read(reader_t*reader)
 {
-    stack_t*stack = 0;
+    nodestack_t*stack = 0;
     node_t*top_node = 0;
 
     do {

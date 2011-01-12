@@ -104,7 +104,7 @@ test: predict.so
 	python test_python_module.py
 
 clean:
-	rm -f svm test ast ann multimodel *.o
+	rm -f svm test ast ann multimodel *.o lib/*.o lib/*.a lib/*.gch
 
 
 .PHONY: clean all
