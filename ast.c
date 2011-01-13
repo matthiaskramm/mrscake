@@ -318,9 +318,9 @@ min_args:2,
 max_args:2,
 };
 
-// -------------------------- max_arg ------------------------------------
+// -------------------------- arg_max ------------------------------------
 
-constant_t node_max_arg_eval(node_t*n, environment_t* env)
+constant_t node_arg_max_eval(node_t*n, environment_t* env)
 {
     float max = AS_FLOAT(EVAL_CHILD(0));
     int index = 0;
@@ -334,11 +334,36 @@ constant_t node_max_arg_eval(node_t*n, environment_t* env)
     }
     return int_constant(index);
 }
-nodetype_t node_max_arg =
+nodetype_t node_arg_max =
 {
-name:"max_arg",
+name:"arg_max",
 flags:NODE_FLAG_HAS_CHILDREN,
-eval: node_max_arg_eval,
+eval: node_arg_max_eval,
+min_args:1,
+max_args:INT_MAX,
+};
+
+// -------------------------- arg_max_i ----------------------------------
+
+constant_t node_arg_max_i_eval(node_t*n, environment_t* env)
+{
+    int max = AS_INT(EVAL_CHILD(0));
+    int index = 0;
+    int t;
+    for(t=1;t<n->num_children;t++) {
+        int c = AS_INT(EVAL_CHILD(t));
+        if(c>max) {
+            max = c;
+            index = t;
+        }
+    }
+    return int_constant(index);
+}
+nodetype_t node_arg_max_i =
+{
+name:"arg_max_i",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_arg_max_i_eval,
 min_args:1,
 max_args:INT_MAX,
 };

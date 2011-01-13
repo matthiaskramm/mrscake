@@ -86,8 +86,9 @@ struct _node {
     NODE(0x1a, node_inclocal) \
     NODE(0x1b, node_bool_to_float) \
     NODE(0x1c, node_equals) \
-    NODE(0x1d, node_max_arg) \
-    NODE(0x1e, node_array_at_pos) \
+    NODE(0x1d, node_arg_max) \
+    NODE(0x1e, node_arg_max_i) \
+    NODE(0x1f, node_array_at_pos) \
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES
@@ -130,6 +131,7 @@ void node_print(node_t*n);
                     node_append_child(current_node, (new_node)); \
                 } else { \
                     if(current_program) { \
+                        assert(!(*current_program)); \
                         (*current_program) = new_node; \
                     } \
                 } \
@@ -150,7 +152,7 @@ void node_print(node_t*n);
                    } while(0)
 
 #define START_CODE(program) \
-	node_t* program; \
+	node_t* program = 0; \
 	{ \
 	    node_t*current_node = 0; \
             node_t**current_program = &program;
@@ -191,7 +193,8 @@ void node_print(node_t*n);
 #define BOOL_TO_FLOAT NODE_BEGIN(&node_bool_to_float)
 #define EQUALS NODE_BEGIN(&node_equals)
 #define BLOCK NODE_BEGIN(&node_block)
-#define MAX_ARG NODE_BEGIN(&node_max_arg)
+#define ARG_MAX NODE_BEGIN(&node_arg_max)
+#define ARG_MAX_I NODE_BEGIN(&node_arg_max_i)
 #define ARRAY_AT_POS NODE_BEGIN(&node_array_at_pos)
 
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)

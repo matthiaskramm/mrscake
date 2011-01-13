@@ -34,6 +34,7 @@ class CodeGeneratingSVM: public CvSVM
         START_CODE(program)
         BLOCK
 
+        /* FIXME: we should evaluate parameter_code(i) only once for each i */
         if(params.kernel_type == CvSVM::RBF) {
             //calc_rbf(vcount, var_count, vecs, another, results);
             double gamma = -params.gamma;
@@ -81,7 +82,13 @@ class CodeGeneratingSVM: public CvSVM
                     END;
                 END;
                 SETLOCAL(j)
-                    EXP NEG ABS GETLOCAL(sv_total+j) END;END;END;
+                    EXP
+                        NEG
+                            ABS
+                                GETLOCAL(sv_total+j)
+                            END;
+                        END;
+                    END;
                 END;
                 SETLOCAL(j)
                     DIV
@@ -167,7 +174,7 @@ class CodeGeneratingSVM: public CvSVM
 
         ARRAY_AT_POS
             ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
-            MAX_ARG
+            ARG_MAX_I
                 int j;
                 for(j=0; j<class_count; j++) {
                     GETLOCAL(vote_offset+j);
@@ -208,7 +215,7 @@ static model_t*svm_train(svm_model_factory_t*factory, dataset_t*dataset)
         m->code = svm.get_program();
     }
 
-    node_print((node_t*)m->code);
+    //node_print((node_t*)m->code);
 
     sanitized_dataset_destroy(d);
     return m;

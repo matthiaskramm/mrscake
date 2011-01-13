@@ -42,9 +42,9 @@ typedef struct _model_collection {
 } model_collection_t;
 
 model_collection_t collections[] = {
-    {svm_models, &num_svm_models},
     {ann_models, &num_ann_models},
     {dtree_models, &num_dtree_models},
+    {svm_models, &num_svm_models},
 };
 
 model_t* model_select(dataset_t*dataset)

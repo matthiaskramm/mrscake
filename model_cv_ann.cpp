@@ -208,7 +208,7 @@ class CodeGeneratingANN: public CvANN_MLP
 
         ARRAY_AT_POS
             ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
-            MAX_ARG
+            ARG_MAX
                 for(j=0;j<output_size;j++) {
                     GETLOCAL(final+j);
                 }
@@ -265,61 +265,6 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
 }
 #endif
 
-static int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows)
-{
-    int y;
-    int x = 0;
-    if(!column->is_categorical) {
-        for(y=0;y<rows;y++) {
-            float*e = (float*)(CV_MAT_ELEM_PTR(*mat, y, xpos+x));
-            *e =  column->entries[y].f;
-        }
-        x++;
-    } else {
-        int c = 0;
-        for(c=0;c<column->num_classes;c++) {
-            for(y=0;y<rows;y++) {
-                float*e = (float*)(CV_MAT_ELEM_PTR(*mat, y, xpos+x));
-                if(column->entries[y].c == c) {
-                    *e = 1.0;
-                } else {
-                    *e = 0.0;
-                }
-            }
-            x++;
-        }
-    }
-    return x;
-}
-
-static int count_multiclass_columns(sanitized_dataset_t*d)
-{
-    int x;
-    int width = 0;
-    for(x=0;x<d->num_columns;x++) {
-        if(!d->columns[x]->is_categorical) {
-            width++;
-        } else {
-            width += d->columns[x]->num_classes;
-        }
-    }
-    return width;
-}
-
-void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out)
-{
-    int x,y;
-    int width = count_multiclass_columns(d);
-    *in = cvCreateMat(d->num_rows, width, CV_32FC1);
-    *out = cvCreateMat(d->num_rows, d->desired_response->num_classes, CV_32FC1);
-    int xpos = 0;
-    for(x=0;x<d->num_columns;x++) {
-        xpos += set_column_in_matrix(d->columns[x], *in, xpos, d->num_rows);
-    }
-    assert(xpos == width);
-    set_column_in_matrix(d->desired_response, *out, 0, d->num_rows);
-}
-
 static model_t*ann_train(ann_model_factory_t*factory, dataset_t*dataset)
 {
     sanitized_dataset_t*d = dataset_sanitize(dataset);
@@ -342,7 +287,7 @@ static model_t*ann_train(ann_model_factory_t*factory, dataset_t*dataset)
     CvMLDataFromExamples data(d);
     CvMat* ann_input;
     CvMat* ann_response;
-    make_ml_multicolumn(d, &ann_input, &ann_response);
+    make_ml_multicolumn(d, &ann_input, &ann_response, true);
     ann.train(ann_input, ann_response, NULL, NULL, ann_params, 0x0000);
 
     model_t*m = (model_t*)malloc(sizeof(model_t));

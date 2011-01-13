@@ -3,7 +3,7 @@
 
 void cvmSetI(CvMat*m, int y, int x, int v)
 {
-    int*e = (int*)(CV_MAT_ELEM_PTR(*m, y, x));
+    int32_t*e = (int32_t*)(CV_MAT_ELEM_PTR(*m, y, x));
     *e = v;
 }
 void cvmSetF(CvMat*m, int y, int x, float f)
@@ -13,7 +13,7 @@ void cvmSetF(CvMat*m, int y, int x, float f)
 }
 int cvmGetI(const CvMat*m, int y, int x)
 {
-    return CV_MAT_ELEM((*m), int, y, x);
+    return CV_MAT_ELEM((*m), int32_t, y, x);
 }
 float cvmGetF(const CvMat*m, int y, int x)
 {
@@ -137,4 +137,67 @@ CvMat*cvmat_from_row(sanitized_dataset_t*dataset, row_t*row, bool expand_categor
     return matrix_row;
 }
 
+int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows)
+{
+    int y;
+    int x = 0;
+    if(!column->is_categorical) {
+        for(y=0;y<rows;y++) {
+            float*e = (float*)(CV_MAT_ELEM_PTR(*mat, y, xpos+x));
+            *e =  column->entries[y].f;
+        }
+        x++;
+    } else {
+        int c = 0;
+        for(c=0;c<column->num_classes;c++) {
+            for(y=0;y<rows;y++) {
+                float*e = (float*)(CV_MAT_ELEM_PTR(*mat, y, xpos+x));
+                if(column->entries[y].c == c) {
+                    *e = 1.0;
+                } else {
+                    *e = 0.0;
+                }
+            }
+            x++;
+        }
+    }
+    return x;
+}
+
+int count_multiclass_columns(sanitized_dataset_t*d)
+{
+    int x;
+    int width = 0;
+    for(x=0;x<d->num_columns;x++) {
+        if(!d->columns[x]->is_categorical) {
+            width++;
+        } else {
+            width += d->columns[x]->num_classes;
+        }
+    }
+    return width;
+}
+
+void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out, bool multicolumn_response)
+{
+    int x,y;
+    int width = count_multiclass_columns(d);
+    *in = cvCreateMat(d->num_rows, width, CV_32FC1);
+    int xpos = 0;
+    for(x=0;x<d->num_columns;x++) {
+        xpos += set_column_in_matrix(d->columns[x], *in, xpos, d->num_rows);
+    }
+    assert(xpos == width);
+    if(multicolumn_response) {
+        *out = cvCreateMat(d->num_rows, d->desired_response->num_classes, CV_32FC1);
+        set_column_in_matrix(d->desired_response, *out, 0, d->num_rows);
+    } else {
+        *out = cvCreateMat(d->num_rows, 1, CV_32SC1);
+        int y;
+        for(y=0;y<d->num_rows;y++) {
+            int32_t*e = (int32_t*)(CV_MAT_ELEM_PTR(**out, y, 0));
+            *e =  d->desired_response->entries[y].c;
+        }
+    }
+}
 

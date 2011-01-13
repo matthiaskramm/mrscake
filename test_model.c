@@ -29,13 +29,13 @@ int main()
     dataset_t* dataset = dataset_new();
 
     int t;
-    for(t=0;t<1024;t++) {
-        example_t*e = example_new(32);
+    for(t=0;t<256;t++) {
+        example_t*e = example_new(16);
         int s;
-        for(s=0;s<32;s++) {
+        for(s=0;s<16;s++) {
             e->inputs[s] = variable_make_continuous((lrand48()%256)/256.0);
         }
-        e->desired_response = variable_make_categorical(t%4);
+        e->desired_response = variable_make_categorical(t%3);
         dataset_add(dataset, e);
     }
     model_t*m = model_select(dataset);
