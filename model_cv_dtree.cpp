@@ -1,7 +1,7 @@
 #include "cvtools.h"
 #include "model.h"
 #include "dataset.h"
-#include "ast.h"
+#include "easy_ast.h"
 #include "model_select.h"
 
 //#define VERIFY 1

@@ -26,7 +26,7 @@
 #include "model.h"
 #include "dataset.h"
 #include "dict.h"
-#include "ast.h"
+#include "easy_ast.h"
 
 dataset_t* dataset_new()
 {
