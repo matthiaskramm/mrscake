@@ -572,7 +572,7 @@ min_args:0,
 max_args:0,
 };
 
-// ---------------------- text s ------------- -------------------------
+// ---------------------- string s --------------------------------------
 
 constant_t node_string_eval(node_t*n, environment_t* env)
 {
@@ -583,6 +583,36 @@ nodetype_t node_string =
 name:"string",
 flags:NODE_FLAG_HAS_VALUE,
 eval: node_string_eval,
+min_args:0,
+max_args:0,
+};
+
+// ---------------------- bool b --------------------------------------
+
+constant_t node_bool_eval(node_t*n, environment_t* env)
+{
+    return n->value;
+}
+nodetype_t node_bool =
+{
+name:"bool",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_bool_eval,
+min_args:0,
+max_args:0,
+};
+
+// ---------------------- missing --------------------------------------
+
+constant_t node_missing_eval(node_t*n, environment_t* env)
+{
+    return n->value;
+}
+nodetype_t node_missing =
+{
+name:"missing",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_missing_eval,
 min_args:0,
 max_args:0,
 };
@@ -658,6 +688,10 @@ node_t* node_new_with_args(nodetype_t*t,...)
 	n->value = array_constant(array);
     } else if(n->type == &node_string) {
 	n->value = string_constant(va_arg(arglist,char*));
+    } else if(n->type == &node_bool) {
+	n->value = bool_constant(va_arg(arglist,int));
+    } else if(n->type == &node_missing) {
+	n->value = missing_constant();
     } else if(n->type == &node_constant) {
 	n->value = va_arg(arglist,constant_t);
     } else if(n->type == &node_setlocal || n->type == &node_getlocal || n->type == &node_inclocal) {

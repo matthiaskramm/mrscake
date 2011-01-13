@@ -24,6 +24,7 @@
 #include "model_select.h"
 #include "ast.h"
 #include "io.h"
+#include "dataset.h"
 
 #define NUM(l) (sizeof(l)/sizeof((l)[0]))
 
@@ -54,6 +55,8 @@ model_t* model_select(dataset_t*dataset)
     int best_score = INT_MAX;
     int t;
     int s;
+    sanitized_dataset_t*data = dataset_sanitize(dataset);
+    printf("%d classes, %d rows of examples\n", data->desired_response->num_classes, data->num_rows);
     for(s=0;s<NUM(collections);s++) {
         model_collection_t*collection = &collections[s];
         for(t=0;t<*collection->num_models;t++) {
@@ -62,9 +65,10 @@ model_t* model_select(dataset_t*dataset)
             model_t*m = factory->train(factory, dataset);
             if(m) {
                 int size = model_size(m);
+                printf("model size %d", size);fflush(stdout);
                 int errors = model_errors(m, dataset);
                 int score = size + errors;
-                printf("score %d (%d errors)", score, errors);fflush(stdout);
+                printf(", %d errors (score: %d)", errors, score);fflush(stdout);
                 if(score < best_score) {
                     if(best_model) {
                         model_destroy(best_model);
@@ -91,16 +95,21 @@ int model_errors(model_t*m, dataset_t*d)
     node_t*node = m->code;
     int t;
     int error = 0;
+
+    node_t*code = (node_t*)m->code;
+    environment_t*env = environment_new(code, 0);
     while(e) {
-        row_t* r = example_to_row(e);
-        variable_t prediction = model_predict(m, r);
+        env->row = example_to_row(e);
+        constant_t c = node_eval(code, env);
+        variable_t prediction = constant_to_variable(&c);
 
         if(!variable_equals(&prediction, &e->desired_response)) {
             error++;
         }
-        row_destroy(r);
+        row_destroy(env->row);env->row=0;
         e = e->next;
     }
+    environment_destroy(env);
     return error;
 }
 

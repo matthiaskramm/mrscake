@@ -38,20 +38,20 @@ typedef struct _nodetype nodetype_t;
 
 struct _nodetype {
     char*name;
-    int flags;
     int min_args;
     int max_args;
     uint8_t opcode;
+    uint8_t flags;
     constant_t (*eval)(node_t*n, environment_t* params);
 };
 
 struct _node {
     nodetype_t*type;
     node_t*parent;
-    struct {
-	node_t**child;
-	int num_children;
-    };
+
+    node_t**child;
+    int num_children;
+
     constant_t value;
 };
 
@@ -76,19 +76,21 @@ struct _node {
     NODE(0x10, node_var) \
     NODE(0x11, node_nop) \
     NODE(0x12, node_constant) \
-    NODE(0x13, node_category) \
-    NODE(0x14, node_array) \
-    NODE(0x15, node_float) \
-    NODE(0x16, node_int) \
-    NODE(0x17, node_string) \
-    NODE(0x18, node_getlocal)  \
-    NODE(0x19, node_setlocal) \
-    NODE(0x1a, node_inclocal) \
-    NODE(0x1b, node_bool_to_float) \
-    NODE(0x1c, node_equals) \
-    NODE(0x1d, node_arg_max) \
-    NODE(0x1e, node_arg_max_i) \
-    NODE(0x1f, node_array_at_pos) \
+    NODE(0x13, node_bool) \
+    NODE(0x14, node_category) \
+    NODE(0x15, node_array) \
+    NODE(0x16, node_float) \
+    NODE(0x17, node_int) \
+    NODE(0x18, node_string) \
+    NODE(0x19, node_missing) \
+    NODE(0x1a, node_getlocal)  \
+    NODE(0x1b, node_setlocal) \
+    NODE(0x1c, node_inclocal) \
+    NODE(0x1d, node_bool_to_float) \
+    NODE(0x1e, node_equals) \
+    NODE(0x1f, node_arg_max) \
+    NODE(0x20, node_arg_max_i) \
+    NODE(0x21, node_array_at_pos) \
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES
@@ -105,7 +107,6 @@ void node_free(node_t*n);
 constant_t node_eval(node_t*n,environment_t* e);
 int node_highest_local(node_t*node);
 void node_print(node_t*n);
-
 
 #ifdef __cplusplus
 }

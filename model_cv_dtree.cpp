@@ -68,9 +68,9 @@ class CodeGeneratingDTree: public CvDTree
             assert(dataset->desired_response->is_categorical);
             category_t c = (int)floor(node->value+FLT_EPSILON);
             if(c<0 || c>=dataset->desired_response->num_classes) {
-                RETURN(missing_constant());
+                MISSING_CONSTANT;
             } else {
-                RETURN(dataset->desired_response->classes[c]);
+                GENERIC_CONSTANT(dataset->desired_response->classes[c]);
             }
             return;
         }
