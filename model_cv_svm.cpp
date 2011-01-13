@@ -28,12 +28,41 @@ class CodeGeneratingSVM: public CvSVM
         int var_count = get_var_count();
         int class_count = this->dataset->desired_response->num_classes;
 
-        printf("%d %d %d\n", var_all, var_count, dataset->expanded_num_columns);
-
         assert(var_count == dataset->expanded_num_columns);
         assert(class_labels->cols == class_count);
 
+        bool*sv_is_used = new bool[sv_total];
+        memset(sv_is_used, false, sizeof(bool)*sv_total);
+
+        int t;
+        CvSVMDecisionFunc* df = (CvSVMDecisionFunc*)decision_func;
+        int i;
+        for(i=0; i<class_count; i++) {
+            int j;
+            for(j=i+1; j<class_count; j++) {
+                int k;
+                int sv_count = df->sv_count;
+                for(k = 0; k < sv_count; k++) {
+                    sv_is_used[df->sv_index[k]] = true;
+                }
+                df++;
+            }
+        }
+        int total_used_svs = 0;
+        for(i=0; i<sv_total; i++) {
+            if(sv_is_used[i])
+                total_used_svs++;
+        }
+        int*used_svs = new int[total_used_svs];
+        int pos = 0;
+        for(i=0; i<sv_total; i++) {
+            if(sv_is_used[i]) {
+                used_svs[pos++] = i;
+            }
+        }
+
         START_CODE(program)
+        BLOCK
 
         if(params.kernel_type == CvSVM::RBF) {
             //calc_rbf(vcount, var_count, vecs, another, results);
@@ -176,7 +205,10 @@ class CodeGeneratingSVM: public CvSVM
             END;
         END;
 
+        END;
         END_CODE;
+        delete[] used_svs;
+        delete[] sv_is_used;
         return program;
     }
     sanitized_dataset_t*dataset;
@@ -198,15 +230,17 @@ static model_t*svm_train(svm_model_factory_t*factory, dataset_t*dataset)
                                      /*degree*/0, /*gamma*/1, /*coef0*/0, /*C*/1,
                                      /*nu*/0, /*p*/0, /*class_weights*/0,
                                      cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON));
-    CvMLDataFromExamples data(d);
-    const CvMat* values = data.get_values();
-    const CvMat* response = data.get_responses();
+    CvMat* input;
+    CvMat* response;
+    make_ml_multicolumn(d, &input, &response, false);
 
     model_t*m = 0;
-    if(svm.train_auto(values, response, 0, 0, params, 9)) {
+    if(svm.train_auto(input, response, 0, 0, params, 9)) {
         m = (model_t*)malloc(sizeof(model_t));
         m->code = svm.get_program();
     }
+
+    node_print((node_t*)m->code);
 
     sanitized_dataset_destroy(d);
     return m;
