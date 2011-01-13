@@ -31,36 +31,6 @@ class CodeGeneratingSVM: public CvSVM
         assert(var_count == dataset->expanded_num_columns);
         assert(class_labels->cols == class_count);
 
-        bool*sv_is_used = new bool[sv_total];
-        memset(sv_is_used, false, sizeof(bool)*sv_total);
-
-        int t;
-        CvSVMDecisionFunc* df = (CvSVMDecisionFunc*)decision_func;
-        int i;
-        for(i=0; i<class_count; i++) {
-            int j;
-            for(j=i+1; j<class_count; j++) {
-                int k;
-                int sv_count = df->sv_count;
-                for(k = 0; k < sv_count; k++) {
-                    sv_is_used[df->sv_index[k]] = true;
-                }
-                df++;
-            }
-        }
-        int total_used_svs = 0;
-        for(i=0; i<sv_total; i++) {
-            if(sv_is_used[i])
-                total_used_svs++;
-        }
-        int*used_svs = new int[total_used_svs];
-        int pos = 0;
-        for(i=0; i<sv_total; i++) {
-            if(sv_is_used[i]) {
-                used_svs[pos++] = i;
-            }
-        }
-
         START_CODE(program)
         BLOCK
 
@@ -207,8 +177,6 @@ class CodeGeneratingSVM: public CvSVM
 
         END;
         END_CODE;
-        delete[] used_svs;
-        delete[] sv_is_used;
         return program;
     }
     sanitized_dataset_t*dataset;
