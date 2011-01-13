@@ -1,4 +1,4 @@
-all: multimodel svm ann ast model predict.so
+all: multimodel ast model predict.so
 
 CC=gcc -pg -g -fPIC
 CXX=g++ -pg -g -fPIC
@@ -88,19 +88,6 @@ python_interpreter: python_interpreter.c Makefile
 multimodel: multimodel.o lib/libml.a $(OBJECTS) Makefile
 	$(CXX) multimodel.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
-svm.o: svm.cpp Makefile
-	$(CXX) -Ilib $< -c -o $@
-
-ann.o: ann.cpp Makefile
-	$(CXX) -Ilib $< -c -o $@
-
-svm: svm.o lib/libml.a Makefile
-	$(CXX) svm.o -o $@ lib/libml.a $(LIBS)
-
-ann: ann.o lib/libml.a Makefile
-	$(CXX) ann.o -o $@ lib/libml.a $(LIBS)
-
-
 test: predict.so
 	python test_python_module.py
 
@@ -108,4 +95,4 @@ clean:
 	rm -f svm test ast ann multimodel *.o lib/*.o lib/*.a lib/*.gch
 
 
-.PHONY: clean all
+.PHONY: clean all test
