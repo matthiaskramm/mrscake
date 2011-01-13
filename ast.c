@@ -175,6 +175,53 @@ min_args:1,
 max_args:1,
 };
 
+// -------------------------- neg x ----------------------------------
+
+constant_t node_neg_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_1(value);
+    return float_constant(-AS_FLOAT(value));
+}
+nodetype_t node_neg =
+{
+name:"neg",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_neg_eval,
+min_args:1,
+max_args:1,
+};
+
+// -------------------------- abs x ----------------------------------
+
+constant_t node_abs_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_1(value);
+    return float_constant(fabs(AS_FLOAT(value)));
+}
+nodetype_t node_abs =
+{
+name:"abs",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_abs_eval,
+min_args:1,
+max_args:1,
+};
+
+// -------------------------- nop ----------------------------------
+
+constant_t node_nop_eval(node_t*n, environment_t* env)
+{
+    return missing_constant();
+}
+nodetype_t node_nop =
+{
+name:"nop",
+flags:0,
+eval: node_nop_eval,
+min_args:0,
+max_args:0,
+};
+
 // -------------------------- float(b) ----------------------------------
 
 constant_t node_bool_to_float_eval(node_t*n, environment_t* env)
@@ -342,6 +389,21 @@ min_args:0,
 max_args:0,
 };
 
+// -------------------------- int ------------------------------------
+
+constant_t node_int_eval(node_t*n, environment_t* env)
+{
+    return n->value;
+}
+nodetype_t node_int =
+{
+name:"int",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_int_eval,
+min_args:0,
+max_args:0,
+};
+
 // -------------------------- x in y ----------------------------------
 
 constant_t node_in_eval(node_t*n, environment_t* env)
@@ -449,6 +511,27 @@ min_args:0,
 max_args:0,
 };
 
+// ---------------------- inclocal i ----------------------------------
+
+constant_t node_inclocal_eval(node_t*n, environment_t* env)
+{
+    int index = n->value.i;
+    assert(index >= 0 && index < env->num_locals);
+    bool local_is_not_undefined = env->locals[index].type != 0;
+    assert(local_is_not_undefined);
+    assert(env->locals[index].type == CONSTANT_INT);
+    env->locals[index].i++;
+    return env->locals[index];
+}
+nodetype_t node_inclocal =
+{
+name:"inclocal",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_inclocal_eval,
+min_args:0,
+max_args:0,
+};
+
 // ---------------------- category i (return i) -------------------------
 
 constant_t node_category_eval(node_t*n, environment_t* env)
@@ -543,6 +626,8 @@ node_t* node_new_with_args(nodetype_t*t,...)
 	n->value = category_constant(va_arg(arglist,category_t));
     } else if(n->type == &node_float) {
 	n->value = float_constant(va_arg(arglist,double));
+    } else if(n->type == &node_int) {
+	n->value = int_constant(va_arg(arglist,int));
     } else if(n->type == &node_array) {
         array_t*array = va_arg(arglist,array_t*);
 	n->value = array_constant(array);
@@ -550,7 +635,7 @@ node_t* node_new_with_args(nodetype_t*t,...)
 	n->value = string_constant(va_arg(arglist,char*));
     } else if(n->type == &node_constant) {
 	n->value = va_arg(arglist,constant_t);
-    } else if(n->type == &node_setlocal || n->type == &node_getlocal) {
+    } else if(n->type == &node_setlocal || n->type == &node_getlocal || n->type == &node_inclocal) {
 	n->value = int_constant(va_arg(arglist,int));
     }
     va_end(arglist);

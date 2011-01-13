@@ -26,6 +26,7 @@
 #include "model.h"
 #include "dataset.h"
 #include "dict.h"
+#include "ast.h"
 
 dataset_t* dataset_new()
 {
@@ -130,16 +131,6 @@ void column_destroy(column_t*c)
     }
     free(c);
 }
-void sanitized_dataset_destroy(sanitized_dataset_t*s)
-{
-    int t;
-    for(t=0;t<s->num_columns;t++) {
-        column_destroy(s->columns[t]);
-    }
-    free(s->columns);
-    column_destroy(s->desired_response);
-    free(s);
-}
 
 typedef struct _columnbuilder {
     column_t*column;
@@ -242,6 +233,28 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
                            : 1;
     }
 
+
+    /* build expanded column info (version of the data where every class of every
+       input variable has it's own 0/1 column)
+     */
+    s->expanded_columns = malloc(sizeof(s->expanded_columns[0])*s->expanded_num_columns);
+    int pos=0;
+    for(x=0;x<s->num_columns;x++) {
+        if(!s->columns[x]->is_categorical) {
+            s->expanded_columns[pos].col = x;
+            s->expanded_columns[pos].cls = 0;
+            pos++;
+        } else {
+            int c;
+            for(c=0;c<s->columns[x]->num_classes;c++) {
+                s->expanded_columns[pos].col = x;
+                s->expanded_columns[pos].cls = c;
+                pos++;
+            }
+        }
+    }
+    assert(pos == s->expanded_num_columns);
+
     /* copy response column to the new dataset */
     s->desired_response = column_new(s->num_rows, true);
     columnbuilder_t*builder = columnbuilder_new(s->desired_response);
@@ -284,3 +297,45 @@ constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int
         return missing_constant();
     }
 }
+
+void sanitized_dataset_destroy(sanitized_dataset_t*s)
+{
+    int t;
+    for(t=0;t<s->num_columns;t++) {
+        column_destroy(s->columns[t]);
+    }
+    free(s->columns);
+    column_destroy(s->desired_response);
+    free(s);
+}
+
+node_t* parameter_code(sanitized_dataset_t*d, int num)
+{
+    int x = d->expanded_columns[num].col;
+    int cls = d->expanded_columns[num].cls;
+
+    if(d->columns[x]->is_categorical) {
+        START_CODE(program);
+            BOOL_TO_FLOAT
+                EQUALS
+                    VAR(x);
+                    CONSTANT(d->columns[x]->classes[cls]);
+                END;
+            END;
+        END_CODE;
+        return program;
+    } else {
+        return node_new_with_args(&node_var, x);
+    }
+}
+
+array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*dataset)
+{
+    array_t*classes = array_new(dataset->desired_response->num_classes);
+    int t;
+    for(t=0;t<classes->size;t++) {
+        classes->entries[t] = dataset->desired_response->classes[t];
+    }
+    return classes;
+}
+

@@ -24,18 +24,20 @@ class CodeGeneratingANN: public CvANN_MLP
         this->dataset = dataset;
 	this->input_size = input_size;
 	this->output_size = output_size;
-	var_offset = new int[layer_sizes->cols+1];
-	int t;
-	int o = 0;
-	for(t=0;t<layer_sizes->cols;t++) {
-	    var_offset[t] = o;
-	    o += layer_sizes->data.i[t];
-	}
-	var_offset[t] = o;
+
+        var_offset = new int[layer_sizes->cols+1];
+        int t;
+        int o = 0;
+        for(t=0;t<layer_sizes->cols;t++) {
+            var_offset[t] = o;
+            o += layer_sizes->data.i[t];
+        }
+        var_offset[t] = o;
     }
-    ~CodeGeneratingANN() 
+
+    ~CodeGeneratingANN()
     {
-	delete[] var_offset;
+        delete[] var_offset;
     }
 
     void scale_input()
@@ -76,39 +78,6 @@ class CodeGeneratingANN: public CvANN_MLP
 
 	   return ["A","B","C"][[r0,r1,r2].index(max([r0,r1,r2]))]
      */
-    node_t* parameter(int num) const
-    {
-        int t;
-        int pos = 0;
-        int x;
-        for(x=0;x<this->dataset->num_columns;x++) {
-            if(!this->dataset->columns[x]->is_categorical) {
-                if(pos == num) {
-                    return node_new_with_args(&node_var, x);
-                }
-                pos++;
-            } else {
-                int c;
-                for(c=0;c<this->dataset->columns[x]->num_classes;c++) {
-                    if(pos == num) {
-                        START_CODE(program);
-                            BOOL_TO_FLOAT
-                                EQUALS
-                                    VAR(x);
-                                    CONSTANT(this->dataset->columns[x]->classes[c]);
-                                END;
-                            END;
-                        END_CODE;
-                        return program;
-                    }
-                    pos++;
-                }
-            }
-        }
-        assert(0);
-        return 0;
-    }
-
     node_t* get_program() const
     {
         START_CODE(program);
@@ -122,7 +91,7 @@ class CodeGeneratingANN: public CvANN_MLP
 	    SETLOCAL(var_offset[0]+j)
 		ADD
 		    MUL
-                        INSERT_NODE(parameter(j));
+                        INSERT_NODE(parameter_code(dataset, j));
 			FLOAT_CONSTANT(w[j*2])
 		    END;
 		    FLOAT_CONSTANT(w[j*2+1])
@@ -237,14 +206,8 @@ class CodeGeneratingANN: public CvANN_MLP
 	    END;
 	}
 
-        array_t*classes = array_new(dataset->desired_response->num_classes);
-        int t;
-        for(t=0;t<classes->size;t++) {
-            classes->entries[t] = dataset->desired_response->classes[t];
-        }
-
         ARRAY_AT_POS
-            ARRAY_CONSTANT(classes);
+            ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
             MAX_ARG
                 for(j=0;j<output_size;j++) {
                     GETLOCAL(final+j);

@@ -86,6 +86,9 @@ void node_read_internal_data(node_t*node, reader_t*reader)
     } else if(type==&node_float) {
         float f = read_float(reader);
         node->value = float_constant(f);
+    } else if(type==&node_int) {
+        int i = (int32_t)read_compressed_uint(reader);
+        node->value = int_constant(i);
     } else if(type==&node_var) {
         int var_index = read_compressed_uint(reader);
         node->value = int_constant(var_index);
@@ -211,6 +214,9 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
     } else if(node->type==&node_float) {
         float f = AS_FLOAT(node->value);
         write_float(writer, f);
+    } else if(node->type==&node_int) {
+        int i = AS_INT(node->value);
+        write_compressed_uint(writer, i);
     } else if(node->type==&node_string) {
         char*s = AS_STRING(node->value);
         write_string(writer, s);

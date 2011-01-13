@@ -69,20 +69,25 @@ struct _node {
     NODE(0x09, node_gte) \
     NODE(0x0a, node_in) \
     NODE(0x0b, node_not) \
-    NODE(0x0c, node_exp) \
-    NODE(0x0d, node_sqr) \
-    NODE(0x0e, node_var) \
-    NODE(0x0f, node_constant) \
-    NODE(0x10, node_category) \
-    NODE(0x11, node_array) \
-    NODE(0x12, node_float) \
-    NODE(0x13, node_string) \
-    NODE(0x14, node_getlocal)  \
-    NODE(0x15, node_setlocal) \
-    NODE(0x16, node_bool_to_float) \
-    NODE(0x17, node_equals) \
-    NODE(0x18, node_max_arg) \
-    NODE(0x19, node_array_at_pos)
+    NODE(0x0c, node_neg) \
+    NODE(0x0d, node_exp) \
+    NODE(0x0e, node_sqr) \
+    NODE(0x0f, node_abs) \
+    NODE(0x10, node_var) \
+    NODE(0x11, node_nop) \
+    NODE(0x12, node_constant) \
+    NODE(0x13, node_category) \
+    NODE(0x14, node_array) \
+    NODE(0x15, node_float) \
+    NODE(0x16, node_int) \
+    NODE(0x17, node_string) \
+    NODE(0x18, node_getlocal)  \
+    NODE(0x19, node_setlocal) \
+    NODE(0x1a, node_inclocal) \
+    NODE(0x1b, node_bool_to_float) \
+    NODE(0x1c, node_equals) \
+    NODE(0x1d, node_max_arg) \
+    NODE(0x1e, node_array_at_pos) \
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES
@@ -169,6 +174,9 @@ void node_print(node_t*n);
 #define DIV NODE_BEGIN(&node_div)
 #define EXP NODE_BEGIN(&node_exp)
 #define SQR NODE_BEGIN(&node_sqr)
+#define NEG NODE_BEGIN(&node_neg)
+#define ABS NODE_BEGIN(&node_abs)
+#define NOP NODE_BEGIN(&node_nop)
 #define VAR(i) NODE_BEGIN(&node_var, i)
 #define RETURN(c) do {NODE_BEGIN(&node_constant, c)}while(0);
 #define CONSTANT(c) do {NODE_BEGIN(&node_constant, c)}while(0);
@@ -176,8 +184,10 @@ void node_print(node_t*n);
 #define FLOAT_CONSTANT(f) NODE_BEGIN(&node_float, f)
 #define STRING_CONSTANT(s) NODE_BEGIN(&node_string, s)
 #define ARRAY_CONSTANT(args...) NODE_BEGIN(&node_array, ##args)
+#define INT_CONSTANT(args...) NODE_BEGIN(&node_int, ##args)
 #define SETLOCAL(i) NODE_BEGIN(&node_setlocal, i)
 #define GETLOCAL(i) NODE_BEGIN(&node_getlocal, i)
+#define INCLOCAL(i) NODE_BEGIN(&node_inclocal, i)
 #define BOOL_TO_FLOAT NODE_BEGIN(&node_bool_to_float)
 #define EQUALS NODE_BEGIN(&node_equals)
 #define BLOCK NODE_BEGIN(&node_block)
