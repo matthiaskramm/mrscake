@@ -645,7 +645,7 @@ void nodelist_init()
     static bool is_initialized = false;
     if(is_initialized) 
         return;
-#   define NODE(op, name) name.opcode = op;
+#   define NODE(op, name) name._opcode = op;
     LIST_NODES
     #undef NODE
     is_initialized = true;
@@ -654,7 +654,7 @@ void nodelist_init()
 uint8_t node_get_opcode(node_t*n)
 {
     nodelist_init();
-    return n->type->opcode;
+    return n->type->_opcode;
 }
 
 // ======================== node handling ==============================

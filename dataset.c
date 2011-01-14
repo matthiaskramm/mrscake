@@ -319,7 +319,7 @@ node_t* parameter_code(sanitized_dataset_t*d, int num)
             BOOL_TO_FLOAT
                 EQUALS
                     VAR(x);
-                    CONSTANT(d->columns[x]->classes[cls]);
+                    GENERIC_CONSTANT(d->columns[x]->classes[cls]);
                 END;
             END;
         END_CODE;

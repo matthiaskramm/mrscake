@@ -40,7 +40,7 @@ struct _nodetype {
     char*name;
     int min_args;
     int max_args;
-    uint8_t opcode;
+    uint8_t _opcode;
     uint8_t flags;
     constant_t (*eval)(node_t*n, environment_t* params);
 };

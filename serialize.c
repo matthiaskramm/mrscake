@@ -98,7 +98,7 @@ void node_read_internal_data(node_t*node, reader_t*reader)
     } else if(type==&node_constant || type==&node_setlocal || type==&node_getlocal) {
         node->value = constant_read(reader);
     } else {
-        fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, type->opcode);
+        fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, node_get_opcode(node));
         return;
     }
 }

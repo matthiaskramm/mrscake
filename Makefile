@@ -13,7 +13,8 @@ ifeq ($(IS_MACOS),)
 endif
 
 MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o
-OBJECTS=$(MODELS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o
+CODE_GENERATORS=codegen_python.o
+OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -46,6 +47,12 @@ list.o: list.c list.h Makefile
 	$(CC) -c $< -o $@
 
 serialize.o: serialize.c serialize.h ast.h constant.h Makefile
+	$(CC) -c $< -o $@
+
+codegen.o: codegen.c codegen.h Makefile
+	$(CC) -c $< -o $@
+
+codegen_python.o: codegen_python.c codegen.h Makefile
 	$(CC) -c $< -o $@
 
 io.o: io.c io.h Makefile
