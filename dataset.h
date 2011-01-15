@@ -52,6 +52,8 @@ struct _column {
 
     int num_classes;
     constant_t*classes;
+
+    char*name;
     
     union {
         float f;
@@ -66,6 +68,7 @@ constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int
 
 void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
 
+model_t* model_new(sanitized_dataset_t*dataset);
 
 example_t**example_list_to_array(dataset_t*d);
 

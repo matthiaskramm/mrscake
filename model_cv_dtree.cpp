@@ -188,7 +188,7 @@ static model_t*dtree_train(model_factory_t*factory, sanitized_dataset_t*d)
     CvDTreeParams cvd_params(10, 1, 0, false, 16, 0, false, false, 0);
     dtree.train(&data, cvd_params);
 
-    model_t*m = (model_t*)calloc(1,sizeof(model_t));
+    model_t*m = model_new(d);
     m->code = dtree.get_program();
 
 #ifdef VERIFY

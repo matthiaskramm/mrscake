@@ -85,6 +85,7 @@ void dataset_destroy(dataset_t*dataset);
 typedef struct _model {
     int num_inputs;
     columntype_t*column_types;
+    char**column_names;
     void*code;
 } model_t;
 

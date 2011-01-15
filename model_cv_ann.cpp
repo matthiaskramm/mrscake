@@ -309,7 +309,7 @@ static model_t*ann_train(ann_model_factory_t*factory, sanitized_dataset_t*d)
     make_ml_multicolumn(d, &ann_input, &ann_response, true);
     ann.train(ann_input, ann_response, NULL, NULL, ann_params, 0x0000);
 
-    model_t*m = (model_t*)calloc(1,sizeof(model_t));
+    model_t*m = model_new(d);
     m->code = ann.get_program();
 
 #ifdef VERIFY

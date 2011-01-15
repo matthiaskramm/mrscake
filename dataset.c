@@ -339,3 +339,16 @@ array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*dataset)
     return classes;
 }
 
+model_t* model_new(sanitized_dataset_t*dataset)
+{
+    model_t*m = (model_t*)calloc(1,sizeof(model_t));
+    m->column_types = calloc(dataset->num_columns, sizeof(m->column_types[0]));
+    m->column_names = calloc(dataset->num_columns, sizeof(m->column_names[0]));
+    int t;
+    for(t=0;t<dataset->num_columns;t++) {
+	m->column_types[t] = dataset->columns[t]->is_categorical ? CATEGORICAL : CONTINUOUS;
+	//m->column_names[t] = strdup(dataset->columns[t]->name);
+    }
+    return m;
+}
+

@@ -233,11 +233,11 @@ static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
 
     model_t*m = 0;
     if(!use_auto_training && svm.train(input, response, 0, 0, params)) {
-        m = (model_t*)calloc(1,sizeof(model_t));
+	m = model_new(d);
         m->code = svm.get_program();
     } 
     if(use_auto_training && svm.train_auto(input, response, 0, 0, params, 5)) {
-        m = (model_t*)calloc(1,sizeof(model_t));
+	m = model_new(d);
         m->code = svm.get_program();
     }
     cvReleaseMat(&input);
