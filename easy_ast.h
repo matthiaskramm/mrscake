@@ -100,7 +100,7 @@
 #define INCLOCAL(i) NODE_BEGIN(&node_inclocal, i)
 
 #define BOOL_TO_FLOAT NODE_BEGIN(&node_bool_to_float)
-#define ARG_MAX NODE_BEGIN(&node_arg_max)
+#define ARG_MAX_F NODE_BEGIN(&node_arg_max)
 #define ARG_MAX_I NODE_BEGIN(&node_arg_max_i)
 #define ARRAY_AT_POS NODE_BEGIN(&node_array_at_pos)
 

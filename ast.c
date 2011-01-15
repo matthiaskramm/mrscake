@@ -73,7 +73,7 @@ constant_t node_add_eval(node_t*n, environment_t* env)
 nodetype_t node_add =
 {
 name:"add",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval:node_add_eval,
 min_args:1,
 max_args:INT_MAX,
@@ -89,7 +89,7 @@ constant_t node_sub_eval(node_t*n, environment_t* env)
 nodetype_t node_sub =
 {
 name:"minus",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_sub_eval,
 min_args:2,
 max_args:2,
@@ -105,7 +105,7 @@ constant_t node_mul_eval(node_t*n, environment_t* env)
 nodetype_t node_mul =
 {
 name:"mul",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_mul_eval,
 min_args:2,
 max_args:2,
@@ -121,7 +121,7 @@ constant_t node_div_eval(node_t*n, environment_t* env)
 nodetype_t node_div =
 {
 name:"div",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_div_eval,
 min_args:2,
 max_args:2,
@@ -222,6 +222,36 @@ min_args:0,
 max_args:0,
 };
 
+// -------------------------- brackets ----------------------------------
+
+constant_t node_brackets_eval(node_t*n, environment_t* env)
+{
+    return EVAL_CHILD(0);
+}
+nodetype_t node_brackets =
+{
+name:"()",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_brackets_eval,
+min_args:1,
+max_args:1,
+};
+
+// -------------------------- return ----------------------------------
+
+constant_t node_return_eval(node_t*n, environment_t* env)
+{
+    return EVAL_CHILD(0);
+}
+nodetype_t node_return =
+{
+name:"()",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_return_eval,
+min_args:1,
+max_args:1,
+};
+
 // -------------------------- float(b) ----------------------------------
 
 constant_t node_bool_to_float_eval(node_t*n, environment_t* env)
@@ -248,7 +278,7 @@ constant_t node_lt_eval(node_t*n, environment_t* env)
 nodetype_t node_lt =
 {
 name:"lt",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_lt_eval,
 min_args:2,
 max_args:2,
@@ -264,7 +294,7 @@ constant_t node_lte_eval(node_t*n, environment_t* env)
 nodetype_t node_lte =
 {
 name:"lte",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_lte_eval,
 min_args:2,
 max_args:2,
@@ -280,7 +310,7 @@ constant_t node_gt_eval(node_t*n, environment_t* env)
 nodetype_t node_gt =
 {
 name:"gt",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_gt_eval,
 min_args:2,
 max_args:2,
@@ -296,7 +326,7 @@ constant_t node_gte_eval(node_t*n, environment_t* env)
 nodetype_t node_gte =
 {
 name:"gte",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_gte_eval,
 min_args:2,
 max_args:2,
@@ -312,7 +342,7 @@ constant_t node_equals_eval(node_t*n, environment_t* env)
 nodetype_t node_equals =
 {
 name:"equals",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_equals_eval,
 min_args:2,
 max_args:2,
@@ -445,7 +475,7 @@ constant_t node_in_eval(node_t*n, environment_t* env)
 nodetype_t node_in =
 {
 name:"in",
-flags:NODE_FLAG_HAS_CHILDREN,
+flags:NODE_FLAG_INFIX|NODE_FLAG_HAS_CHILDREN,
 eval: node_in_eval,
 min_args:2,
 max_args:2,
@@ -659,11 +689,11 @@ uint8_t node_get_opcode(node_t*n)
 
 // ======================== node handling ==============================
 
-node_t* node_new(nodetype_t*t)
+node_t* node_new(nodetype_t*t, node_t*parent)
 {
     node_t*n = (node_t*)malloc(sizeof(node_t));
     n->type = t;
-    n->parent = 0;
+    n->parent = parent;
     n->child = 0;
     n->num_children = 0;
     n->value = missing_constant();
@@ -672,7 +702,7 @@ node_t* node_new(nodetype_t*t)
 
 node_t* node_new_with_args(nodetype_t*t,...)
 {
-    node_t*n = node_new(t);
+    node_t*n = node_new(t, 0);
     va_list arglist;
     va_start(arglist, t);
     if(n->type == &node_var) {
@@ -714,10 +744,12 @@ void node_append_child(node_t*n, node_t*child)
     }
     assert(n->num_children < n->type->max_args);
 
+    child->parent = n;
+
     if(!n->num_children) {
 	// first child
 	n->child = malloc(1*sizeof(node_t*));
-	n->child[0] = child;
+	((node_t**)n->child)[0] = child;
 	n->num_children++;
 	return;
     }
@@ -730,9 +762,16 @@ void node_append_child(node_t*n, node_t*child)
     } while(size);
 
     if(n->num_children == highest_bit) {
-	n->child = realloc(n->child, (highest_bit<<1)*sizeof(node_t*));
+	n->child = realloc((void*)n->child, (highest_bit<<1)*sizeof(node_t*));
     }
-    n->child[n->num_children++] = child;
+    ((node_t**)n->child)[n->num_children++] = child;
+}
+
+void node_set_child(node_t*n, int num, node_t*child)
+{
+    assert(num >= 0 && num < n->num_children);
+    ((node_t**)n->child)[num] = child;
+    child->parent = n;
 }
 
 void node_destroy(node_t*n)
@@ -743,9 +782,9 @@ void node_destroy(node_t*n)
     }
     if((n->type->flags&NODE_FLAG_HAS_CHILDREN) && n->child) {
 	for(t=0;t<n->num_children;t++) {
-	    node_destroy(n->child[t]);n->child[t] = 0;
+	    node_destroy(n->child[t]);((node_t**)n->child)[t] = 0;
 	}
-	free(n->child);
+	free((void*)n->child);
     }
     free(n);
 }
@@ -819,6 +858,23 @@ int node_highest_local(node_t*node)
 	    max = l;
     }
     return max;
+}
+
+void node_sanitycheck(node_t*n)
+{
+    int t;
+    for(t=0;t<n->num_children;t++) {
+	assert(n->child[t]);
+	assert(n->child[t] != n);
+	if(n->child[t]->parent != n) {
+	    printf("%s -> %s (references back to: %s)", 
+		    n->type->name, n->child[t]->type->name, 
+		    n->child[t]->parent?n->child[t]->parent->type->name:"(null)"
+		    );
+	}
+	assert(n->child[t]->parent == n);
+	node_sanitycheck(n->child[t]);
+    }
 }
 
 void node_print(node_t*n)

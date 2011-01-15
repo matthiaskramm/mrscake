@@ -10,7 +10,7 @@ void python_write_node_block(node_t*n, state_t*s)
 }
 void python_write_node_if(node_t*n, state_t*s)
 {
-    if(node_has_consumer_parent(n)) {
+    if(!node_terminates(n) && node_has_consumer_parent(n)) {
         strf(s, "(");
         write_node(s, n->child[1]);
         strf(s, " if ");
@@ -23,26 +23,28 @@ void python_write_node_if(node_t*n, state_t*s)
         write_node(s, n->child[0]);
         strf(s, ":\n");
         indent(s);write_node(s, n->child[1]);dedent(s);
-        if(!missing(n->child[2])) {
+        if(!node_is_missing(n->child[2])) {
             strf(s, "\nelse:\n");
             indent(s);write_node(s, n->child[2]);dedent(s);
         }
-        strf(s, "\n");
+        //strf(s, "\n");
     }
 }
 void python_write_node_add(node_t*n, state_t*s)
 {
     int t;
     for(t=0;t<n->num_children;t++) {
-        if(t) strf(s, "+");
+        if(t && !node_has_minus_prefix(n->child[t])) strf(s, "+");
         write_node(s, n->child[t]);
     }
 }
 void python_write_node_sub(node_t*n, state_t*s)
 {
-    write_node(s, n->child[0]);
-    strf(s, "-");
-    write_node(s, n->child[1]);
+    int t;
+    for(t=0;t<n->num_children;t++) {
+        if(t && !node_has_minus_prefix(n->child[t])) strf(s, "-");
+        write_node(s, n->child[t]);
+    }
 }
 void python_write_node_mul(node_t*n, state_t*s)
 {
@@ -233,10 +235,40 @@ void python_write_node_array_at_pos(node_t*n, state_t*s)
     write_node(s, n->child[1]);
     strf(s, "]");
 }
+void python_write_node_return(node_t*n, state_t*s)
+{
+    strf(s, "return ");
+    write_node(s, n->child[0]);
+}
+void python_write_node_brackets(node_t*n, state_t*s)
+{
+    strf(s, "(");
+    write_node(s, n->child[0]);
+    strf(s, ")");
+}
+void python_write_header(model_t*model, state_t*s)
+{
+    strf(s, "def predict(");
+    int t;
+    node_t*root = (node_t*)model->code;
+    for(t=0;t<model->num_inputs;t++) {
+	if(t) strf(s, ", ");
+	strf(s, "param%d", t);
+    }
+    strf(s, "):\n");
+    indent(s);
+}
+void python_write_footer(model_t*model, state_t*s)
+{
+    dedent(s);
+}
+
 
 codegen_t codegen_python = {
 #define NODE(opcode, name) write_##name: python_write_##name,
 LIST_NODES
 #undef NODE
+    write_header: python_write_header,
+    write_footer: python_write_footer,
 };
 

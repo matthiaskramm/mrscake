@@ -134,7 +134,7 @@ node_t* node_read(reader_t*reader)
         uint8_t opcode = read_uint8(reader);
         nodetype_t*type = opcode_to_node(opcode);
         assert(type);
-        node_t*node = node_new(type);
+        node_t*node = node_new(type, stack->prev?stack->prev->node:0);
         stack = stack_new(node, stack);
         if(type->flags & NODE_FLAG_HAS_VALUE) {
             node_read_internal_data(node, reader);

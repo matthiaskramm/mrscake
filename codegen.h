@@ -11,6 +11,8 @@ typedef struct _codegen {
 #define NODE(opcode, name) void (*write_##name)(node_t*node, state_t*s);
 LIST_NODES
 #undef NODE
+    void (*write_header)(model_t*model, state_t*s);
+    void (*write_footer)(model_t*model, state_t*s);
 } codegen_t;
 
 struct _state {
@@ -20,8 +22,6 @@ struct _state {
     codegen_t*codegen;
 };
 
-bool node_has_consumer_parent(node_t*n);
-bool missing(node_t*n);
 void strf(state_t*s, const char*format, ...);
 void write_node(state_t*s, node_t*n);
 void indent(state_t*s);
@@ -29,7 +29,7 @@ void dedent(state_t*s);
 
 codegen_t codegen_python;
 
-char*generate_code(codegen_t*codegen, node_t*n);
+char*generate_code(codegen_t*codegen, model_t*m);
 
 #endif
 

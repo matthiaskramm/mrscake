@@ -208,7 +208,7 @@ class CodeGeneratingANN: public CvANN_MLP
 
         ARRAY_AT_POS
             ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
-            ARG_MAX
+            ARG_MAX_F
                 for(j=0;j<output_size;j++) {
                     GETLOCAL(final+j);
                 }

@@ -1,24 +1,7 @@
 #include <assert.h>
 #include "codegen.h"
+#include "ast_transforms.h"
 
-bool node_has_consumer_parent(node_t*n)
-{
-    while(1) {
-        node_t*child = n;
-        n = n->parent;
-        if(!n) break;
-        if(n->type == &node_block) {
-            if(n->child[n->num_children-1] != child)
-                return false;
-        }
-    }
-    return true;
-}
-bool missing(node_t*n)
-{
-    return(n->type == &node_missing ||
-           n->type == &node_nop);
-}
 void strf(state_t*state, const char*format, ...)
 {
     char buf[1024];
@@ -79,13 +62,17 @@ void dedent(state_t*s)
     s->indent -= 4;
 }
 
-char*generate_code(codegen_t*codegen, node_t*n)
+char*generate_code(codegen_t*codegen, model_t*m)
 {
+    node_t*n = (node_t*)m->code;
     state_t s;
     s.codegen = codegen;
     s.indent = 0;
     s.writer = growingmemwriter_new();
+    n = node_prepare_for_code_generation(n);
+    codegen->write_header(m, &s);
     write_node(&s, n);
+    codegen->write_footer(m, &s);
     write_uint8(s.writer, 0);
 
     char*result = writer_growmemwrite_getmem(s.writer, 0);

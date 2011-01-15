@@ -35,6 +35,7 @@ typedef struct _nodetype nodetype_t;
 
 #define NODE_FLAG_HAS_CHILDREN 1
 #define NODE_FLAG_HAS_VALUE 2
+#define NODE_FLAG_INFIX 4
 
 struct _nodetype {
     char*name;
@@ -49,7 +50,7 @@ struct _node {
     nodetype_t*type;
     node_t*parent;
 
-    node_t**child;
+    node_t*const*child;
     int num_children;
 
     constant_t value;
@@ -91,18 +92,28 @@ struct _node {
     NODE(0x1f, node_arg_max) \
     NODE(0x20, node_arg_max_i) \
     NODE(0x21, node_array_at_pos) \
+    NODE(0x22, node_return) \
+    NODE(0x23, node_brackets)
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES
 #undef NODE
 
+enum opcodes {
+#define NODE(opcode, name) name##_opcode = opcode,
+LIST_NODES
+#undef NODE
+};
+
 extern nodetype_t* nodelist[];
 void nodelist_init();
 uint8_t node_get_opcode(node_t*n);
 
-node_t* node_new(nodetype_t*t);
+node_t* node_new(nodetype_t*t, node_t*parent);
 node_t* node_new_with_args(nodetype_t*t,...);
 void node_append_child(node_t*n, node_t*child);
+void node_set_child(node_t*n, int num, node_t*child);
+void node_sanitycheck(node_t*n);
 void node_free(node_t*n);
 constant_t node_eval(node_t*n,environment_t* e);
 int node_highest_local(node_t*node);

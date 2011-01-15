@@ -14,7 +14,7 @@ endif
 
 MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o
 CODE_GENERATORS=codegen_python.o
-OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o
+OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -29,6 +29,9 @@ model_select.o: model_select.c constant.h ast.h Makefile
 	$(CC) -c $< -o $@
 
 ast.o: ast.c ast.h model.h Makefile
+	$(CC) -c $< -o $@
+
+ast_transforms.o: ast_transforms.c ast_transforms.h ast.h Makefile
 	$(CC) -c $< -o $@
 
 constant.o: constant.c constant.h model.h Makefile
