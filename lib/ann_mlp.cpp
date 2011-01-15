@@ -161,7 +161,8 @@ void CvANN_MLP::set_activ_func( int _activ_func, double _f_param1, double _f_par
             _f_param2 = 1.;
         break;
     default:
-        min_val = max_val = min_val1 = max_val1 = 0.;
+        min_val = min_val1 = 0.;
+        max_val = max_val1 = 1.;
         _f_param1 = 1.;
         _f_param2 = 0.;
     }
