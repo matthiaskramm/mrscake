@@ -128,7 +128,7 @@ void python_write_node_exp(node_t*n, state_t*s)
 void python_write_node_sqr(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
-    strf(s, " ** 2");
+    strf(s, "**2");
 }
 void python_write_node_abs(node_t*n, state_t*s)
 {

@@ -210,16 +210,15 @@ class CodeGeneratingSVM: public CvSVM
     sanitized_dataset_t*dataset;
 };
 
-static model_t*svm_train(svm_model_factory_t*factory, dataset_t*dataset)
+static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
 {
-    sanitized_dataset_t*d = dataset_sanitize(dataset);
-
+#if 0
     if(factory->kernel == CvSVM::LINEAR && d->desired_response->num_classes > 4 ||
        factory->kernel == CvSVM::RBF    && d->desired_response->num_classes > 3) {
         /* if we have too many classes one-vs-one SVM classification is too slow */
-        sanitized_dataset_destroy(d);
         return 0;
     }
+#endif
 
     CodeGeneratingSVM svm(d);
     CvSVMParams params = CvSVMParams(CvSVM::C_SVC, factory->kernel,
@@ -230,15 +229,19 @@ static model_t*svm_train(svm_model_factory_t*factory, dataset_t*dataset)
     CvMat* response;
     make_ml_multicolumn(d, &input, &response, false);
 
+    bool use_auto_training = d->desired_response->num_classes <= 3;
+
     model_t*m = 0;
-    if(svm.train_auto(input, response, 0, 0, params, 9)) {
-        m = (model_t*)malloc(sizeof(model_t));
+    if(!use_auto_training && svm.train(input, response, 0, 0, params)) {
+        m = (model_t*)calloc(1,sizeof(model_t));
+        m->code = svm.get_program();
+    } 
+    if(use_auto_training && svm.train_auto(input, response, 0, 0, params, 5)) {
+        m = (model_t*)calloc(1,sizeof(model_t));
         m->code = svm.get_program();
     }
-
-    //node_print((node_t*)m->code);
-
-    sanitized_dataset_destroy(d);
+    cvReleaseMat(&input);
+    cvReleaseMat(&response);
     return m;
 }
 

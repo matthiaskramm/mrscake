@@ -20,11 +20,13 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include <limits.h>
+#include <stdlib.h>
 #include "model.h"
 #include "model_select.h"
 #include "ast.h"
 #include "io.h"
 #include "dataset.h"
+#include "codegen.h"
 
 #define NUM(l) (sizeof(l)/sizeof((l)[0]))
 
@@ -43,9 +45,9 @@ typedef struct _model_collection {
 } model_collection_t;
 
 model_collection_t collections[] = {
+    {svm_models, &num_svm_models},
     {ann_models, &num_ann_models},
     {dtree_models, &num_dtree_models},
-    {svm_models, &num_svm_models},
 };
 
 model_t* model_select(dataset_t*dataset)
@@ -56,19 +58,37 @@ model_t* model_select(dataset_t*dataset)
     int t;
     int s;
     sanitized_dataset_t*data = dataset_sanitize(dataset);
-    printf("%d classes, %d rows of examples\n", data->desired_response->num_classes, data->num_rows);
+#define DEBUG
+#ifdef DEBUG
+    printf("# %d classes, %d rows of examples\n", data->desired_response->num_classes, data->num_rows);
+#endif
     for(s=0;s<NUM(collections);s++) {
         model_collection_t*collection = &collections[s];
         for(t=0;t<*collection->num_models;t++) {
             model_factory_t*factory = collection->models[t];
-            printf("Trying %s... ", factory->name);fflush(stdout);
-            model_t*m = factory->train(factory, dataset);
+#ifdef DEBUG
+            printf("# Trying %s... ", factory->name);fflush(stdout);
+#endif
+            model_t*m = factory->train(factory, data);
+
             if(m) {
                 int size = model_size(m);
+#ifdef DEBUG
                 printf("model size %d", size);fflush(stdout);
+#endif
                 int errors = model_errors(m, dataset);
                 int score = size + errors;
-                printf(", %d errors (score: %d)", errors, score);fflush(stdout);
+#ifdef DEBUG
+                printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
+		node_sanitycheck((node_t*)m->code);
+#endif
+#ifdef SHOW_CODE
+		//node_print((node_t*)m->code);
+		printf("# -------------------------------\n");
+		printf("%s\n", generate_code(&codegen_python, m));
+		printf("# -------------------------------\n");
+#endif
+
                 if(score < best_score) {
                     if(best_model) {
                         model_destroy(best_model);
@@ -80,12 +100,16 @@ model_t* model_select(dataset_t*dataset)
                     model_destroy(m);
                 }
             } else {
-                printf("failed");
+#ifdef DEBUG
+                printf("failed\n");
+#endif
             }
-            printf("\n");
         }
     }
-    printf("Using %s.\n", best_factory->name);
+    sanitized_dataset_destroy(data);
+#ifdef DEBUG
+    printf("# Using %s.\n", best_factory->name);
+#endif
     return best_model;
 }
 

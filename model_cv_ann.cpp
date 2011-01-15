@@ -286,10 +286,8 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
 }
 #endif
 
-static model_t*ann_train(ann_model_factory_t*factory, dataset_t*dataset)
+static model_t*ann_train(ann_model_factory_t*factory, sanitized_dataset_t*d)
 {
-    sanitized_dataset_t*d = dataset_sanitize(dataset);
-
     int num_layers = factory->num_layers;
 
     CvMat* layers = cvCreateMat( 1, num_layers, CV_32SC1);
@@ -311,7 +309,7 @@ static model_t*ann_train(ann_model_factory_t*factory, dataset_t*dataset)
     make_ml_multicolumn(d, &ann_input, &ann_response, true);
     ann.train(ann_input, ann_response, NULL, NULL, ann_params, 0x0000);
 
-    model_t*m = (model_t*)malloc(sizeof(model_t));
+    model_t*m = (model_t*)calloc(1,sizeof(model_t));
     m->code = ann.get_program();
 
 #ifdef VERIFY
@@ -321,7 +319,6 @@ static model_t*ann_train(ann_model_factory_t*factory, dataset_t*dataset)
     cvReleaseMat(&layers);
     cvReleaseMat(&ann_input);
     cvReleaseMat(&ann_response);
-    sanitized_dataset_destroy(d);
     return m;
 }
 

@@ -21,14 +21,16 @@
 
 #ifndef __model_select_h__
 #define  __model_select_h__
+
+#include "dataset.h"
  
 typedef struct _model_factory {
     const char*name;
-    model_t*(*train)(struct _model_factory*factory, dataset_t*dataset);
+    model_t*(*train)(struct _model_factory*factory, sanitized_dataset_t*dataset);
     void*internal;
 } model_factory_t;
 
-typedef model_t*(*training_function_t)(model_factory_t*factory, dataset_t*dataset);
+typedef model_t*(*training_function_t)(model_factory_t*factory, sanitized_dataset_t*dataset);
 
 model_t* model_select(dataset_t*);
 int model_score(model_t*m, dataset_t*d);
