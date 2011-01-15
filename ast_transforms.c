@@ -1,3 +1,24 @@
+/* ast_transforms.c
+   AST transformations and queries
+
+   Part of the data prediction package.
+   
+   Copyright (c) 2011 Matthias Kramm <kramm@quiss.org> 
+ 
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
+
 #include "ast_transforms.h"
 
 bool node_has_consumer_parent(node_t*n)
@@ -90,6 +111,10 @@ bool lower_precedence(nodetype_t*type1, nodetype_t*type2)
     /* FIXME */
     if((type1 == &node_add || type1 == &node_sub) && 
        (type2 == &node_mul || type2 == &node_div)) {
+	return true;
+    }
+    if((type1 == &node_add || type1 == &node_sub || type2 == &node_mul || type2 == &node_div) &&
+       (type2 == &node_sqr)) {
 	return true;
     }
     return false;
