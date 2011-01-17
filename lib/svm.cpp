@@ -1751,8 +1751,8 @@ bool CvSVM::train_auto( const CvMat* _train_data, const CvMat* _responses,
 
     if(!testset_size) {
         char buf[128];
-        sprintf(buf, "Requested %d-fold validation on %d samples- too few samples.", k_fold, sample_count);
-        CV_Error( CV_StsBadArg, buf);
+        fprintf(stderr, "Requested %d-fold validation on %d samples- too few samples.\n", k_fold, sample_count);
+        return false;
     }
 
     const int trainset_size = sample_count - testset_size;
