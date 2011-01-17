@@ -39,6 +39,11 @@ class CodeGeneratingSVM: public CvSVM
         :CvSVM()
     {
         this->dataset = dataset;
+        this->expanded_columns = expanded_columns_new(dataset);
+    }
+    ~CodeGeneratingSVM()
+    {
+        expanded_columns_destroy(this->expanded_columns);
     }
 
     node_t* get_program() const
@@ -49,7 +54,7 @@ class CodeGeneratingSVM: public CvSVM
         int var_count = get_var_count();
         int class_count = this->dataset->desired_response->num_classes;
 
-        assert(var_count == dataset->expanded_num_columns);
+        assert(var_count == expanded_columns->num);
         assert(class_labels->cols == class_count);
 
         START_CODE(program)
@@ -70,7 +75,7 @@ class CodeGeneratingSVM: public CvSVM
                                     SQR
                                         SUB
                                             FLOAT_CONSTANT(vec[k]);
-                                            INSERT_NODE(parameter_code(dataset, k))
+                                            INSERT_NODE(expanded_columns_parameter_code(expanded_columns, k))
                                         END;
                                     END;
                                 }
@@ -95,7 +100,7 @@ class CodeGeneratingSVM: public CvSVM
                         int k;
                         for(k=0;k<var_count;k++) {
                             MUL
-                                INSERT_NODE(parameter_code(dataset, k))
+                                INSERT_NODE(expanded_columns_parameter_code(expanded_columns, k))
                                 FLOAT_CONSTANT(vec[k]*mul)
                             END;
                         }
@@ -148,7 +153,7 @@ class CodeGeneratingSVM: public CvSVM
                         int k;
                         for(k=0;k<var_count;k++) {
                             MUL
-                                INSERT_NODE(parameter_code(dataset, k))
+                                INSERT_NODE(expanded_columns_parameter_code(expanded_columns, k))
                                 FLOAT_CONSTANT(vec[k])
                             END;
                         }
@@ -208,6 +213,7 @@ class CodeGeneratingSVM: public CvSVM
         return program;
     }
     sanitized_dataset_t*dataset;
+    expanded_columns_t*expanded_columns;
 };
 
 static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
@@ -235,7 +241,7 @@ static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
     if(!use_auto_training && svm.train(input, response, 0, 0, params)) {
 	m = model_new(d);
         m->code = svm.get_program();
-    } 
+    }
     if(use_auto_training && svm.train_auto(input, response, 0, 0, params, 5)) {
 	m = model_new(d);
         m->code = svm.get_program();

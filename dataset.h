@@ -38,12 +38,6 @@ typedef struct _sanitized_dataset {
     int num_rows;
     column_t**columns;
     
-    int expanded_num_columns;
-    struct {
-        int col;
-        int cls;
-    }* expanded_columns;
-
     column_t*desired_response;
 } sanitized_dataset_t;
 
@@ -62,18 +56,30 @@ struct _column {
 };
 
 sanitized_dataset_t* dataset_sanitize(dataset_t*dataset);
-
 void sanitized_dataset_print(sanitized_dataset_t*s);
 constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int i);
-
 void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
 
+/* structure for storing "exploded" version of columns where every class
+   has its own column */
+typedef struct _expanded_columns {
+    sanitized_dataset_t*dataset;
+    int num;
+    struct {
+        int source_column;
+        int source_class;
+    }* columns;
+} expanded_columns_t;
+
+
+expanded_columns_t* expanded_columns_new(sanitized_dataset_t*s);
+node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num);
+void expanded_columns_destroy(expanded_columns_t*e);
+
+
 model_t* model_new(sanitized_dataset_t*dataset);
-
 example_t**example_list_to_array(dataset_t*d);
-
 node_t* parameter_code(sanitized_dataset_t*d, int num);
-
 array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*d);
 
 #ifdef __cplusplus

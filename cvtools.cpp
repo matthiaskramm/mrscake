@@ -119,12 +119,19 @@ void cvmat_print(CvMat*mat)
 
 CvMat*cvmat_from_row(sanitized_dataset_t*dataset, row_t*row, bool expand_categories, bool add_one)
 {
-    int width = !expand_categories ? dataset->num_columns : dataset->expanded_num_columns;
+    int width = dataset->num_columns;
+
+    expanded_columns_t*e = 0;
+    if(expand_categories) {
+        e = expanded_columns_new(dataset);
+        width = e->num;
+    }
+
     if(add_one)
         width++;
 
     CvMat* matrix_row = cvCreateMat(1, width, CV_32FC1);
-    
+
     if(!expand_categories) {
         int t;
         for(t=0;t<row->num_inputs;t++) {
@@ -150,7 +157,11 @@ CvMat*cvmat_from_row(sanitized_dataset_t*dataset, row_t*row, bool expand_categor
                 }
             }
         }
-        assert(pos == dataset->expanded_num_columns);
+        assert(pos == e->num);
+    }
+
+    if(e) {
+        expanded_columns_destroy(e);
     }
 
     if(add_one)

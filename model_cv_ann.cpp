@@ -43,6 +43,7 @@ class CodeGeneratingANN: public CvANN_MLP
         :CvANN_MLP(layer_sizes, activ_func, f_param1, f_param2)
     {
         this->dataset = dataset;
+        this->expanded_columns = expanded_columns_new(dataset);
 	this->input_size = input_size;
 	this->output_size = output_size;
 
@@ -58,6 +59,7 @@ class CodeGeneratingANN: public CvANN_MLP
 
     ~CodeGeneratingANN()
     {
+        expanded_columns_destroy(this->expanded_columns);
         delete[] var_offset;
     }
 
@@ -112,7 +114,7 @@ class CodeGeneratingANN: public CvANN_MLP
 	    SETLOCAL(var_offset[0]+j)
 		ADD
 		    MUL
-                        INSERT_NODE(parameter_code(dataset, j));
+                        INSERT_NODE(expanded_columns_parameter_code(expanded_columns, j));
 			FLOAT_CONSTANT(w[j*2])
 		    END;
 		    FLOAT_CONSTANT(w[j*2+1])
@@ -255,6 +257,7 @@ class CodeGeneratingANN: public CvANN_MLP
     }
 
     sanitized_dataset_t*dataset;
+    expanded_columns_t*expanded_columns;
     int*var_offset;
     int input_size;
     int output_size;

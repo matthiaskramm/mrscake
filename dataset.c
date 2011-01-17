@@ -208,7 +208,6 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
     s->num_columns = dataset->first_example->num_inputs;
     s->num_rows = dataset->num_examples;
     s->columns = malloc(sizeof(column_t)*s->num_columns);
-    s->expanded_num_columns = 0;
     example_t*last_row = dataset->first_example;
 
     /* copy columns from the old to the new dataset, mapping categories
@@ -227,33 +226,7 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
             example = example->next;
         }
         columnbuilder_destroy(builder);
-
-        s->expanded_num_columns += 
-            is_categorical ? s->columns[x]->num_classes
-                           : 1;
     }
-
-
-    /* build expanded column info (version of the data where every class of every
-       input variable has it's own 0/1 column)
-     */
-    s->expanded_columns = malloc(sizeof(s->expanded_columns[0])*s->expanded_num_columns);
-    int pos=0;
-    for(x=0;x<s->num_columns;x++) {
-        if(!s->columns[x]->is_categorical) {
-            s->expanded_columns[pos].col = x;
-            s->expanded_columns[pos].cls = 0;
-            pos++;
-        } else {
-            int c;
-            for(c=0;c<s->columns[x]->num_classes;c++) {
-                s->expanded_columns[pos].col = x;
-                s->expanded_columns[pos].cls = c;
-                pos++;
-            }
-        }
-    }
-    assert(pos == s->expanded_num_columns);
 
     /* copy response column to the new dataset */
     s->desired_response = column_new(s->num_rows, true);
@@ -309,17 +282,55 @@ void sanitized_dataset_destroy(sanitized_dataset_t*s)
     free(s);
 }
 
-node_t* parameter_code(sanitized_dataset_t*d, int num)
+expanded_columns_t* expanded_columns_new(sanitized_dataset_t*s)
 {
-    int x = d->expanded_columns[num].col;
-    int cls = d->expanded_columns[num].cls;
+    /* build expanded column info (version of the data where every class of every
+       input variable has it's own 0/1 column)
+     */
+    expanded_columns_t*e = (expanded_columns_t*)calloc(1,sizeof(expanded_columns_t));
+    e->dataset = s;
 
-    if(d->columns[x]->is_categorical) {
+    int x;
+    for(x=0;x<s->num_columns;x++) {
+        e->num += s->columns[x]->is_categorical ? s->columns[x]->num_classes : 1;
+    }
+
+    e->columns = malloc(sizeof(e->columns[0])*e->num);
+    int pos=0;
+    for(x=0;x<s->num_columns;x++) {
+        if(!s->columns[x]->is_categorical) {
+            e->columns[pos].source_column = x;
+            e->columns[pos].source_class = 0;
+            pos++;
+        } else {
+            int c;
+            for(c=0;c<s->columns[x]->num_classes;c++) {
+                e->columns[pos].source_column = x;
+                e->columns[pos].source_class = c;
+                pos++;
+            }
+        }
+    }
+    assert(pos == e->num);
+    return e;
+}
+void expanded_columns_destroy(expanded_columns_t*e)
+{
+    free(e->columns);
+    free(e);
+}
+
+node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num)
+{
+    int x = e->columns[num].source_column;
+    int cls = e->columns[num].source_class;
+
+    if(e->dataset->columns[x]->is_categorical) {
         START_CODE(program);
             BOOL_TO_FLOAT
                 EQUALS
                     VAR(x);
-                    GENERIC_CONSTANT(d->columns[x]->classes[cls]);
+                    GENERIC_CONSTANT(e->dataset->columns[x]->classes[cls]);
                 END;
             END;
         END_CODE;

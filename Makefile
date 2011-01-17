@@ -61,16 +61,16 @@ codegen_python.o: codegen_python.c codegen.h Makefile
 io.o: io.c io.h Makefile
 	$(CC) -c $< -o $@
 
-cvtools.o: cvtools.cpp lib/ml.hpp Makefile
+cvtools.o: cvtools.cpp lib/ml.hpp dataset.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h cvtools.h Makefile
+model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h cvtools.h dataset.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_svm.o: model_cv_svm.cpp model.h ast.h cvtools.h Makefile
+model_cv_svm.o: model_cv_svm.cpp model.h ast.h cvtools.h dataset.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h Makefile
+model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h dataset.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
 test_model.o: test_model.c model.h Makefile
@@ -101,8 +101,11 @@ multimodel: multimodel.o lib/libml.a $(OBJECTS) Makefile
 test: predict.so
 	python test_python_module.py
 
-clean:
-	rm -f svm test ast ann multimodel *.o lib/*.o lib/*.a lib/*.gch
+local-clean:
+	rm -f svm test ast ann multimodel *.o
+
+clean: local-clean
+	rm -f lib/*.o lib/*.a lib/*.gch
 
 
-.PHONY: clean all test
+.PHONY: clean all test local-clean
