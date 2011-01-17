@@ -170,7 +170,8 @@ void constant_clear(constant_t*v)
             v->a = 0;
         break;
         case CONSTANT_STRING:
-            free(v->s);
+            /* FIXME */
+            //free(v->s);
             v->s = 0;
         break;
     }
