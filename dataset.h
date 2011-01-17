@@ -55,7 +55,7 @@ struct _column {
     } entries[0];
 };
 
-sanitized_dataset_t* dataset_sanitize(dataset_t*dataset);
+sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset);
 void sanitized_dataset_print(sanitized_dataset_t*s);
 constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int i);
 void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
@@ -78,7 +78,7 @@ void expanded_columns_destroy(expanded_columns_t*e);
 
 
 model_t* model_new(sanitized_dataset_t*dataset);
-example_t**example_list_to_array(dataset_t*d);
+example_t**example_list_to_array(trainingdata_t*d);
 node_t* parameter_code(sanitized_dataset_t*d, int num);
 array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*d);
 

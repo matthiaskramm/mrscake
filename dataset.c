@@ -28,12 +28,12 @@
 #include "dict.h"
 #include "easy_ast.h"
 
-dataset_t* dataset_new()
+trainingdata_t* trainingdata_new()
 {
-    dataset_t*d = (dataset_t*)calloc(1,sizeof(dataset_t));
+    trainingdata_t*d = (trainingdata_t*)calloc(1,sizeof(trainingdata_t));
     return d;
 }
-void dataset_add(dataset_t*d, example_t*e)
+void trainingdata_add_example(trainingdata_t*d, example_t*e)
 {
     e->prev = d->last_example;
     if(d->last_example) {
@@ -46,35 +46,44 @@ void dataset_add(dataset_t*d, example_t*e)
     }
     d->num_examples++;
 }
-bool dataset_check_format(dataset_t*dataset)
+bool trainingdata_check_format(trainingdata_t*trainingdata)
 {
     int t;
     example_t*e;
-    int last = dataset->num_examples-1;
-    int pos = dataset->num_examples-1;
-    for(e=dataset->first_example;e;e=e->next) {
-        if(dataset->first_example->num_inputs != e->num_inputs) {
-            fprintf(stderr, "Bad configuration: row %d has %d inputs, row %d has %d.\n", t, dataset->first_example->num_inputs, 0, e->num_inputs);
+    int pos = 0;
+    char has_names = 0;
+    char has_no_names = 0;
+    for(e=trainingdata->first_example;e;e=e->next) {
+        if(e->input_names)
+            has_names = 1;
+        if(!e->input_names)
+            has_no_names = 1;
+        if(has_names && has_no_names) {
+            fprintf(stderr, "Please specify examples as either arrays or as name->value mappings, but not both at once\n");
+            return false;
+        }
+        if(trainingdata->first_example->num_inputs != e->num_inputs) {
+            fprintf(stderr, "Bad configuration: row %d has %d inputs, row %d has %d.\n", t, trainingdata->first_example->num_inputs, 0, e->num_inputs);
             return false;
         }
         int s;
         for(s=0;s<e->num_inputs;s++) {
-            if(dataset->first_example->inputs[s].type != e->inputs[s].type) {
+            if(trainingdata->first_example->inputs[s].type != e->inputs[s].type) {
                 fprintf(stderr, "Bad configuration: item %d,%d is %d, item %d,%d is %d\n",
-                         pos, s,                      e->inputs[s].type,
-                        last, s, dataset->first_example->inputs[s].type
+                         pos, s,                           e->inputs[s].type,
+                           0, s, trainingdata->first_example->inputs[s].type
                         );
                 return false;
             }
         }
-        pos--;
+        pos++;
     }
     return true;
 }
-void dataset_print(dataset_t*dataset)
+void trainingdata_print(trainingdata_t*trainingdata)
 {
     example_t*e;
-    for(e=dataset->first_example;e;e=e->next) {
+    for(e=trainingdata->first_example;e;e=e->next) {
         int s;
         for(s=0;s<e->num_inputs;s++) {
             variable_t v = e->inputs[s];
@@ -94,18 +103,18 @@ void dataset_print(dataset_t*dataset)
         printf("\n");
     }
 }
-void dataset_destroy(dataset_t*dataset)
+void trainingdata_destroy(trainingdata_t*trainingdata)
 {
-    example_t*e = dataset->first_example;
+    example_t*e = trainingdata->first_example;
     while(e) {
         example_t*next = e->next;
         example_destroy(e);
         e = next;
     }
-    free(dataset);
+    free(trainingdata);
 }
 
-example_t**example_list_to_array(dataset_t*d)
+example_t**example_list_to_array(trainingdata_t*d)
 {
     example_t**examples = (example_t**)malloc(sizeof(example_t*)*d->num_examples);
     int pos = 0;
@@ -137,13 +146,13 @@ typedef struct _columnbuilder {
     int category_memsize;
     dict_t*string2pos;
     dict_t*int2pos;
+    int count;
 } columnbuilder_t;
 
 columnbuilder_t*columnbuilder_new(column_t*column)
 {
-    columnbuilder_t*builder = (columnbuilder_t*)malloc(sizeof(columnbuilder_t));
+    columnbuilder_t*builder = (columnbuilder_t*)calloc(1,sizeof(columnbuilder_t));
     builder->column = column;
-    builder->category_memsize = 0;
     builder->string2pos = dict_new(&charptr_type);
     builder->int2pos = dict_new(&int_type);
     return builder;
@@ -151,6 +160,7 @@ columnbuilder_t*columnbuilder_new(column_t*column)
 void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
 {
     column_t*column = builder->column;
+    builder->count++;
 
     if(!column->is_categorical) {
         assert(e.type == CONSTANT_FLOAT);
@@ -199,12 +209,36 @@ void columnbuilder_destroy(columnbuilder_t*builder)
     free(builder);
 }
 
-sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
+dict_t*extract_column_names(trainingdata_t*dataset)
+{
+    dict_t*d = dict_new(&charptr_type);
+    example_t*e = dataset->first_example;
+    int pos = 1;
+    while(e) {
+        if(e->input_names) {
+            int x;
+            for(x=0;x<e->num_inputs;x++) {
+                const char*name = e->input_names[x];
+                if(!dict_lookup(d, name)) {
+                    dict_put(d, name, INT_TO_PTR(pos));
+                    pos++;
+                }
+            }
+        }
+        e = e->next;
+    }
+    return d;
+}
+
+sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
 {
     sanitized_dataset_t*s = malloc(sizeof(sanitized_dataset_t));
 
-    if(!dataset_check_format(dataset))
+    if(!trainingdata_check_format(dataset))
         return 0;
+
+    dict_t*column_names = extract_column_names(dataset);
+
     s->num_columns = dataset->first_example->num_inputs;
     s->num_rows = dataset->num_examples;
     s->columns = malloc(sizeof(column_t)*s->num_columns);
@@ -212,32 +246,47 @@ sanitized_dataset_t* dataset_sanitize(dataset_t*dataset)
 
     /* copy columns from the old to the new dataset, mapping categories
        to numbers */
-    int x;
+    int x,y;
+    columnbuilder_t**builders = malloc(sizeof(columnbuilder_t*)*s->num_columns);
     for(x=0;x<s->num_columns;x++) {
         columntype_t ltype = last_row->inputs[x].type;
         bool is_categorical = ltype!=CONTINUOUS;
         s->columns[x] = column_new(s->num_rows, is_categorical);
-
-        columnbuilder_t*builder = columnbuilder_new(s->columns[x]);
-        int y;
-        example_t*example = dataset->first_example;
-        for(y=0;y<s->num_rows;y++) {
-            columnbuilder_add(builder,y,variable_to_constant(&example->inputs[x]));
-            example = example->next;
-        }
-        columnbuilder_destroy(builder);
+        builders[x] = columnbuilder_new(s->columns[x]);
     }
+    example_t*example = dataset->first_example;
+    for(y=0;y<s->num_rows;y++) {
+        for(x=0;x<s->num_columns;x++) {
+            int col = x;
+            if(example->input_names) {
+                col = PTR_TO_INT(dict_lookup(column_names,example->input_names[x]))-1;
+            }
+            variable_t*var = &example->inputs[x];
+            columnbuilder_add(builders[col],y,variable_to_constant(var));
+        }
+        example = example->next;
+    }
+    for(x=0;x<s->num_columns;x++) {
+        if(builders[x]->count != s->num_rows) {
+            fprintf(stderr, "Mixup between column names. (Column %d has only %d entries).\n", x, builders[x]->count);
+        }
+        columnbuilder_destroy(builders[x]);
+    }
+    free(builders);
 
     /* copy response column to the new dataset */
     s->desired_response = column_new(s->num_rows, true);
     columnbuilder_t*builder = columnbuilder_new(s->desired_response);
-    example_t*example = dataset->first_example;
-    int y;
+    example = dataset->first_example;
     for(y=0;y<s->num_rows;y++) {
         columnbuilder_add(builder,y,variable_to_constant(&example->desired_response));
         example = example->next;
     }
     columnbuilder_destroy(builder);
+
+    if(column_names) {
+        dict_destroy(column_names);
+    }
     return s;
 }
 void sanitized_dataset_print(sanitized_dataset_t*s)

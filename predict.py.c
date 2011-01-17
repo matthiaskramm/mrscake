@@ -23,6 +23,7 @@
 #include <setjmp.h>
 #include "model.h"
 #include "list.h"
+#include "stringpool.h"
 
 #if PY_MAJOR_VERSION >= 3
 #define PYTHON3
@@ -49,7 +50,7 @@ DECLARE_LIST(example);
 
 typedef struct {
     PyObject_HEAD
-    dataset_t*dataset;
+    trainingdata_t*data;
 } DataSetObject;
 
 typedef struct {
@@ -111,27 +112,51 @@ PyObject*forward_getattr(PyObject*self, char *a)
 #define PY_NONE Py_BuildValue("s", 0)
 
 //--------------------helper functions --------------------------------
+int add_item(example_t*e, int pos, PyObject*item)
+{
+    if(PyInt_Check(item)) {
+        e->inputs[pos] = variable_make_categorical(PyInt_AS_LONG(item));
+    } else if(PyFloat_Check(item)) {
+        e->inputs[pos] = variable_make_continuous(PyFloat_AS_DOUBLE(item));
+    } else if(PyString_Check(item)) {
+        e->inputs[pos] = variable_make_text(PyString_AsString(item));
+    } else {
+        return (int)PY_ERROR("bad object %s in list", item->ob_type->tp_name);
+    }
+    return 1;
+}
 example_t* pylist_to_example(PyObject*input)
 {
-    if(!PyList_Check(input)) // && !PyTuple_Check(input))
-        return PY_ERROR("first argument must be a list");
-
-    int size = PyList_Size(input);
-    example_t*e = example_new(size);
-    int t;
-    for(t=0;t<size;t++) {
-        PyObject*item = PyList_GetItem(input, t);
-        if(PyInt_Check(item)) {
-            e->inputs[t] = variable_make_categorical(PyInt_AS_LONG(item));
-        } else if(PyFloat_Check(item)) {
-            e->inputs[t] = variable_make_continuous(PyFloat_AS_DOUBLE(item));
-        } else if(PyString_Check(item)) {
-            e->inputs[t] = variable_make_text(PyString_AsString(item));
-        } else {
-            return PY_ERROR("bad object %s in list", item->ob_type->tp_name);
+    example_t*e = 0;
+    if(PyList_Check(input)) {
+        int size = PyList_Size(input);
+        e = example_new(size);
+        int t;
+        for(t=0;t<size;t++) {
+            PyObject*item = PyList_GetItem(input, t);
+            if(!add_item(e, t, item))
+                return NULL;
         }
+    } else if(PyDict_Check(input)) {
+        int size = PyDict_Size(input);
+        PyObject*pkey = 0;
+        PyObject*pvalue = 0;
+        int pos = 0;
+        int t = 0;
+        e = example_new(size);
+        e->input_names = (const char**)malloc(sizeof(e->input_names[0])*size);
+        while(PyDict_Next(input, &pos, &pkey, &pvalue)) {
+            if(!PyString_Check(pkey))
+                return PY_ERROR("dict object must use strings as keys");
+            const char*s = pystring_asstring(pkey);
+            if(!add_item(e, t, pvalue))
+                return NULL;
+            e->input_names[t] = register_string(s);
+            t++;
+        }
+    } else {
+        return PY_ERROR("first argument must be a list or a dict");
     }
-
     return e;
 }
 //---------------------------------------------------------------------
@@ -234,7 +259,7 @@ static PyMethodDef model_methods[] =
 //---------------------------------------------------------------------
 static void dataset_dealloc(PyObject* _self) {
     DataSetObject* self = (DataSetObject*)_self;
-    dataset_destroy(self->dataset);
+    trainingdata_destroy(self->data);
     PyObject_Del(self);
 }
 static PyObject* dataset_getattr(PyObject * _self, char* a)
@@ -248,7 +273,7 @@ static int dataset_setattr(PyObject * self, char* a, PyObject * o) {
 static int py_dataset_print(PyObject * _self, FILE *fi, int flags)
 {
     DataSetObject*self = (DataSetObject*)_self;
-    dataset_print(self->dataset);
+    trainingdata_print(self->data);
     return 0;
 }
 PyDoc_STRVAR(dataset_train_doc, \
@@ -263,8 +288,8 @@ static PyObject* py_dataset_train(PyObject * _self, PyObject* args, PyObject* kw
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "OO", kwlist, &input, &output))
 	return NULL;
 
-    if(!PyList_Check(input)) // && !PyTuple_Check(input))
-        return PY_ERROR("first argument to train() must be a list");
+    if(!PyList_Check(input) && !PyDict_Check(input)) // && !PyTuple_Check(input))
+        return PY_ERROR("first argument to train() must be a list or a dict");
 
     example_t*e = pylist_to_example(input);
     if(!e)
@@ -277,7 +302,7 @@ static PyObject* py_dataset_train(PyObject * _self, PyObject* args, PyObject* kw
         return PY_ERROR("output parameter must be an integer or a string");
     }
 
-    dataset_add(self->dataset, e);
+    trainingdata_add_example(self->data, e);
     return PY_NONE;
 }
 PyDoc_STRVAR(dataset_get_model_doc, \
@@ -291,12 +316,15 @@ static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* 
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "", kwlist))
 	return NULL;
 
-    int num_examples = self->dataset->num_examples;
+    int num_examples = self->data->num_examples;
     if(!num_examples) {
         return PY_ERROR("No training data given. Can't build a model from no data.");
     }
+    if(!trainingdata_check_format(self->data)) {
+        return PY_ERROR("bad training data");
+    }
 
-    model_t* model = model_select(self->dataset);
+    model_t* model = model_select(self->data);
 
     ModelObject*ret = PyObject_New(ModelObject, &ModelClass);
     ret->model = model;
@@ -312,7 +340,7 @@ static PyObject* py_dataset_new(PyObject* module, PyObject* args, PyObject* kwar
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "", kwlist))
 	return NULL;
     DataSetObject*self = PyObject_New(DataSetObject, &DataSetClass);
-    self->dataset = dataset_new();
+    self->data = trainingdata_new();
     return (PyObject*)self;
 }
 static PyMethodDef dataset_methods[] =

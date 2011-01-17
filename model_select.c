@@ -50,14 +50,14 @@ model_collection_t collections[] = {
     {dtree_models, &num_dtree_models},
 };
 
-model_t* model_select(dataset_t*dataset)
+model_t* model_select(trainingdata_t*trainingdata)
 {
     model_t*best_model = 0;
     model_factory_t*best_factory = 0;
     int best_score = INT_MAX;
     int t;
     int s;
-    sanitized_dataset_t*data = dataset_sanitize(dataset);
+    sanitized_dataset_t*data = dataset_sanitize(trainingdata);
 #define DEBUG
 #ifdef DEBUG
     printf("# %d classes, %d rows of examples\n", data->desired_response->num_classes, data->num_rows);
@@ -76,7 +76,7 @@ model_t* model_select(dataset_t*dataset)
 #ifdef DEBUG
                 printf("model size %d", size);fflush(stdout);
 #endif
-                int errors = model_errors(m, dataset);
+                int errors = model_errors(m, trainingdata);
                 int score = size + errors;
 #ifdef DEBUG
                 printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
@@ -113,7 +113,7 @@ model_t* model_select(dataset_t*dataset)
     return best_model;
 }
 
-int model_errors(model_t*m, dataset_t*d)
+int model_errors(model_t*m, trainingdata_t*d)
 {
     example_t*e = d->first_example;
     node_t*node = m->code;
@@ -147,7 +147,7 @@ int model_size(model_t*m)
     return size;
 }
 
-int model_score(model_t*m, dataset_t*d)
+int model_score(model_t*m, trainingdata_t*d)
 {
     return model_size(m) + model_errors(m, d);
 }

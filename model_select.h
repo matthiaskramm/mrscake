@@ -32,6 +32,6 @@ typedef struct _model_factory {
 
 typedef model_t*(*training_function_t)(model_factory_t*factory, sanitized_dataset_t*dataset);
 
-model_t* model_select(dataset_t*);
-int model_score(model_t*m, dataset_t*d);
+model_t* model_select(trainingdata_t*);
+int model_score(model_t*m, trainingdata_t*d);
 #endif

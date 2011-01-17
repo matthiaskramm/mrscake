@@ -94,17 +94,25 @@ double variable_value(variable_t*v)
 example_t*example_new(int num_inputs)
 {
     example_t*r = (example_t*)malloc(sizeof(example_t)+sizeof(variable_t)*num_inputs);
+    r->input_names = 0;
     r->num_inputs = num_inputs;
     return r;
 }
 row_t*example_to_row(example_t*e)
 {
     row_t*r = row_new(e->num_inputs);
+    if(e->input_names) {
+        fprintf(stderr, "can't convert example data with input names to row\n");
+        return 0;
+    }
     memcpy(r->inputs, e->inputs, sizeof(variable_t)*e->num_inputs);
     return r;
 }
 void example_destroy(example_t*example)
 {
+    if(example->input_names) {
+        free(example->input_names);
+    }
     free(example);
 }
 row_t*row_new(int num_inputs)

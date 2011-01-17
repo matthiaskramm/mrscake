@@ -26,7 +26,7 @@
 
 int main()
 {
-    dataset_t* dataset = dataset_new();
+    trainingdata_t* data = trainingdata_new();
 
     int t;
     for(t=0;t<256;t++) {
@@ -36,10 +36,10 @@ int main()
             e->inputs[s] = variable_make_continuous((lrand48()%256)/256.0);
         }
         e->desired_response = variable_make_categorical(t%3);
-        dataset_add(dataset, e);
+        trainingdata_add_example(data, e);
     }
-    model_t*m = model_select(dataset);
+    model_t*m = model_select(data);
     model_destroy(m);
 
-    dataset_destroy(dataset);
+    trainingdata_destroy(data);
 }

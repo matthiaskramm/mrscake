@@ -62,6 +62,7 @@ void row_destroy(row_t*row);
    the corresponding inputs */
 typedef struct _example {
     int num_inputs;
+    const char**input_names;
     struct _example*prev;
     struct _example*next;
     variable_t desired_response;
@@ -71,16 +72,16 @@ typedef struct _example {
 example_t*example_new(int num_inputs);
 row_t*example_to_row(example_t*e);
 
-typedef struct _dataset {
+typedef struct _trainingdata {
     example_t*first_example;
     example_t*last_example;
     int num_examples;
-} dataset_t;
+} trainingdata_t;
 
-dataset_t* dataset_new();
-void dataset_add(dataset_t*d, example_t*e);
-void dataset_print(dataset_t*dataset);
-void dataset_destroy(dataset_t*dataset);
+trainingdata_t* trainingdata_new();
+void trainingdata_add_example(trainingdata_t*d, example_t*e);
+void trainingdata_print(trainingdata_t*dataset);
+void trainingdata_destroy(trainingdata_t*dataset);
 
 typedef struct _model {
     int num_inputs;
@@ -95,7 +96,7 @@ void model_save(model_t*m, const char*filename);
 void model_print(model_t*m);
 void model_destroy(model_t*m);
 
-model_t* model_select(dataset_t*dataset);
+model_t* model_select(trainingdata_t*dataset);
 
 #ifdef __cplusplus
 }
