@@ -121,7 +121,8 @@ int add_item(example_t*e, int pos, PyObject*item)
     } else if(PyString_Check(item)) {
         e->inputs[pos] = variable_make_text(PyString_AsString(item));
     } else {
-        return (int)PY_ERROR("bad object %s in list", item->ob_type->tp_name);
+	PY_ERROR("bad object %s in list", item->ob_type->tp_name);
+        return 0;
     }
     return 1;
 }
@@ -141,7 +142,7 @@ example_t* pylist_to_example(PyObject*input)
         int size = PyDict_Size(input);
         PyObject*pkey = 0;
         PyObject*pvalue = 0;
-        int pos = 0;
+        size_t pos = 0;
         int t = 0;
         e = example_new(size);
         e->input_names = (const char**)malloc(sizeof(e->input_names[0])*size);
