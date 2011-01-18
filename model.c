@@ -24,6 +24,7 @@
 #include "model.h"
 #include "ast.h"
 #include "io.h"
+#include "stringpool.h"
 
 variable_t variable_make_categorical(category_t c)
 {
@@ -43,7 +44,7 @@ variable_t variable_make_text(const char*s)
 {
     variable_t v;
     v.type = TEXT;
-    v.text = strdup(s);
+    v.text = register_string(s);
     return v;
 }
 variable_t variable_make_missing()

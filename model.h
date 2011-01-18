@@ -38,7 +38,7 @@ typedef struct _variable {
     union {
 	category_t category;
 	float value;
-        char*text;
+        const char*text;
     };
 } variable_t;
 

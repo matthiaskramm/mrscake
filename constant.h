@@ -49,7 +49,7 @@ struct _constant {
 	int i;
 	bool b;
         array_t* a;
-        char* s;
+        const char* s;
     };
     uint8_t type;
 };

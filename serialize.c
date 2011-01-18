@@ -178,7 +178,7 @@ static void constant_write(constant_t*value, writer_t*writer)
             break;
         }
         case CONSTANT_STRING: {
-            char*s = AS_STRING(*value);
+            const char*s = AS_STRING(*value);
             write_string(writer, s);
             break;
         }
@@ -221,7 +221,7 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
         int i = AS_INT(node->value);
         write_compressed_uint(writer, i);
     } else if(node->type==&node_string) {
-        char*s = AS_STRING(node->value);
+        const char*s = AS_STRING(node->value);
         write_string(writer, s);
     } else if(node->type==&node_var) {
         int var_index = AS_INT(node->value);

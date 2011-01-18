@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <string.h>
 #include "constant.h"
+#include "stringpool.h"
 
 char*type_name[] = {"undefined","float","category","int","bool","missing","array","string"};
 
@@ -97,7 +98,7 @@ constant_t string_constant(const char*s)
 {
     constant_t v;
     v.type = CONSTANT_STRING;
-    v.s = strdup(s);
+    v.s = register_string(s);
     return v;
 }
 bool constant_equals(constant_t*c1, constant_t*c2)
