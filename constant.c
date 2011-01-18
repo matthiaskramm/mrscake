@@ -35,6 +35,13 @@ array_t* array_new(int size)
     array->size = size;
     return array;
 }
+void array_fill(array_t*a, constant_t c)
+{
+    int t;
+    for(t=0;t<a->size;t++) {
+        a->entries[t] = c;
+    }
+}
 array_t* array_create(int size, ...)
 {
     va_list arglist;

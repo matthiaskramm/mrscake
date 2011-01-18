@@ -31,107 +31,111 @@ typedef struct _dtree_model_factory {
     model_factory_t head;
 } dtree_model_factory_t;
 
-class CodeGeneratingDTree: public CvDTree
+int map_category_back(const CvDTreeTrainData* data, int ci, int i)
 {
-    int map_category_back(int ci, int i) const
-    {
-        const int*cmap = data->cat_map->data.i;
-        const int*cofs = data->cat_ofs->data.i;
-        int from = cofs[ci];
-        int to = (ci+1 >= data->cat_ofs->cols) ? data->cat_map->cols : cofs[ci+1];
-        assert(i>=0 && i<to-from);
-        return cmap[from+i];
-    }
+    const int*cmap = data->cat_map->data.i;
+    const int*cofs = data->cat_ofs->data.i;
+    int from = cofs[ci];
+    int to = (ci+1 >= data->cat_ofs->cols) ? data->cat_map->cols : cofs[ci+1];
+    assert(i>=0 && i<to-from);
+    return cmap[from+i];
+}
 
-    int count_categories(int ci) const
-    {
-        const int*cmap = data->cat_map->data.i;
-        const int*cofs = data->cat_ofs->data.i;
-        int from = cofs[ci];
-        int to = (ci+1 >= data->cat_ofs->cols) ? data->cat_map->cols : cofs[ci+1];
-        return to-from;
-    }
+int count_categories(const CvDTreeTrainData* data, int ci)
+{
+    const int*cmap = data->cat_map->data.i;
+    const int*cofs = data->cat_ofs->data.i;
+    int from = cofs[ci];
+    int to = (ci+1 >= data->cat_ofs->cols) ? data->cat_map->cols : cofs[ci+1];
+    return to-from;
+}
 
-    array_t*parse_bitfield(int column, int ci, int subset[2]) const
-    {
-        /* FIXME: We have a maximum of 64 categories, seperated into "left" and "right"
-                  ones. There's the case of an input category not occuring in that
-                  set, which would require us to treat that input variable as
-                  "missing" (as opposed to, as we currently do, as "right"). */
-        int s,t;
-        int count = 0;
+array_t*parse_bitfield(CvDTreeTrainData* data, sanitized_dataset_t*dataset, int column, int ci, int subset[2])
+{
+    /* FIXME: We have a maximum of 64 categories, seperated into "left" and "right"
+              ones. There's the case of an input category not occuring in that
+              set, which would require us to treat that input variable as
+              "missing" (as opposed to, as we currently do, as "right"). */
+    int s,t;
+    int count = 0;
 
-        int num_categories = count_categories(ci);
-        for(s=0;s<num_categories;s++) {
-            // CAT_DIR == -1 means "go left"
-            if(CV_DTREE_CAT_DIR(s,subset)<0) {
-                count++;
-            }
+    int num_categories = count_categories(data, ci);
+    for(s=0;s<num_categories;s++) {
+        // CAT_DIR == -1 means "go left"
+        if(CV_DTREE_CAT_DIR(s,subset)<0) {
+            count++;
         }
-        array_t* a = array_new(count);
-        count = 0;
-        assert(dataset->columns[column]->is_categorical);
-        for(s=0;s<num_categories;s++) {
-            if(CV_DTREE_CAT_DIR(s,subset)<0) {
-                int c = map_category_back(ci, s);
-                a->entries[count++] = dataset->columns[column]->classes[c];
-            }
-        }
-        return a;
     }
+    array_t* a = array_new(count);
+    count = 0;
+    assert(dataset->columns[column]->is_categorical);
+    for(s=0;s<num_categories;s++) {
+        if(CV_DTREE_CAT_DIR(s,subset)<0) {
+            int c = map_category_back(data, ci, s);
+            a->entries[count++] = dataset->columns[column]->classes[c];
+        }
+    }
+    return a;
+}
 
-    void walk(CvDTreeNode*node, node_t*current_node) const
-    {
-        const int*vtype = data->var_type->data.i;
-        node_t**current_program = 0;
+static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, sanitized_dataset_t*dataset, CvDTreeNode*node, node_t*current_node, bool resolve_classes)
+{
+    const int*vtype = data->var_type->data.i;
+    node_t**current_program = 0;
 
-        if(node->Tn <= pruned_tree_idx || !node->left) {
-            assert(dataset->desired_response->is_categorical);
-            category_t c = (int)floor(node->value+FLT_EPSILON);
+    if(node->Tn <= pruned_tree_idx || !node->left) {
+        assert(dataset->desired_response->is_categorical);
+        category_t c = (int)floor(node->value+FLT_EPSILON);
+        if(resolve_classes) {
             if(c<0 || c>=dataset->desired_response->num_classes) {
                 MISSING_CONSTANT;
             } else {
                 GENERIC_CONSTANT(dataset->desired_response->classes[c]);
             }
-            return;
+        } else {
+            INT_CONSTANT(c);
         }
-
-        CvDTreeSplit* split = node->split;
-        int ci = vtype[split->var_idx];
-        /* TODO: a split contains multiple variables we can use (iterate
-                 over a split by using split->next). We could wrap an
-                 additional if-statement around the code below which will
-                 test all possible variables for existence first. The original
-                 dtree code also contained a final fallback (which moves to
-                 the node with more samples) in case we don't have *any* of the 
-                 variables in this split.
-         */
-        IF
-            if(split->inversed) {
-                NOT
-            }
-            if(ci<0) { // ordered
-                    LTE
-                        VAR(split->var_idx);
-                        FLOAT_CONSTANT(split->ord.c);
-                    END;
-            } else { //categorical
-                array_t*a = parse_bitfield(split->var_idx, ci, split->subset);
-                    IN
-                        VAR(split->var_idx);
-                        ARRAY_CONSTANT(a);
-                    END;
-            }
-            if(split->inversed) {
-                END;
-            }
-        THEN
-            walk(node->left, current_node);
-        ELSE
-            walk(node->right, current_node);
-        END;
+        return;
     }
 
+    CvDTreeSplit* split = node->split;
+    int ci = vtype[split->var_idx];
+    /* TODO: a split contains multiple variables we can use (iterate
+             over a split by using split->next). We could wrap an
+             additional if-statement around the code below which will
+             test all possible variables for existence first. The original
+             dtree code also contained a final fallback (which moves to
+             the node with more samples) in case we don't have *any* of the 
+             variables in this split.
+     */
+    IF
+        if(split->inversed) {
+            NOT
+        }
+        if(ci<0) { // ordered
+                LTE
+                    VAR(split->var_idx);
+                    FLOAT_CONSTANT(split->ord.c);
+                END;
+        } else { //categorical
+            array_t*a = parse_bitfield(data, dataset, split->var_idx, ci, split->subset);
+                IN
+                    VAR(split->var_idx);
+                    ARRAY_CONSTANT(a);
+                END;
+        }
+        if(split->inversed) {
+            END;
+        }
+    THEN
+        walk_dtree_node(data, pruned_tree_idx, dataset, node->left, current_node, resolve_classes);
+    ELSE
+        walk_dtree_node(data, pruned_tree_idx, dataset, node->right, current_node, resolve_classes);
+    END;
+}
+
+class CodeGeneratingDTree: public CvDTree
+{
     public:
     CodeGeneratingDTree(sanitized_dataset_t*dataset)
         :CvDTree()
@@ -155,11 +159,57 @@ class CodeGeneratingDTree: public CvDTree
 
         START_CODE(code);
           BLOCK
-            walk(root,code);
+            walk_dtree_node(data,pruned_tree_idx,dataset,root,code, true);
           END;
         END_CODE;
         return code;
     }
+    sanitized_dataset_t*dataset;
+};
+
+class CodeGeneratingRTrees: public CvRTrees
+{
+    public:
+    CodeGeneratingRTrees(sanitized_dataset_t*dataset)
+        :CvRTrees()
+    {
+        this->dataset = dataset;
+    }
+    
+    node_t* get_program() const
+    {
+        START_CODE(code);
+        BLOCK;
+        int k;
+
+        SETLOCAL(0)
+            ARRAY_NEW(dataset->desired_response->num_classes);
+        END;
+
+        for(k=0; k<ntrees; k++)
+        {
+            SETLOCAL(k+1)
+                walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false);
+            END;
+            ARRAY_AT_POS_INC
+                GETLOCAL(0);
+                GETLOCAL(k+1);
+            END;
+        }
+
+        ARRAY_AT_POS
+            ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+            ARRAY_ARG_MAX_I;
+                GETLOCAL(0);
+            END;
+        END;
+
+        END;
+        END_CODE;
+        return code;
+    }
+
+
     sanitized_dataset_t*dataset;
 };
 
@@ -197,6 +247,23 @@ static model_t*dtree_train(model_factory_t*factory, sanitized_dataset_t*d)
     return m;
 }
 
+static model_t*rtrees_train(model_factory_t*factory, sanitized_dataset_t*d)
+{
+    CvMLDataFromExamples data(d);
+
+    CodeGeneratingRTrees rtrees(d);
+
+    /* TODO: more max_trees parameter tweaking (k-fold cross-validation?) */
+    int max_trees = (int)sqrt(d->num_rows);
+    CvRTParams params(10, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
+    rtrees.train(&data, params);
+
+    model_t*m = model_new(d);
+    m->code = rtrees.get_program();
+    return m;
+}
+
+
 static dtree_model_factory_t dtree_model_factory = {
     {
         name: "dtree",
@@ -204,8 +271,16 @@ static dtree_model_factory_t dtree_model_factory = {
     }
 };
 
+static dtree_model_factory_t rtrees_model_factory = {
+    {
+        name: "rtrees",
+        train: rtrees_train,
+    }
+};
+
 model_factory_t* dtree_models[] =
 {
     (model_factory_t*)&dtree_model_factory,
+    (model_factory_t*)&rtrees_model_factory,
 };
 int num_dtree_models = sizeof(dtree_models) / sizeof(dtree_models[0]);

@@ -260,6 +260,29 @@ void python_write_node_array_at_pos(node_t*n, state_t*s)
     write_node(s, n->child[1]);
     strf(s, "]");
 }
+void python_write_node_array_at_pos_inc(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "[");
+    write_node(s, n->child[1]);
+    strf(s, "]+=1");
+}
+void python_write_node_array_arg_max_i(node_t*n, state_t*s)
+{
+    strf(s, "max([(v,nr) for nr,v in enumerate(");
+    write_node(s, n->child[0]);
+    strf(s, ")])[1]");
+}
+void python_write_node_array_new(node_t*n, state_t*s)
+{
+    int t;
+    strf(s, "[");
+    for(t=0;t<n->value.i;t++) {
+        if(t) strf(s, ",");
+        strf(s, "0");
+    }
+    strf(s, "]");
+}
 void python_write_node_return(node_t*n, state_t*s)
 {
     strf(s, "return ");

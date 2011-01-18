@@ -131,10 +131,8 @@ example_t**example_list_to_array(trainingdata_t*d)
 }
 column_t*column_new(int num_rows, bool is_categorical)
 {
-    column_t*c = malloc(sizeof(column_t)+sizeof(c->entries[0])*num_rows);
+    column_t*c = calloc(1, sizeof(column_t)+sizeof(c->entries[0])*num_rows);
     c->is_categorical = is_categorical;
-    c->classes = 0;
-    c->num_classes = 0;
     return c;
 }
 void column_destroy(column_t*c)
@@ -447,6 +445,7 @@ model_t* model_new(sanitized_dataset_t*dataset)
 	m->column_names[t] = dataset->columns[t]->name;
         has_column_names |= !!dataset->columns[t]->name;
     }
+
     if(!has_column_names) {
         free(m->column_names);
         m->column_names = 0;

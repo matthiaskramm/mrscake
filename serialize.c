@@ -249,6 +249,7 @@ model_t* model_load(const char*filename)
 {
     model_t*m = (model_t*)calloc(1, sizeof(model_t));
     reader_t *r = filereader_new2(filename);
+    m->name = register_and_free_string(read_string(r));
     m->num_inputs = read_compressed_uint(r);
     uint8_t flags = read_uint8(r);
     int t;
@@ -256,8 +257,7 @@ model_t* model_load(const char*filename)
         m->column_names = calloc(m->num_inputs, sizeof(m->column_names[0]));
         for(t=0;t<m->num_inputs;t++) {
             char*s = read_string(r);
-            m->column_names[t] = register_string(s);
-            free(s);
+            m->column_names[t] = register_and_free_string(s);
         }
     }
     if(flags&2) {
@@ -274,6 +274,7 @@ void model_save(model_t*m, const char*filename)
 {
     node_t*code = (node_t*)m->code;
     writer_t *w = filewriter_new2(filename);
+    write_string(w, m->name);
     write_compressed_uint(w, m->num_inputs);
     uint8_t flags = 0;
     if(m->column_names)
@@ -281,6 +282,7 @@ void model_save(model_t*m, const char*filename)
     if(m->column_types)
         flags |= 2;
     write_uint8(w, flags);
+    
     if(m->column_names) {
         int t;
         for(t=0;t<m->num_inputs;t++) {

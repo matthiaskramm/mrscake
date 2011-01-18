@@ -93,7 +93,10 @@ struct _node {
     NODE(0x20, node_arg_max_i) \
     NODE(0x21, node_array_at_pos) \
     NODE(0x22, node_return) \
-    NODE(0x23, node_brackets)
+    NODE(0x23, node_brackets) \
+    NODE(0x24, node_array_at_pos_inc) \
+    NODE(0x25, node_array_arg_max_i) \
+    NODE(0x26, node_array_new)
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES

@@ -104,6 +104,7 @@ char*generate_code(codegen_t*codegen, model_t*m)
 
 char*model_generate_code(model_t*m, char*language)
 {
+    node_print(m->code);
     if(!language) {
         return generate_code(&codegen_python, m);
     } else if(!strcmp(language,"python")) {

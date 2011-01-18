@@ -72,6 +72,7 @@ struct _array {
 };
 array_t* array_new(int size);
 array_t* array_create(int size, ...);
+void array_fill(array_t*a, constant_t c);
 void array_destroy(array_t*a);
 
 int constant_check_type(constant_t v, uint8_t type);

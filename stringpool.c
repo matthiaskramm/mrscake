@@ -38,3 +38,9 @@ const char*register_string(const char*s)
     }
     return stored_string;
 }
+const char*register_and_free_string(char*s)
+{
+    const char*r = register_string(s);
+    free(s);
+    return r;
+}

@@ -104,6 +104,10 @@
 #define ARG_MAX_I NODE_BEGIN(&node_arg_max_i)
 #define ARRAY_AT_POS NODE_BEGIN(&node_array_at_pos)
 
+#define ARRAY_AT_POS_INC NODE_BEGIN(&node_array_at_pos_inc)
+#define ARRAY_ARG_MAX_I NODE_BEGIN(&node_array_arg_max_i)
+#define ARRAY_NEW(size) NODE_BEGIN(&node_array_new, size)
+
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)
 #define VERIFY_STRING(s) do{if(0){(s)[0];};}while(0)
 

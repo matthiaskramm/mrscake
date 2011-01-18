@@ -67,13 +67,13 @@ io.o: io.c io.h Makefile
 cvtools.o: cvtools.cpp lib/ml.hpp dataset.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h cvtools.h dataset.h Makefile
+model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h cvtools.h dataset.h easy_ast.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_svm.o: model_cv_svm.cpp model.h ast.h cvtools.h dataset.h Makefile
+model_cv_svm.o: model_cv_svm.cpp model.h ast.h cvtools.h dataset.h easy_ast.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h dataset.h Makefile
+model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h dataset.h easy_ast.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
 test_model.o: test_model.c model.h Makefile

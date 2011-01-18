@@ -30,6 +30,10 @@ bool node_has_consumer_parent(node_t*n)
 	    break;
 	if(n->type == &node_return) 
 	    break;
+	if(n->type == &node_setlocal) 
+	    return true;
+	if(n->type == &node_array_at_pos_inc) 
+	    return true;
         if(n->type == &node_block) {
             if(n->child[n->num_children-1] != child)
                 return false;

@@ -39,15 +39,18 @@ extern int num_dtree_models;
 extern model_factory_t* svm_models[];
 extern int num_svm_models;
 
+extern model_factory_t* rtrees_models[];
+extern int num_rtrees_models;
+
 typedef struct _model_collection {
     model_factory_t**models;
     int* num_models;
 } model_collection_t;
 
 model_collection_t collections[] = {
-    {svm_models, &num_svm_models},
-    {ann_models, &num_ann_models},
     {dtree_models, &num_dtree_models},
+    //{svm_models, &num_svm_models},
+    {ann_models, &num_ann_models},
 };
 
 model_t* model_select(trainingdata_t*trainingdata)
@@ -72,6 +75,7 @@ model_t* model_select(trainingdata_t*trainingdata)
             model_t*m = factory->train(factory, data);
 
             if(m) {
+                m->name = factory->name;
                 int size = model_size(m);
 #ifdef DEBUG
                 printf("model size %d", size);fflush(stdout);
@@ -82,12 +86,14 @@ model_t* model_select(trainingdata_t*trainingdata)
                 printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
 		node_sanitycheck((node_t*)m->code);
 #endif
+                if(!strcmp(m->name, "rtrees")) {
+#define SHOW_CODE
 #ifdef SHOW_CODE
-		//node_print((node_t*)m->code);
 		printf("# -------------------------------\n");
 		printf("%s\n", generate_code(&codegen_python, m));
 		printf("# -------------------------------\n");
 #endif
+                }
 
                 if(score < best_score) {
                     if(best_model) {

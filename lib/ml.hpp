@@ -1014,11 +1014,11 @@ protected:
     virtual void write_tree_nodes( CvFileStorage* fs ) const;
     virtual void read_tree_nodes( CvFileStorage* fs, CvFileNode* node );
 
+public:
     CvDTreeNode* root;
     CvMat* var_importance;
     CvDTreeTrainData* data;
 
-public:
     int pruned_tree_idx;
 };
 

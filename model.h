@@ -85,6 +85,7 @@ void trainingdata_print(trainingdata_t*dataset);
 void trainingdata_destroy(trainingdata_t*dataset);
 
 typedef struct _model {
+    const char*name;
     int num_inputs;
     columntype_t*column_types;
     const char**column_names;

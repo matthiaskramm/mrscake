@@ -414,6 +414,51 @@ min_args:2,
 max_args:2,
 };
 
+// -------------------------- array_at_pos_inc --------------------------
+
+constant_t node_array_at_pos_inc_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_2(array,index);
+    int i = AS_INT(index);
+    array_t*a = AS_ARRAY(array);
+    a->entries[i] = int_constant(AS_INT(a->entries[i]) + 1);
+    return a->entries[i];
+}
+nodetype_t node_array_at_pos_inc =
+{
+name:"array_at_pos_inc",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_array_at_pos_inc_eval,
+min_args:2,
+max_args:2,
+};
+
+// -------------------------- array_arg_max_i --------------------------
+
+constant_t node_array_arg_max_i_eval(node_t*n, environment_t* env)
+{
+    EVAL_HEADER_1(_array);
+    array_t*array = AS_ARRAY(_array);
+    int max = AS_INT(array->entries[0]);
+    int index = 0;
+    int t;
+    for(t=1;t<array->size;t++) {
+        int c = AS_INT(array->entries[t]);
+        if(c>max) {
+            max = c;
+            index = t;
+        }
+    }
+    return int_constant(index);
+}
+nodetype_t node_array_arg_max_i =
+{
+name:"array_arg_max_i",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_array_arg_max_i_eval,
+min_args:1,
+max_args:1,
+};
 // -------------------------- array ------------------------------------
 
 constant_t node_array_eval(node_t*n, environment_t* env)
@@ -425,6 +470,23 @@ nodetype_t node_array =
 name:"array",
 flags:NODE_FLAG_HAS_VALUE,
 eval: node_array_eval,
+min_args:0,
+max_args:0,
+};
+
+// -------------------------- array_new --------------------------------
+
+constant_t node_array_new_eval(node_t*n, environment_t* env)
+{
+    array_t*a = array_new(AS_INT(n->value));
+    array_fill(a, int_constant(0));
+    return array_constant(a);
+}
+nodetype_t node_array_new =
+{
+name:"array_new",
+flags:NODE_FLAG_HAS_VALUE,
+eval: node_array_new_eval,
 min_args:0,
 max_args:0,
 };
@@ -722,6 +784,8 @@ node_t* node_new_with_args(nodetype_t*t,...)
 	n->value = bool_constant(va_arg(arglist,int));
     } else if(n->type == &node_missing) {
 	n->value = missing_constant();
+    } else if(n->type == &node_array_new) {
+	n->value = int_constant(va_arg(arglist,int));
     } else if(n->type == &node_constant) {
 	n->value = va_arg(arglist,constant_t);
     } else if(n->type == &node_setlocal || n->type == &node_getlocal || n->type == &node_inclocal) {
