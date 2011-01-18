@@ -291,7 +291,7 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
     if(column_names) {
         DICT_ITERATE_ITEMS(column_names, char*, name, void*, _column) {
             int column = PTR_TO_INT(_column)-1;
-            s->columns[column]->name = name;
+            s->columns[column]->name = register_string(name);
         }
         dict_destroy(column_names);
     }
@@ -422,12 +422,19 @@ void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y)
 model_t* model_new(sanitized_dataset_t*dataset)
 {
     model_t*m = (model_t*)calloc(1,sizeof(model_t));
+    m->num_inputs = dataset->num_columns;
     m->column_types = calloc(dataset->num_columns, sizeof(m->column_types[0]));
     m->column_names = calloc(dataset->num_columns, sizeof(m->column_names[0]));
+    bool has_column_names = false;
     int t;
     for(t=0;t<dataset->num_columns;t++) {
 	m->column_types[t] = dataset->columns[t]->is_categorical ? CATEGORICAL : CONTINUOUS;
 	m->column_names[t] = dataset->columns[t]->name;
+        has_column_names |= !!dataset->columns[t]->name;
+    }
+    if(!has_column_names) {
+        free(m->column_names);
+        m->column_names = 0;
     }
     return m;
 }

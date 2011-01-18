@@ -24,6 +24,7 @@
 #include <memory.h>
 #include "ast.h"
 #include "io.h"
+#include "stringpool.h"
 
 static nodetype_t* opcode_to_node(uint8_t opcode)
 {
@@ -246,8 +247,25 @@ void node_write(node_t*node, writer_t*writer)
 }
 model_t* model_load(const char*filename)
 {
-    model_t*m = (model_t*)malloc(sizeof(model_t));
+    model_t*m = (model_t*)calloc(1, sizeof(model_t));
     reader_t *r = filereader_new2(filename);
+    m->num_inputs = read_compressed_uint(r);
+    uint8_t flags = read_uint8(r);
+    int t;
+    if(flags&1) {
+        m->column_names = calloc(m->num_inputs, sizeof(m->column_names[0]));
+        for(t=0;t<m->num_inputs;t++) {
+            char*s = read_string(r);
+            m->column_names[t] = register_string(s);
+            free(s);
+        }
+    }
+    if(flags&2) {
+        m->column_types = calloc(m->num_inputs, sizeof(m->column_types[0]));
+        for(t=0;t<m->num_inputs;t++) {
+            m->column_types[t] = read_compressed_uint(r);
+        }
+    }
     m->code = (void*)node_read(r);
     r->dealloc(r);
     return m;
@@ -256,6 +274,25 @@ void model_save(model_t*m, const char*filename)
 {
     node_t*code = (node_t*)m->code;
     writer_t *w = filewriter_new2(filename);
+    write_compressed_uint(w, m->num_inputs);
+    uint8_t flags = 0;
+    if(m->column_names)
+        flags |= 1;
+    if(m->column_types)
+        flags |= 2;
+    write_uint8(w, flags);
+    if(m->column_names) {
+        int t;
+        for(t=0;t<m->num_inputs;t++) {
+            write_string(w, m->column_names[t]);
+        }
+    }
+    if(m->column_types) {
+        int t;
+        for(t=0;t<m->num_inputs;t++) {
+            write_compressed_uint(w, m->column_types[t]);
+        }
+    }
     node_write(code, w);
     w->finish(w);
 }

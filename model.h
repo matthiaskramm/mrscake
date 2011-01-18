@@ -86,7 +86,7 @@ void trainingdata_destroy(trainingdata_t*dataset);
 typedef struct _model {
     int num_inputs;
     columntype_t*column_types;
-    char**column_names;
+    const char**column_names;
     void*code;
 } model_t;
 

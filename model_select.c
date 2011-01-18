@@ -106,6 +106,7 @@ model_t* model_select(trainingdata_t*trainingdata)
             }
         }
     }
+            
     sanitized_dataset_destroy(data);
 #ifdef DEBUG
     printf("# Using %s.\n", best_factory->name);
