@@ -81,7 +81,7 @@ model_t* model_select(trainingdata_t*trainingdata)
                 printf("model size %d", size);fflush(stdout);
 #endif
                 int errors = model_errors(m, data);
-                int score = size + errors;
+                int score = size + errors * sizeof(uint32_t);
 #ifdef DEBUG
                 printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
 		node_sanitycheck((node_t*)m->code);
@@ -149,7 +149,3 @@ int model_size(model_t*m)
     return size;
 }
 
-int model_score(model_t*m, sanitized_dataset_t*d)
-{
-    return model_size(m) + model_errors(m, d) * sizeof(uint32_t);
-}

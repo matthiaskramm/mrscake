@@ -29,6 +29,7 @@
 
 typedef struct _dtree_model_factory {
     model_factory_t head;
+    int max_trees_divide;
 } dtree_model_factory_t;
 
 int map_category_back(const CvDTreeTrainData* data, int ci, int i)
@@ -180,30 +181,84 @@ class CodeGeneratingRTrees: public CvRTrees
     {
         START_CODE(code);
         BLOCK;
-        int k;
 
-        SETLOCAL(0)
-            ARRAY_NEW(dataset->desired_response->num_classes);
-        END;
-
-        for(k=0; k<ntrees; k++)
-        {
-            SETLOCAL(k+1)
-                walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false);
+        if(ntrees == 1) {
+            // optimization: if it's just a single tree, we don't need voting
+            walk_dtree_node(trees[0]->data,trees[0]->pruned_tree_idx,dataset,trees[0]->root,current_node,true);
+        } else {
+            SETLOCAL(0)
+                ARRAY_NEW(dataset->desired_response->num_classes);
             END;
-            ARRAY_AT_POS_INC
-                GETLOCAL(0);
-                GETLOCAL(k+1);
+
+            int k;
+            for(k=0; k<ntrees; k++)
+            {
+                SETLOCAL(k+1)
+                    walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false);
+                END;
+                ARRAY_AT_POS_INC
+                    GETLOCAL(0);
+                    GETLOCAL(k+1);
+                END;
+            }
+
+            ARRAY_AT_POS
+                ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+                ARRAY_ARG_MAX_I;
+                    GETLOCAL(0);
+                END;
             END;
         }
 
-        ARRAY_AT_POS
-            ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
-            ARRAY_ARG_MAX_I;
-                GETLOCAL(0);
-            END;
         END;
+        END_CODE;
+        return code;
+    }
 
+
+    sanitized_dataset_t*dataset;
+};
+
+class CodeGeneratingERTrees: public CvERTrees
+{
+    public:
+    CodeGeneratingERTrees(sanitized_dataset_t*dataset)
+        :CvERTrees()
+    {
+        this->dataset = dataset;
+    }
+
+    node_t* get_program() const
+    {
+        START_CODE(code);
+        BLOCK;
+
+        if(ntrees == 1) {
+            walk_dtree_node(trees[0]->data,trees[0]->pruned_tree_idx,dataset,trees[0]->root,current_node,true);
+        } else {
+            SETLOCAL(0)
+                ARRAY_NEW(dataset->desired_response->num_classes);
+            END;
+
+            int k;
+            for(k=0; k<ntrees; k++)
+            {
+                SETLOCAL(k+1)
+                    walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false);
+                END;
+                ARRAY_AT_POS_INC
+                    GETLOCAL(0);
+                    GETLOCAL(k+1);
+                END;
+            }
+
+            ARRAY_AT_POS
+                ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+                ARRAY_ARG_MAX_I;
+                    GETLOCAL(0);
+                END;
+            END;
+        }
         END;
         END_CODE;
         return code;
@@ -235,7 +290,7 @@ static model_t*dtree_train(model_factory_t*factory, sanitized_dataset_t*d)
     CvMLDataFromExamples data(d);
 
     CodeGeneratingDTree dtree(d);
-    CvDTreeParams cvd_params(10, 1, 0, false, 16, 0, false, false, 0);
+    CvDTreeParams cvd_params(16, 1, 0, false, 16, 0, false, false, 0);
     dtree.train(&data, cvd_params);
 
     model_t*m = model_new(d);
@@ -247,40 +302,124 @@ static model_t*dtree_train(model_factory_t*factory, sanitized_dataset_t*d)
     return m;
 }
 
-static model_t*rtrees_train(model_factory_t*factory, sanitized_dataset_t*d)
+static int get_max_trees(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+{
+    /* TODO: more max_trees parameter tweaking (k-fold cross-validation?) */
+    return (int)sqrt(d->num_rows) / factory->max_trees_divide;
+}
+
+static model_t*rtrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
 {
     CvMLDataFromExamples data(d);
-
     CodeGeneratingRTrees rtrees(d);
-
-    /* TODO: more max_trees parameter tweaking (k-fold cross-validation?) */
-    int max_trees = (int)sqrt(d->num_rows);
-    CvRTParams params(10, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
+    int max_trees = get_max_trees(factory, d);
+    CvRTParams params(16, 2, 0, false, 16, 0, true, 0, get_max_trees(factory, d), 0, CV_TERMCRIT_ITER);
     rtrees.train(&data, params);
-
     model_t*m = model_new(d);
     m->code = rtrees.get_program();
     return m;
 }
 
+static model_t*ertrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+{
+    CvMLDataFromExamples data(d);
+    CodeGeneratingERTrees ertrees(d);
+    CvRTParams params(16, 2, 0, false, 16, 0, true, 0, get_max_trees(factory, d), 0, CV_TERMCRIT_ITER);
+    ertrees.train(&data, params);
+    model_t*m = model_new(d);
+    m->code = ertrees.get_program();
+    return m;
+}
 
 static dtree_model_factory_t dtree_model_factory = {
     {
         name: "dtree",
-        train: dtree_train,
-    }
+        train: (training_function_t)dtree_train,
+    },
 };
-
 static dtree_model_factory_t rtrees_model_factory = {
     {
         name: "rtrees",
-        train: rtrees_train,
-    }
+        train: (training_function_t)rtrees_train,
+    },
+    max_trees_divide: 1,
+};
+static dtree_model_factory_t rtrees2_model_factory = {
+    {
+        name: "rtrees (n/2 trees)",
+        train: (training_function_t)rtrees_train,
+    },
+    max_trees_divide: 2,
+};
+static dtree_model_factory_t rtrees4_model_factory = {
+    {
+        name: "rtrees (n/4 trees)",
+        train: (training_function_t)rtrees_train,
+    },
+    max_trees_divide: 4,
+};
+static dtree_model_factory_t rtrees8_model_factory = {
+    {
+        name: "rtrees (n/8 trees)",
+        train: (training_function_t)rtrees_train,
+    },
+    max_trees_divide: 8,
+};
+static dtree_model_factory_t rtrees16_model_factory = {
+    {
+        name: "rtrees (n/16 trees)",
+        train: (training_function_t)rtrees_train,
+    },
+    max_trees_divide: 16,
+};
+static dtree_model_factory_t ertrees_model_factory = {
+    {
+        name: "ertrees",
+        train: (training_function_t)ertrees_train,
+    },
+    max_trees_divide: 1,
+};
+static dtree_model_factory_t ertrees2_model_factory = {
+    {
+        name: "ertrees (n/2 trees)",
+        train: (training_function_t)ertrees_train,
+    },
+    max_trees_divide: 2,
+};
+static dtree_model_factory_t ertrees4_model_factory = {
+    {
+        name: "ertrees (n/4 trees)",
+        train: (training_function_t)ertrees_train,
+    },
+    max_trees_divide: 4,
+};
+static dtree_model_factory_t ertrees8_model_factory = {
+    {
+        name: "ertrees (n/8 trees)",
+        train: (training_function_t)ertrees_train,
+    },
+    max_trees_divide: 8,
+};
+static dtree_model_factory_t ertrees16_model_factory = {
+    {
+        name: "ertrees (n/16 trees)",
+        train: (training_function_t)ertrees_train,
+    },
+    max_trees_divide: 16,
 };
 
 model_factory_t* dtree_models[] =
 {
     (model_factory_t*)&dtree_model_factory,
     (model_factory_t*)&rtrees_model_factory,
+    (model_factory_t*)&rtrees2_model_factory,
+    (model_factory_t*)&rtrees4_model_factory,
+    (model_factory_t*)&rtrees8_model_factory,
+    (model_factory_t*)&rtrees16_model_factory,
+    (model_factory_t*)&ertrees_model_factory,
+    (model_factory_t*)&ertrees2_model_factory,
+    (model_factory_t*)&ertrees4_model_factory,
+    (model_factory_t*)&ertrees8_model_factory,
+    (model_factory_t*)&ertrees16_model_factory,
 };
 int num_dtree_models = sizeof(dtree_models) / sizeof(dtree_models[0]);

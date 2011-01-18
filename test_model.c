@@ -39,6 +39,9 @@ int main()
         trainingdata_add_example(data, e);
     }
     model_t*m = model_select(data);
+
+    printf("%s\n", model_generate_code(m, "python"));
+
     model_destroy(m);
 
     trainingdata_destroy(data);
