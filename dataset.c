@@ -70,9 +70,9 @@ bool trainingdata_check_format(trainingdata_t*trainingdata)
         int s;
         for(s=0;s<e->num_inputs;s++) {
             if(trainingdata->first_example->inputs[s].type != e->inputs[s].type) {
-                fprintf(stderr, "Bad configuration: item %d,%d is %d, item %d,%d is %d\n",
-                         pos, s,                           e->inputs[s].type,
-                           0, s, trainingdata->first_example->inputs[s].type
+                fprintf(stderr, "Bad configuration: item %d in row %d is %s, item %d in row %d is %s\n",
+                         s, pos, variable_type(&e->inputs[s]),
+                         s,   0, variable_type(&trainingdata->first_example->inputs[s])
                         );
                 return false;
             }

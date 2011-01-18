@@ -54,6 +54,23 @@ variable_t variable_make_missing()
     v.value = __builtin_nan("");
     return v;
 }
+const char*variable_type(variable_t*v)
+{
+    switch(v->type) {
+        case CATEGORICAL:
+            return "category";
+        break;
+        case CONTINUOUS:
+            return "float";
+        break;
+        case TEXT:
+            return "text";
+        break;
+        default:
+            return "invalid";
+        break;
+    }
+}
 void variable_print(variable_t*v, FILE*stream)
 {
     switch(v->type) {
