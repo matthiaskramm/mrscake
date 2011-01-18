@@ -252,7 +252,7 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
     example_t*last_row = dataset->first_example;
 
     /* copy columns from the old to the new dataset, mapping categories
-       to numbers */
+       to numbers. TODO: Also shuffle the rows */
     int x,y;
     columnbuilder_t**builders = malloc(sizeof(columnbuilder_t*)*s->num_columns);
     for(x=0;x<s->num_columns;x++) {

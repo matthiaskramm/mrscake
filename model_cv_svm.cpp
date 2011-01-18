@@ -218,13 +218,21 @@ class CodeGeneratingSVM: public CvSVM
 
 static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
 {
-#if 0
     if(factory->kernel == CvSVM::LINEAR && d->desired_response->num_classes > 4 ||
        factory->kernel == CvSVM::RBF    && d->desired_response->num_classes > 3) {
         /* if we have too many classes one-vs-one SVM classification is too slow */
         return 0;
     }
-#endif
+    int old_rows = d->num_rows;
+    if(factory->kernel == CvSVM::LINEAR && d->num_rows > 1000) {
+        d->num_rows = 1000;
+    }
+    if(factory->kernel == CvSVM::RBF && d->num_rows > 300) {
+        d->num_rows = 300;
+    }
+    if(factory->kernel == CvSVM::SIGMOID && d->num_rows > 200) {
+        d->num_rows = 200;
+    }
 
     CodeGeneratingSVM svm(d);
     CvSVMParams params = CvSVMParams(CvSVM::C_SVC, factory->kernel,
@@ -246,6 +254,9 @@ static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
 	m = model_new(d);
         m->code = svm.get_program();
     }
+
+    d->num_rows = old_rows;
+
     cvReleaseMat(&input);
     cvReleaseMat(&response);
     return m;
