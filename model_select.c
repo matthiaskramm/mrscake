@@ -86,14 +86,11 @@ model_t* model_select(trainingdata_t*trainingdata)
                 printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
 		node_sanitycheck((node_t*)m->code);
 #endif
-                if(!strcmp(m->name, "rtrees")) {
-#define SHOW_CODE
 #ifdef SHOW_CODE
 		printf("# -------------------------------\n");
 		printf("%s\n", generate_code(&codegen_python, m));
 		printf("# -------------------------------\n");
 #endif
-                }
 
                 if(score < best_score) {
                     if(best_model) {
@@ -154,5 +151,5 @@ int model_size(model_t*m)
 
 int model_score(model_t*m, sanitized_dataset_t*d)
 {
-    return model_size(m) + model_errors(m, d);
+    return model_size(m) + model_errors(m, d) * sizeof(uint32_t);
 }
