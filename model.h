@@ -70,7 +70,7 @@ typedef struct _example {
 } example_t;
 
 example_t*example_new(int num_inputs);
-row_t*example_to_row(example_t*e);
+row_t*example_to_row(example_t*e, const char**column_names);
 
 typedef struct _trainingdata {
     example_t*first_example;

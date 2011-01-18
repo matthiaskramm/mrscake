@@ -27,6 +27,7 @@
 #include "dataset.h"
 #include "dict.h"
 #include "easy_ast.h"
+#include "stringpool.h"
 
 trainingdata_t* trainingdata_new()
 {
@@ -211,11 +212,14 @@ void columnbuilder_destroy(columnbuilder_t*builder)
 
 dict_t*extract_column_names(trainingdata_t*dataset)
 {
-    dict_t*d = dict_new(&charptr_type);
+    dict_t*d = 0;
     example_t*e = dataset->first_example;
     int pos = 1;
     while(e) {
         if(e->input_names) {
+            if(!d) {
+                d = dict_new(&charptr_type);
+            }
             int x;
             for(x=0;x<e->num_inputs;x++) {
                 const char*name = e->input_names[x];
@@ -285,6 +289,10 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
     columnbuilder_destroy(builder);
 
     if(column_names) {
+        DICT_ITERATE_ITEMS(column_names, char*, name, void*, _column) {
+            int column = PTR_TO_INT(_column)-1;
+            s->columns[column]->name = name;
+        }
         dict_destroy(column_names);
     }
     return s;
@@ -398,6 +406,18 @@ array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*dataset)
     }
     return classes;
 }
+void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y)
+{
+    int x;
+    for(x=0;x<s->num_columns;x++) {
+        column_t*c = s->columns[x];
+        if(c->is_categorical) {
+            row->inputs[x] = constant_to_variable(&c->classes[c->entries[y].c]);
+        } else {
+            row->inputs[x] = variable_make_continuous(c->entries[y].f);
+        }
+    }
+}
 
 model_t* model_new(sanitized_dataset_t*dataset)
 {
@@ -407,7 +427,7 @@ model_t* model_new(sanitized_dataset_t*dataset)
     int t;
     for(t=0;t<dataset->num_columns;t++) {
 	m->column_types[t] = dataset->columns[t]->is_categorical ? CATEGORICAL : CONTINUOUS;
-	//m->column_names[t] = strdup(dataset->columns[t]->name);
+	m->column_names[t] = dataset->columns[t]->name;
     }
     return m;
 }

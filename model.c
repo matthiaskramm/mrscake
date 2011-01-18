@@ -98,10 +98,10 @@ example_t*example_new(int num_inputs)
     r->num_inputs = num_inputs;
     return r;
 }
-row_t*example_to_row(example_t*e)
+row_t*example_to_row(example_t*e, const char**column_names)
 {
     row_t*r = row_new(e->num_inputs);
-    if(e->input_names) {
+    if(e->input_names && !column_names) {
         fprintf(stderr, "can't convert example data with input names to row\n");
         return 0;
     }

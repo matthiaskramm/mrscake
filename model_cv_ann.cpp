@@ -269,7 +269,7 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
     example_t*e = dataset->first_example;
     int t;
     while(e) {
-        row_t* r = example_to_row(e);
+        row_t* r = example_to_row(e, m->column_names);
         constant_t p = ann->predict(r, false);
         variable_t c1 = constant_to_variable(&p);
         variable_t c2 = model_predict(m, r);

@@ -138,7 +138,11 @@ void python_write_node_abs(node_t*n, state_t*s)
 }
 void python_write_node_var(node_t*n, state_t*s)
 {
-    strf(s, "param%d", n->value.i);
+    if(s->model->column_names) {
+        strf(s, "%s", s->model->column_names[n->value.i]);
+    } else {
+        strf(s, "input[%d]", n->value.i);
+    }
 }
 void python_write_node_nop(node_t*n, state_t*s)
 {
@@ -270,11 +274,15 @@ void python_write_node_brackets(node_t*n, state_t*s)
 void python_write_header(model_t*model, state_t*s)
 {
     strf(s, "def predict(");
-    int t;
-    node_t*root = (node_t*)model->code;
-    for(t=0;t<model->num_inputs;t++) {
-	if(t) strf(s, ", ");
-	strf(s, "param%d", t);
+    if(s->model->column_names) {
+        int t;
+        node_t*root = (node_t*)model->code;
+        for(t=0;t<model->num_inputs;t++) {
+            if(t) strf(s, ", ");
+            strf(s, "%s", s->model->column_names[t]);
+        }
+    } else {
+        strf(s, "params");
     }
     strf(s, "):\n");
     indent(s);

@@ -81,6 +81,7 @@ model_t* model_new(sanitized_dataset_t*dataset);
 example_t**example_list_to_array(trainingdata_t*d);
 node_t* parameter_code(sanitized_dataset_t*d, int num);
 array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*d);
+void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y);
 
 #ifdef __cplusplus
 }

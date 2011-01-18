@@ -208,7 +208,7 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
     example_t*e = pylist_to_example(data);
     if(!e)
         return NULL;
-    row_t*row = example_to_row(e);
+    row_t*row = example_to_row(e, 0);
     variable_t i = model_predict(self->model, row);
     row_destroy(row);
     example_destroy(e);

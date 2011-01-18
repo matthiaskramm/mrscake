@@ -87,6 +87,7 @@ char*generate_code(codegen_t*codegen, model_t*m)
 {
     node_t*n = (node_t*)m->code;
     state_t s;
+    s.model = m;
     s.codegen = codegen;
     s.indent = 0;
     s.writer = growingmemwriter_new();

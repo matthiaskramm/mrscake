@@ -39,6 +39,7 @@ LIST_NODES
 struct _state {
     int indent;
     bool after_newline;
+    model_t*model;
     writer_t*writer;
     codegen_t*codegen;
 };

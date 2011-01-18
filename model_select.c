@@ -76,7 +76,7 @@ model_t* model_select(trainingdata_t*trainingdata)
 #ifdef DEBUG
                 printf("model size %d", size);fflush(stdout);
 #endif
-                int errors = model_errors(m, trainingdata);
+                int errors = model_errors(m, data);
                 int score = size + errors;
 #ifdef DEBUG
                 printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
@@ -113,26 +113,24 @@ model_t* model_select(trainingdata_t*trainingdata)
     return best_model;
 }
 
-int model_errors(model_t*m, trainingdata_t*d)
+int model_errors(model_t*m, sanitized_dataset_t*s)
 {
-    example_t*e = d->first_example;
     node_t*node = m->code;
     int t;
     int error = 0;
-
     node_t*code = (node_t*)m->code;
-    environment_t*env = environment_new(code, 0);
-    while(e) {
-        env->row = example_to_row(e);
-        constant_t c = node_eval(code, env);
-        variable_t prediction = constant_to_variable(&c);
-
-        if(!variable_equals(&prediction, &e->desired_response)) {
+    row_t* row = row_new(s->num_columns);
+    environment_t*env = environment_new(code, row);
+    int y;
+    for(y=0;y<s->num_rows;y++) {
+        sanitized_dataset_fill_row(s, row, y);
+        constant_t prediction = node_eval(code, env);
+        constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];
+        if(!constant_equals(&prediction, desired)) {
             error++;
         }
-        row_destroy(env->row);env->row=0;
-        e = e->next;
     }
+    row_destroy(row);
     environment_destroy(env);
     return error;
 }
@@ -147,7 +145,7 @@ int model_size(model_t*m)
     return size;
 }
 
-int model_score(model_t*m, trainingdata_t*d)
+int model_score(model_t*m, sanitized_dataset_t*d)
 {
     return model_size(m) + model_errors(m, d);
 }

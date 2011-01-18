@@ -169,7 +169,7 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
     example_t**examples = example_list_to_array(dataset);
     int t;
     for(t=0;t<dataset->num_examples;t++) {
-        row_t* r = example_to_row(examples[t]);
+        row_t* r = example_to_row(examples[t], m->column_names);
         category_t c1 = tree->predict(r);
         category_t c2 = model_predict(m, r);
         assert(c1 == c2);
