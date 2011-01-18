@@ -47,7 +47,7 @@ struct _column {
     int num_classes;
     constant_t*classes;
 
-    char*name;
+    const char*name;
     
     union {
         float f;

@@ -88,6 +88,9 @@ void trainingdata_print(trainingdata_t*trainingdata)
         int s;
         for(s=0;s<e->num_inputs;s++) {
             variable_t v = e->inputs[s];
+            if(e->input_names) {
+                printf("%s=", e->input_names[s]);
+            }
             if(v.type == CATEGORICAL) {
                 printf("C%d\t", v.category);
             } else if(v.type == CONTINUOUS) {
@@ -300,6 +303,18 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
 void sanitized_dataset_print(sanitized_dataset_t*s)
 {
     int x,y;
+    if(s->columns[0]->name) {
+        for(x=0;x<s->num_columns;x++) {
+            if(x) {
+                printf("\t");
+            }
+            printf("%s", s->columns[x]->name);
+        }
+        printf("| ");
+        printf("desired_response");
+        printf("\n");
+    }
+
     for(y=0;y<s->num_rows;y++) {
         for(x=0;x<s->num_columns;x++) {
             column_t*column = s->columns[x];
