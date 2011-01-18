@@ -102,3 +102,14 @@ char*generate_code(codegen_t*codegen, model_t*m)
     return result;
 }
 
+char*model_generate_code(model_t*m, char*language)
+{
+    if(!language) {
+        return generate_code(&codegen_python, m);
+    } else if(!strcmp(language,"python")) {
+        return generate_code(&codegen_python, m);
+    } else {
+        return generate_code(&codegen_python, m);
+    }
+}
+

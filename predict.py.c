@@ -224,6 +224,20 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
     else
         return PY_ERROR("internal error: bad variable type %d", i.type);
 }
+PyDoc_STRVAR(model_generate_code_doc, \
+"generate_code(language)\n\n"
+"Generate code for this model\n"
+);
+static PyObject* py_model_generate_code(PyObject* _self, PyObject* args, PyObject* kwargs)
+{
+    ModelObject* self = (ModelObject*)_self;
+    char*language = 0;
+    static char *kwlist[] = {"language", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwlist, &language))
+	return NULL;
+    char*code = model_generate_code(self->model, language);
+    return PyString_FromString(code);
+}
 PyDoc_STRVAR(model_load_doc, \
 "load_model()\n\n"
 "Load a model.\n"
@@ -253,6 +267,7 @@ static PyMethodDef model_methods[] =
     /* Model functions */
     {"save", (PyCFunction)py_model_save, METH_KEYWORDS, model_save_doc},
     {"predict", (PyCFunction)py_model_predict, METH_KEYWORDS, model_predict_doc},
+    {"generate_code", (PyCFunction)py_model_generate_code, METH_KEYWORDS, model_generate_code_doc},
     {0,0,0,0}
 };
 

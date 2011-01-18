@@ -141,7 +141,7 @@ void python_write_node_var(node_t*n, state_t*s)
     if(s->model->column_names) {
         strf(s, "%s", s->model->column_names[n->value.i]);
     } else {
-        strf(s, "input[%d]", n->value.i);
+        strf(s, "data[%d]", n->value.i);
     }
 }
 void python_write_node_nop(node_t*n, state_t*s)
@@ -282,7 +282,7 @@ void python_write_header(model_t*model, state_t*s)
             strf(s, "%s", s->model->column_names[t]);
         }
     } else {
-        strf(s, "params");
+        strf(s, "data");
     }
     strf(s, "):\n");
     indent(s);

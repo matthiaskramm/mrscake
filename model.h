@@ -95,6 +95,7 @@ model_t* model_load(const char*filename);
 void model_save(model_t*m, const char*filename);
 void model_print(model_t*m);
 void model_destroy(model_t*m);
+char*model_generate_code(model_t*m, char*language);
 
 model_t* model_select(trainingdata_t*dataset);
 
