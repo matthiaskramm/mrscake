@@ -208,6 +208,11 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
     example_t*e = pylist_to_example(data);
     if(!e)
         return NULL;
+    if(e->num_inputs != self->model->num_inputs) {
+        PY_ERROR("You supplied %d inputs for a model with %d inputs", e->num_inputs, self->model->num_inputs);
+        example_destroy(e);
+        return NULL;
+    }
     row_t*row = example_to_row(e, 0);
     variable_t i = model_predict(self->model, row);
     row_destroy(row);
