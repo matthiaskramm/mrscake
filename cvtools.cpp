@@ -210,23 +210,23 @@ int count_multiclass_columns(sanitized_dataset_t*d)
     return width;
 }
 
-void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out, bool multicolumn_response)
+void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out, int num_rows, bool multicolumn_response)
 {
     int x,y;
     int width = count_multiclass_columns(d);
-    *in = cvCreateMat(d->num_rows, width, CV_32FC1);
+    *in = cvCreateMat(num_rows, width, CV_32FC1);
     int xpos = 0;
     for(x=0;x<d->num_columns;x++) {
-        xpos += set_column_in_matrix(d->columns[x], *in, xpos, d->num_rows);
+        xpos += set_column_in_matrix(d->columns[x], *in, xpos, num_rows);
     }
     assert(xpos == width);
     if(multicolumn_response) {
-        *out = cvCreateMat(d->num_rows, d->desired_response->num_classes, CV_32FC1);
-        set_column_in_matrix(d->desired_response, *out, 0, d->num_rows);
+        *out = cvCreateMat(num_rows, d->desired_response->num_classes, CV_32FC1);
+        set_column_in_matrix(d->desired_response, *out, 0, num_rows);
     } else {
-        *out = cvCreateMat(d->num_rows, 1, CV_32SC1);
+        *out = cvCreateMat(num_rows, 1, CV_32SC1);
         int y;
-        for(y=0;y<d->num_rows;y++) {
+        for(y=0;y<num_rows;y++) {
             int32_t*e = (int32_t*)(CV_MAT_ELEM_PTR(**out, y, 0));
             *e =  d->desired_response->entries[y].c;
         }

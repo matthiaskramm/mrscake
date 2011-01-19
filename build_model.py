@@ -121,8 +121,9 @@ dataset = predict.DataSet()
 for inputs,output in examples:
     dataset.train(inputs, output=output)
 
+output_filename = "test.model"
 model = dataset.get_model()
-model.save("test.model")
+model.save(output_filename)
 
 correct = 0
 wrong = 0
@@ -134,4 +135,4 @@ for inputs,output in examples:
         correct += 1
 
 print "%2.2f%% accuracy (%2.2f%% error)" % ((correct*100.0 / (wrong + correct)), (wrong*100.0 / (wrong + correct)))
-
+print "Model saved to",output_filename

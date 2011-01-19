@@ -310,12 +310,15 @@ static model_t*ann_train(ann_model_factory_t*factory, sanitized_dataset_t*d)
         cvmSetI(layers, 0, t, size);
     }
 
+    /* train on half the examples */
+    int num_rows = (d->num_rows+1)>>1;
+
     CvANN_MLP_TrainParams ann_params;
     CodeGeneratingANN ann(d, input_width, output_width, layers, factory->activation_function, 0.0, 0.0);
     CvMLDataFromExamples data(d);
     CvMat* ann_input;
     CvMat* ann_response;
-    make_ml_multicolumn(d, &ann_input, &ann_response, true);
+    make_ml_multicolumn(d, &ann_input, &ann_response, num_rows, true);
     ann.train(ann_input, ann_response, NULL, NULL, ann_params, 0x0000);
 
     model_t*m = model_new(d);

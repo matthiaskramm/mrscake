@@ -47,7 +47,7 @@ int cvmat_get_max_index(CvMat*mat);
 void cvmat_print(CvMat*mat);
 int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows);
 int count_multiclass_columns(sanitized_dataset_t*d);
-void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out, bool multicolumn_response);
+void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out, int num_rows, bool multicolumn_response);
 
 void cvmSetI(CvMat*m, int y, int x, int v);
 void cvmSetF(CvMat*m, int y, int x, float f);

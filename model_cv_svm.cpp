@@ -223,15 +223,18 @@ static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
         /* if we have too many classes one-vs-one SVM classification is too slow */
         return 0;
     }
-    int old_rows = d->num_rows;
+
+    /* train on half the examples */
+    int num_rows = (d->num_rows+1)>>1;
+
     if(factory->kernel == CvSVM::LINEAR && d->num_rows > 1000) {
-        d->num_rows = 1000;
+        num_rows = 1000;
     }
     if(factory->kernel == CvSVM::RBF && d->num_rows > 300) {
-        d->num_rows = 300;
+        num_rows = 300;
     }
     if(factory->kernel == CvSVM::SIGMOID && d->num_rows > 200) {
-        d->num_rows = 200;
+        num_rows = 200;
     }
 
     CodeGeneratingSVM svm(d);
@@ -241,7 +244,7 @@ static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
                                      cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 1000, FLT_EPSILON));
     CvMat* input;
     CvMat* response;
-    make_ml_multicolumn(d, &input, &response, false);
+    make_ml_multicolumn(d, &input, &response, num_rows, false);
 
     bool use_auto_training = d->desired_response->num_classes <= 3;
 
@@ -254,8 +257,6 @@ static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
 	m = model_new(d);
         m->code = svm.get_program();
     }
-
-    d->num_rows = old_rows;
 
     cvReleaseMat(&input);
     cvReleaseMat(&response);
