@@ -152,7 +152,7 @@ void CvERTreeTrainData::set_data( const CvMat* _train_data, int _tflag,
     if( _var_type )
         CV_CALL( var_type0 = cvPreprocessVarType( _var_type, var_idx, var_count, &r_type ));
 
-    CV_CALL( var_type = cvCreateMat( 1, var_count+3, CV_32SC1 ));
+    CV_CALL( var_type = cvCreateMat( 1, var_count+2, CV_32SC1 ));
     
     cat_var_count = 0;
     ord_var_count = -1;
