@@ -80,7 +80,7 @@ array_t*parse_bitfield(CvDTreeTrainData* data, sanitized_dataset_t*dataset, int 
     return a;
 }
 
-static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, sanitized_dataset_t*dataset, CvDTreeNode*node, node_t*current_node, bool resolve_classes)
+static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, sanitized_dataset_t*dataset, CvDTreeNode*node, node_t*current_node, bool resolve_classes, bool as_float)
 {
     const int*vtype = data->var_type->data.i;
     node_t**current_program = 0;
@@ -95,7 +95,11 @@ static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, sanitiz
                 GENERIC_CONSTANT(dataset->desired_response->classes[c]);
             }
         } else {
-            INT_CONSTANT(c);
+            if(as_float) {
+                FLOAT_CONSTANT(node->value);
+            } else {
+                INT_CONSTANT(c);
+            }
         }
         return;
     }
@@ -130,9 +134,9 @@ static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, sanitiz
             END;
         }
     THEN
-        walk_dtree_node(data, pruned_tree_idx, dataset, node->left, current_node, resolve_classes);
+        walk_dtree_node(data, pruned_tree_idx, dataset, node->left, current_node, resolve_classes, as_float);
     ELSE
-        walk_dtree_node(data, pruned_tree_idx, dataset, node->right, current_node, resolve_classes);
+        walk_dtree_node(data, pruned_tree_idx, dataset, node->right, current_node, resolve_classes, as_float);
     END;
 }
 
@@ -161,7 +165,7 @@ class CodeGeneratingDTree: public CvDTree
 
         START_CODE(code);
           BLOCK
-            walk_dtree_node(data,pruned_tree_idx,dataset,root,code, true);
+            walk_dtree_node(data,pruned_tree_idx,dataset,root,code, true, false);
           END;
         END_CODE;
         return code;
@@ -185,7 +189,7 @@ class CodeGeneratingRTrees: public CvRTrees
 
         if(ntrees == 1) {
             // optimization: if it's just a single tree, we don't need voting
-            walk_dtree_node(trees[0]->data,trees[0]->pruned_tree_idx,dataset,trees[0]->root,current_node,true);
+            walk_dtree_node(trees[0]->data,trees[0]->pruned_tree_idx,dataset,trees[0]->root,current_node,true,false);
         } else {
             SETLOCAL(0)
                 ARRAY_NEW(dataset->desired_response->num_classes);
@@ -195,7 +199,7 @@ class CodeGeneratingRTrees: public CvRTrees
             for(k=0; k<ntrees; k++)
             {
                 SETLOCAL(k+1)
-                    walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false);
+                    walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false,false);
                 END;
                 ARRAY_AT_POS_INC
                     GETLOCAL(0);
@@ -235,7 +239,7 @@ class CodeGeneratingERTrees: public CvERTrees
         BLOCK;
 
         if(ntrees == 1) {
-            walk_dtree_node(trees[0]->data,trees[0]->pruned_tree_idx,dataset,trees[0]->root,current_node,true);
+            walk_dtree_node(trees[0]->data,trees[0]->pruned_tree_idx,dataset,trees[0]->root,current_node,true,false);
         } else {
             SETLOCAL(0)
                 ARRAY_NEW(dataset->desired_response->num_classes);
@@ -245,7 +249,7 @@ class CodeGeneratingERTrees: public CvERTrees
             for(k=0; k<ntrees; k++)
             {
                 SETLOCAL(k+1)
-                    walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false);
+                    walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false,false);
                 END;
                 ARRAY_AT_POS_INC
                     GETLOCAL(0);
@@ -269,6 +273,62 @@ class CodeGeneratingERTrees: public CvERTrees
     sanitized_dataset_t*dataset;
 };
 
+class CodeGeneratingGBTrees: public CvGBTrees
+{
+    public:
+    CodeGeneratingGBTrees(sanitized_dataset_t*dataset)
+        :CvGBTrees()
+    {
+        this->dataset = dataset;
+    }
+
+    node_t* get_program() const
+    {
+        START_CODE(code)
+        BLOCK
+        assert(weak);
+
+        CvSeqReader reader;
+        int weak_count = cvSliceLength( CV_WHOLE_SEQ, weak[class_count-1] );
+        CvDTree* tree;
+        int var_index = 0;
+        for(int i=0; i<class_count; ++i) {
+	    int orig_class_label = class_labels->data.i[i];
+            SETLOCAL(orig_class_label)
+                ADD
+                    if ((weak[i]) && (weak_count)) {
+                        cvStartReadSeq( weak[i], &reader );
+                        cvSetSeqReaderPos( &reader, CV_WHOLE_SEQ.start_index );
+                        for (int j=0; j<weak_count; ++j)
+                        {
+                            CV_READ_SEQ_ELEM( tree, reader );
+                            MUL
+                                walk_dtree_node(tree->data, tree->pruned_tree_idx, dataset, tree->root, current_node, false, true);
+                                FLOAT_CONSTANT(params.shrinkage);
+                            END;
+                        }
+                    }
+                END;
+            END;
+        }
+        ARRAY_AT_POS
+            ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+            ARG_MAX_F;
+                for(int i=0; i<dataset->desired_response->num_classes; ++i) {
+                    GETLOCAL(i);
+                }
+            END;
+        END;
+
+        END;
+        END_CODE;
+
+        return code;
+    }
+
+    sanitized_dataset_t*dataset;
+};
+
 #ifdef VERIFY
 void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
 {
@@ -286,6 +346,12 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
 }
 #endif
 
+static int get_max_trees(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+{
+    /* TODO: more max_trees parameter tweaking (k-fold cross-validation?) */
+    return (int)sqrt(d->num_rows) / factory->max_trees_divide;
+}
+
 static model_t*dtree_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
 {
     CvMLDataFromExamples data(d);
@@ -301,12 +367,6 @@ static model_t*dtree_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
     verify(dataset, m, &dtree);
 #endif
     return m;
-}
-
-static int get_max_trees(dtree_model_factory_t*factory, sanitized_dataset_t*d)
-{
-    /* TODO: more max_trees parameter tweaking (k-fold cross-validation?) */
-    return (int)sqrt(d->num_rows) / factory->max_trees_divide;
 }
 
 static model_t*rtrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
@@ -334,6 +394,20 @@ static model_t*ertrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*
     ertrees.train(&data, params);
     model_t*m = model_new(d);
     m->code = ertrees.get_program();
+    return m;
+}
+
+static model_t*gbtrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+{
+    CvMLDataFromExamples data(d);
+    CodeGeneratingGBTrees gbtrees(d);
+
+    CvGBTreesParams params;
+    params.loss_function_type = CvGBTrees::DEVIANCE_LOSS; // classification, not regression
+    gbtrees.train(&data, params);
+
+    model_t*m = model_new(d);
+    m->code = gbtrees.get_program();
     return m;
 }
 
@@ -423,9 +497,18 @@ static dtree_model_factory_t ertrees16_model_factory = {
     },
     max_trees_divide: 16,
 };
+static dtree_model_factory_t gbtrees_model_factory = {
+    {
+        name: "gbtrees",
+        train: (training_function_t)gbtrees_train,
+    },
+    max_trees_divide: 0,
+    use_surrogate_splits: 0,
+};
 
 model_factory_t* dtree_models[] =
 {
+    (model_factory_t*)&gbtrees_model_factory,
     (model_factory_t*)&dtree_model_factory,
     (model_factory_t*)&dtree_s_model_factory,
     (model_factory_t*)&rtrees_model_factory,
