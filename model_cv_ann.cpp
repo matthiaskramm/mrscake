@@ -299,8 +299,14 @@ static model_t*ann_train(ann_model_factory_t*factory, sanitized_dataset_t*d)
     int t;
     for(t=0;t<num_layers;t++) {
         int size = (input_width+output_width)/2;
-        if(t==0) size = input_width;
-        if(t==num_layers-1) size = output_width;
+        if(t==0) {
+            size = input_width;
+        } else if(t==num_layers-1) {
+            size = output_width;
+        } else {
+            if(size<=1)
+                size = 2;
+        }
         cvmSetI(layers, 0, t, size);
     }
 

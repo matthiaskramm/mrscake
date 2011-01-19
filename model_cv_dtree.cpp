@@ -322,6 +322,11 @@ static model_t*rtrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d
 
 static model_t*ertrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
 {
+    if(d->num_columns == 1 && !d->columns[0]->is_categorical) {
+        /* OpenCV has a bug in their special case code for a 
+           single ordered predictor (see ertrees.cpp:1827) */
+        return 0;
+    }
     CvMLDataFromExamples data(d);
     CodeGeneratingERTrees ertrees(d);
     CvRTParams params(16, 2, 0, false, 16, 0, true, 0, get_max_trees(factory, d), 0, CV_TERMCRIT_ITER);
