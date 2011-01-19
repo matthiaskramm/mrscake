@@ -273,7 +273,7 @@ void python_write_node_array_arg_max_i(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ")])[1]");
 }
-void python_write_node_array_new(node_t*n, state_t*s)
+void python_write_node_zero_array(node_t*n, state_t*s)
 {
     int t;
     strf(s, "[");

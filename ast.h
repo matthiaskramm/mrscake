@@ -80,23 +80,23 @@ struct _node {
     NODE(0x13, node_bool) \
     NODE(0x14, node_category) \
     NODE(0x15, node_array) \
-    NODE(0x16, node_float) \
-    NODE(0x17, node_int) \
-    NODE(0x18, node_string) \
-    NODE(0x19, node_missing) \
-    NODE(0x1a, node_getlocal)  \
-    NODE(0x1b, node_setlocal) \
-    NODE(0x1c, node_inclocal) \
-    NODE(0x1d, node_bool_to_float) \
-    NODE(0x1e, node_equals) \
-    NODE(0x1f, node_arg_max) \
-    NODE(0x20, node_arg_max_i) \
-    NODE(0x21, node_array_at_pos) \
-    NODE(0x22, node_return) \
-    NODE(0x23, node_brackets) \
-    NODE(0x24, node_array_at_pos_inc) \
-    NODE(0x25, node_array_arg_max_i) \
-    NODE(0x26, node_array_new)
+    NODE(0x16, node_zero_array) \
+    NODE(0x17, node_float) \
+    NODE(0x18, node_int) \
+    NODE(0x19, node_string) \
+    NODE(0x1a, node_missing) \
+    NODE(0x1b, node_getlocal)  \
+    NODE(0x1c, node_setlocal) \
+    NODE(0x1d, node_inclocal) \
+    NODE(0x1e, node_bool_to_float) \
+    NODE(0x1f, node_equals) \
+    NODE(0x20, node_arg_max) \
+    NODE(0x21, node_arg_max_i) \
+    NODE(0x22, node_array_at_pos) \
+    NODE(0x23, node_return) \
+    NODE(0x24, node_brackets) \
+    NODE(0x25, node_array_at_pos_inc) \
+    NODE(0x26, node_array_arg_max_i) \
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES

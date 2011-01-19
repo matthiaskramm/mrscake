@@ -30,6 +30,7 @@
 typedef struct _dtree_model_factory {
     model_factory_t head;
     int max_trees_divide;
+    bool use_surrogate_splits;
 } dtree_model_factory_t;
 
 int map_category_back(const CvDTreeTrainData* data, int ci, int i)
@@ -285,12 +286,12 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
 }
 #endif
 
-static model_t*dtree_train(model_factory_t*factory, sanitized_dataset_t*d)
+static model_t*dtree_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
 {
     CvMLDataFromExamples data(d);
 
     CodeGeneratingDTree dtree(d);
-    CvDTreeParams cvd_params(16, 1, 0, false, 16, 0, false, false, 0);
+    CvDTreeParams cvd_params(16, 1, 0, factory->use_surrogate_splits, 16, 0, false, false, 0);
     dtree.train(&data, cvd_params);
 
     model_t*m = model_new(d);
@@ -341,6 +342,16 @@ static dtree_model_factory_t dtree_model_factory = {
         name: "dtree",
         train: (training_function_t)dtree_train,
     },
+    max_trees_divide: 0,
+    use_surrogate_splits: 0,
+};
+static dtree_model_factory_t dtree_s_model_factory = {
+    {
+        name: "dtree (with surrogate splits)",
+        train: (training_function_t)dtree_train,
+    },
+    max_trees_divide: 0,
+    use_surrogate_splits: 1,
 };
 static dtree_model_factory_t rtrees_model_factory = {
     {
@@ -416,6 +427,7 @@ static dtree_model_factory_t ertrees16_model_factory = {
 model_factory_t* dtree_models[] =
 {
     (model_factory_t*)&dtree_model_factory,
+    (model_factory_t*)&dtree_s_model_factory,
     (model_factory_t*)&rtrees_model_factory,
     (model_factory_t*)&rtrees2_model_factory,
     (model_factory_t*)&rtrees4_model_factory,

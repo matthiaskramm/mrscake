@@ -474,19 +474,19 @@ min_args:0,
 max_args:0,
 };
 
-// -------------------------- array_new --------------------------------
+// -------------------------- zero_array --------------------------------
 
-constant_t node_array_new_eval(node_t*n, environment_t* env)
+constant_t node_zero_array_eval(node_t*n, environment_t* env)
 {
     array_t*a = array_new(AS_INT(n->value));
     array_fill(a, int_constant(0));
     return array_constant(a);
 }
-nodetype_t node_array_new =
+nodetype_t node_zero_array =
 {
-name:"array_new",
+name:"zero_array",
 flags:NODE_FLAG_HAS_VALUE,
-eval: node_array_new_eval,
+eval: node_zero_array_eval,
 min_args:0,
 max_args:0,
 };
@@ -784,7 +784,7 @@ node_t* node_new_with_args(nodetype_t*t,...)
 	n->value = bool_constant(va_arg(arglist,int));
     } else if(n->type == &node_missing) {
 	n->value = missing_constant();
-    } else if(n->type == &node_array_new) {
+    } else if(n->type == &node_zero_array) {
 	n->value = int_constant(va_arg(arglist,int));
     } else if(n->type == &node_constant) {
 	n->value = va_arg(arglist,constant_t);

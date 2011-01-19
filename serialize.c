@@ -82,6 +82,9 @@ void node_read_internal_data(node_t*node, reader_t*reader)
             a->entries[t] = constant_read(reader);
         }
         node->value = array_constant(a);
+    } else if(type==&node_zero_array) {
+        int32_t len = read_compressed_uint(reader);
+        node->value = int_constant(len);
     } else if(type==&node_category) {
         category_t c = read_compressed_uint(reader);
         node->value = category_constant(c);
@@ -239,6 +242,9 @@ static void node_write_internal_data(node_t*node, writer_t*writer, unsigned flag
     } else if(node->type==&node_var) {
         int var_index = AS_INT(node->value);
         write_compressed_uint(writer, var_index);
+    } else if(node->type==&node_zero_array) {
+        int size = AS_INT(node->value);
+        write_compressed_uint(writer, size);
     } else if(node->type->flags&NODE_FLAG_HAS_VALUE) {
         constant_write(&node->value, writer, flags);
     }
