@@ -26,8 +26,10 @@
 extern "C" {
 #endif
 
+#define SERIALIZE_FLAG_OMIT_STRINGS 1
+
 node_t* node_read(reader_t*read);
-void node_write(node_t*node, writer_t*writer);
+void node_write(node_t*node, writer_t*writer, unsigned flags);
 
 model_t* model_load(const char*filename);
 void model_save(model_t*m, const char*filename);

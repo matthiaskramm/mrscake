@@ -25,6 +25,7 @@
 #include "ast.h"
 #include "io.h"
 #include "stringpool.h"
+#include "serialize.h"
 
 static nodetype_t* opcode_to_node(uint8_t opcode)
 {
@@ -162,7 +163,7 @@ node_t* node_read(reader_t*reader)
     return top_node;
 }
 
-static void constant_write(constant_t*value, writer_t*writer)
+static void constant_write(constant_t*value, writer_t*writer, unsigned flags)
 {
     write_uint8(writer, value->type);
     switch(value->type) {
@@ -183,7 +184,11 @@ static void constant_write(constant_t*value, writer_t*writer)
         }
         case CONSTANT_STRING: {
             const char*s = AS_STRING(*value);
-            write_string(writer, s);
+            if(flags & SERIALIZE_FLAG_OMIT_STRINGS) {
+                write_uint8(writer, 0);
+            } else {
+                write_string(writer, s);
+            }
             break;
         }
         case CONSTANT_ARRAY: {
@@ -192,7 +197,7 @@ static void constant_write(constant_t*value, writer_t*writer)
             assert(a->size <= 255);
             write_compressed_uint(writer, a->size);
             for(t=0;t<a->size;t++) {
-                constant_write(&a->entries[t], writer);
+                constant_write(&a->entries[t], writer, flags);
             }
             break;
         }
@@ -205,7 +210,7 @@ static void constant_write(constant_t*value, writer_t*writer)
     }
 }
 
-static void node_write_internal_data(node_t*node, writer_t*writer)
+static void node_write_internal_data(node_t*node, writer_t*writer, unsigned flags)
 {
     if(node->type==&node_array) {
         array_t*a = node->value.a;
@@ -213,7 +218,7 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
         write_compressed_uint(writer, a->size);
         int t;
         for(t=0;t<a->size;t++) {
-            constant_write(&a->entries[t], writer);
+            constant_write(&a->entries[t], writer, flags);
         }
     } else if(node->type==&node_category) {
         category_t c = AS_CATEGORY(node->value);
@@ -226,20 +231,24 @@ static void node_write_internal_data(node_t*node, writer_t*writer)
         write_compressed_uint(writer, i);
     } else if(node->type==&node_string) {
         const char*s = AS_STRING(node->value);
-        write_string(writer, s);
+        if(flags & SERIALIZE_FLAG_OMIT_STRINGS) {
+            write_uint8(writer, 0);
+        } else {
+            write_string(writer, s);
+        }
     } else if(node->type==&node_var) {
         int var_index = AS_INT(node->value);
         write_compressed_uint(writer, var_index);
     } else if(node->type->flags&NODE_FLAG_HAS_VALUE) {
-        constant_write(&node->value, writer);
+        constant_write(&node->value, writer, flags);
     }
 }
 
-void node_write(node_t*node, writer_t*writer)
+void node_write(node_t*node, writer_t*writer, unsigned flags)
 {
     uint8_t opcode = node_get_opcode(node);
     write_uint8(writer, opcode);
-    node_write_internal_data(node, writer);
+    node_write_internal_data(node, writer, flags);
 
     if(node->type->flags & NODE_FLAG_HAS_CHILDREN) {
         int t;
@@ -249,7 +258,7 @@ void node_write(node_t*node, writer_t*writer)
             write_compressed_uint(writer, node->num_children);
         }
         for(t=0;t<node->num_children;t++) {
-            node_write(node->child[t], writer);
+            node_write(node->child[t], writer, flags);
         }
     }
 }
@@ -303,7 +312,7 @@ void model_save(model_t*m, const char*filename)
             write_compressed_uint(w, m->column_types[t]);
         }
     }
-    node_write(code, w);
+    node_write(code, w, 0);
     w->finish(w);
 }
 

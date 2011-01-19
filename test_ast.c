@@ -40,7 +40,7 @@ environment_t test_environment()
 node_t*test_serialization(node_t*node)
 {
     writer_t *w = growingmemwriter_new();
-    node_write(node, w);
+    node_write(node, w, 0);
     node_destroy(node);
     reader_t*r = growingmemwriter_getreader(w);
     w->finish(w);

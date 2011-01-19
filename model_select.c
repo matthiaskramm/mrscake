@@ -27,6 +27,7 @@
 #include "io.h"
 #include "dataset.h"
 #include "codegen.h"
+#include "serialize.h"
 
 #define NUM(l) (sizeof(l)/sizeof((l)[0]))
 
@@ -91,7 +92,6 @@ model_t* model_select(trainingdata_t*trainingdata)
 		printf("%s\n", generate_code(&codegen_python, m));
 		printf("# -------------------------------\n");
 #endif
-
                 if(score < best_score) {
                     if(best_model) {
                         model_destroy(best_model);
@@ -143,7 +143,7 @@ int model_size(model_t*m)
 {
     node_t*node = m->code;
     writer_t *w = nullwriter_new();
-    node_write(node, w);
+    node_write(node, w, SERIALIZE_FLAG_OMIT_STRINGS);
     int size = w->pos;
     w->finish(w);
     return size;
