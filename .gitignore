@@ -11,4 +11,7 @@ model
 test
 tags
 gmon.out
+display_model.py
 *.dSYM
+*.model
+data/*
