@@ -65,6 +65,7 @@ void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
 typedef struct _expanded_columns {
     sanitized_dataset_t*dataset;
     int num;
+    bool use_header_code;
     struct {
         int source_column;
         int source_class;
@@ -73,6 +74,7 @@ typedef struct _expanded_columns {
 
 
 expanded_columns_t* expanded_columns_new(sanitized_dataset_t*s);
+node_t* expanded_columns_parameter_init(expanded_columns_t*e);
 node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num);
 void expanded_columns_destroy(expanded_columns_t*e);
 

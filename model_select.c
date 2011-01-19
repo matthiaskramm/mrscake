@@ -31,6 +31,9 @@
 
 #define NUM(l) (sizeof(l)/sizeof((l)[0]))
 
+extern model_factory_t* linear_models[];
+extern int num_linear_models;
+
 extern model_factory_t* ann_models[];
 extern int num_ann_models;
 
@@ -40,15 +43,13 @@ extern int num_dtree_models;
 extern model_factory_t* svm_models[];
 extern int num_svm_models;
 
-extern model_factory_t* rtrees_models[];
-extern int num_rtrees_models;
-
 typedef struct _model_collection {
     model_factory_t**models;
     int* num_models;
 } model_collection_t;
 
 model_collection_t collections[] = {
+    {linear_models, &num_linear_models},
     {dtree_models, &num_dtree_models},
     {svm_models, &num_svm_models},
     {ann_models, &num_ann_models},

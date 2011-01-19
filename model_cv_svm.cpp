@@ -39,15 +39,14 @@ class CodeGeneratingSVM: public CvSVM
         :CvSVM()
     {
         this->dataset = dataset;
-        this->expanded_columns = expanded_columns_new(dataset);
     }
     ~CodeGeneratingSVM()
     {
-        expanded_columns_destroy(this->expanded_columns);
     }
 
     node_t* get_program() const
     {
+        expanded_columns_t*expanded_columns = expanded_columns_new(dataset);
         assert( kernel );
         assert( params.svm_type == CvSVM::C_SVC );
 
@@ -210,10 +209,10 @@ class CodeGeneratingSVM: public CvSVM
 
         END;
         END_CODE;
+        expanded_columns_destroy(expanded_columns);
         return program;
     }
     sanitized_dataset_t*dataset;
-    expanded_columns_t*expanded_columns;
 };
 
 static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)

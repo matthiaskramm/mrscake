@@ -35,7 +35,7 @@ int main()
         for(s=0;s<16;s++) {
             e->inputs[s] = variable_make_continuous((lrand48()%256)/256.0);
         }
-        e->desired_response = variable_make_categorical(t%3);
+        e->desired_response = variable_make_categorical(t%2);
         trainingdata_add_example(data, e);
     }
     model_t*m = model_select(data);

@@ -12,7 +12,7 @@ ifeq ($(IS_MACOS),)
     LIBS=-lz -lpthread -lrt
 endif
 
-MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o
+MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o
 CODE_GENERATORS=codegen_python.o
 OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o
 

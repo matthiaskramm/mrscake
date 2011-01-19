@@ -43,7 +43,6 @@ class CodeGeneratingANN: public CvANN_MLP
         :CvANN_MLP(layer_sizes, activ_func, f_param1, f_param2)
     {
         this->dataset = dataset;
-        this->expanded_columns = expanded_columns_new(dataset);
 	this->input_size = input_size;
 	this->output_size = output_size;
 
@@ -59,7 +58,6 @@ class CodeGeneratingANN: public CvANN_MLP
 
     ~CodeGeneratingANN()
     {
-        expanded_columns_destroy(this->expanded_columns);
         delete[] var_offset;
     }
 
@@ -103,6 +101,7 @@ class CodeGeneratingANN: public CvANN_MLP
      */
     node_t* get_program() const
     {
+        expanded_columns_t*expanded_columns = expanded_columns_new(dataset);
         START_CODE(program);
         BLOCK
 	int l_count = layer_sizes->cols;
@@ -240,6 +239,7 @@ class CodeGeneratingANN: public CvANN_MLP
 
         END_BLOCK;
 	END_CODE;
+        expanded_columns_destroy(expanded_columns);
 	return program;
     }
 
@@ -257,7 +257,6 @@ class CodeGeneratingANN: public CvANN_MLP
     }
 
     sanitized_dataset_t*dataset;
-    expanded_columns_t*expanded_columns;
     int*var_offset;
     int input_size;
     int output_size;
@@ -315,7 +314,6 @@ static model_t*ann_train(ann_model_factory_t*factory, sanitized_dataset_t*d)
 
     CvANN_MLP_TrainParams ann_params;
     CodeGeneratingANN ann(d, input_width, output_width, layers, factory->activation_function, 0.0, 0.0);
-    CvMLDataFromExamples data(d);
     CvMat* ann_input;
     CvMat* ann_response;
     make_ml_multicolumn(d, &ann_input, &ann_response, num_rows, true);

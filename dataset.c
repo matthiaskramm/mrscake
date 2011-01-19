@@ -384,12 +384,11 @@ expanded_columns_t* expanded_columns_new(sanitized_dataset_t*s)
     assert(pos == e->num);
     return e;
 }
-void expanded_columns_destroy(expanded_columns_t*e)
+node_t* expanded_columns_parameter_init(expanded_columns_t*e)
 {
-    free(e->columns);
-    free(e);
+    e->use_header_code = true;
+    return node_new(&node_nop, 0);
 }
-
 node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num)
 {
     int x = e->columns[num].source_column;
@@ -409,6 +408,12 @@ node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num)
         return node_new_with_args(&node_var, x);
     }
 }
+void expanded_columns_destroy(expanded_columns_t*e)
+{
+    free(e->columns);
+    free(e);
+}
+
 
 array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*dataset)
 {
