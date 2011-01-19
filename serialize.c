@@ -141,7 +141,11 @@ node_t* node_read(reader_t*reader)
             node_read_internal_data(node, reader);
         }
         if(type->flags&NODE_FLAG_HAS_CHILDREN) {
-            stack->num_children = read_compressed_uint(reader);
+            if(type->min_args == type->max_args) {
+                stack->num_children = type->min_args;
+            } else {
+                stack->num_children = read_compressed_uint(reader);
+            }
         }
         if(stack->prev) {
             node_t*prev_node = stack->prev->node;
@@ -239,7 +243,11 @@ void node_write(node_t*node, writer_t*writer)
 
     if(node->type->flags & NODE_FLAG_HAS_CHILDREN) {
         int t;
-        write_compressed_uint(writer, node->num_children);
+        if(node->type->min_args == node->type->max_args) {
+            assert(node->type->min_args == node->num_children);
+        } else {
+            write_compressed_uint(writer, node->num_children);
+        }
         for(t=0;t<node->num_children;t++) {
             node_write(node->child[t], writer);
         }
