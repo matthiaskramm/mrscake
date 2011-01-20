@@ -115,7 +115,7 @@ PyObject*forward_getattr(PyObject*self, char *a)
 int add_item(example_t*e, int pos, PyObject*item)
 {
     if(PyInt_Check(item)) {
-        e->inputs[pos] = variable_make_categorical(PyInt_AS_LONG(item));
+        e->inputs[pos] = variable_make_continuous(PyInt_AS_LONG(item));
     } else if(PyFloat_Check(item)) {
         e->inputs[pos] = variable_make_continuous(PyFloat_AS_DOUBLE(item));
     } else if(PyString_Check(item)) {

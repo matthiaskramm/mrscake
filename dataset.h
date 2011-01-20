@@ -59,6 +59,7 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset);
 void sanitized_dataset_print(sanitized_dataset_t*s);
 constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int i);
 void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
+int sanitized_dataset_count_expanded_columns(sanitized_dataset_t*s);
 
 /* structure for storing "exploded" version of columns where every class
    has its own column */
@@ -72,12 +73,10 @@ typedef struct _expanded_columns {
     }* columns;
 } expanded_columns_t;
 
-
 expanded_columns_t* expanded_columns_new(sanitized_dataset_t*s);
 node_t* expanded_columns_parameter_init(expanded_columns_t*e);
 node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num);
 void expanded_columns_destroy(expanded_columns_t*e);
-
 
 model_t* model_new(sanitized_dataset_t*dataset);
 example_t**example_list_to_array(trainingdata_t*d);

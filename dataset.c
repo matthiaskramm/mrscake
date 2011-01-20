@@ -354,6 +354,16 @@ void sanitized_dataset_destroy(sanitized_dataset_t*s)
     free(s);
 }
 
+int sanitized_dataset_count_expanded_columns(sanitized_dataset_t*s)
+{
+    int x;
+    int num = 0;
+    for(x=0;x<s->num_columns;x++) {
+        num += s->columns[x]->is_categorical ? s->columns[x]->num_classes : 1;
+    }
+    return num;
+}
+
 expanded_columns_t* expanded_columns_new(sanitized_dataset_t*s)
 {
     /* build expanded column info (version of the data where every class of every

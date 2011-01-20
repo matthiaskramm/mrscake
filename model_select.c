@@ -67,7 +67,8 @@ model_t* model_select(trainingdata_t*trainingdata)
         return 0;
 #define DEBUG
 #ifdef DEBUG
-    printf("# %d classes, %d rows of examples\n", data->desired_response->num_classes, data->num_rows);
+    printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
+            data->num_columns, sanitized_dataset_count_expanded_columns(data));
 #endif
     for(s=0;s<NUM(collections);s++) {
         model_collection_t*collection = &collections[s];
