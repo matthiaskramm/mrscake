@@ -21,6 +21,7 @@
 
 #include "cvtools.h"
 #include "dataset.h"
+#include "model_select.h"
 
 void cvmSetI(CvMat*m, int y, int x, int v)
 {
@@ -49,7 +50,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(sanitized_dataset_t*dataset)
     int total_columns = input_columns+1;
 
     /* train on half the examples */
-    int train_sample_count = (dataset->num_rows+1)>>1;
+    int train_sample_count = training_set_size(dataset->num_rows);
 
     this->values = cvCreateMat(dataset->num_rows, total_columns, CV_32FC1);
     cvZero(this->values);

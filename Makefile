@@ -78,6 +78,9 @@ model_cv_svm.o: model_cv_svm.cpp model.h ast.h cvtools.h dataset.h easy_ast.h Ma
 model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h dataset.h easy_ast.h Makefile
 	$(CXX) -Ilib $< -c -o $@
 
+model_cv_linear.o: model_cv_linear.cpp model.h ast.h cvtools.h dataset.h easy_ast.h Makefile
+	$(CXX) -Ilib $< -c -o $@
+
 test_model.o: test_model.c model.h Makefile
 	$(CC) -c $< -o $@
 

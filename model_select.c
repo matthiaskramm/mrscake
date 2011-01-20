@@ -152,3 +152,11 @@ int model_size(model_t*m)
     return size;
 }
 
+int training_set_size(int total_size)
+{
+    if(total_size < 20) {
+        return total_size;
+    } else {
+        return (total_size+1)>>1;
+    }
+}

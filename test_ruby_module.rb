@@ -47,9 +47,9 @@ model = Prediction::load_model("/tmp/model.dat")
 model.print
 
 p model.predict({:bananas=>0.3,:oranges=>1.0,:name=>:bla})
-p model.predict({:bananas=>0.4,:oranges=>0.1,:name=>:bli})
+p model.predict({:bananas=>0.4,:oranges=>-1.0,:name=>:bli})
 p model.predict({:bananas=>0.5,:oranges=>1.0,:name=>:bli})
-p model.predict({:bananas=>0.8,:oranges=>0.1,:name=>:bla})
+p model.predict({:bananas=>0.8,:oranges=>-1.0,:name=>:bla})
 p model.predict({:bananas=>0.9,:oranges=>1.0,:name=>:bla})
 
 puts model.generate_code("python")

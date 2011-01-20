@@ -309,8 +309,7 @@ static model_t*ann_train(ann_model_factory_t*factory, sanitized_dataset_t*d)
         cvmSetI(layers, 0, t, size);
     }
 
-    /* train on half the examples */
-    int num_rows = (d->num_rows+1)>>1;
+    int num_rows = training_set_size(d->num_rows);
 
     CvANN_MLP_TrainParams ann_params;
     CodeGeneratingANN ann(d, input_width, output_width, layers, factory->activation_function, 0.0, 0.0);
