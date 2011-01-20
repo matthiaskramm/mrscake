@@ -223,7 +223,6 @@ static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
         return 0;
     }
 
-    /* train on half the examples */
     int num_rows = training_set_size(d->num_rows);
 
     if(factory->kernel == CvSVM::LINEAR && d->num_rows > 1000) {
