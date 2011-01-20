@@ -49,6 +49,8 @@ void trainingdata_add_example(trainingdata_t*d, example_t*e)
 }
 bool trainingdata_check_format(trainingdata_t*trainingdata)
 {
+    if(!trainingdata || !trainingdata->first_example)
+        return false;
     int t;
     example_t*e;
     int pos = 0;

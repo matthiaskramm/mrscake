@@ -102,7 +102,7 @@ char*generate_code(codegen_t*codegen, model_t*m)
     return result;
 }
 
-char*model_generate_code(model_t*m, char*language)
+char*model_generate_code(model_t*m, const char*language)
 {
     if(!language) {
         return generate_code(&codegen_python, m);

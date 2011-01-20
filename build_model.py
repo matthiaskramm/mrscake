@@ -125,14 +125,39 @@ output_filename = "test.model"
 model = dataset.get_model()
 model.save(output_filename)
 
-correct = 0
-wrong = 0
-for inputs,output in examples:
-    prediction = model.predict(inputs)
-    if prediction != output:
-        wrong += 1
-    else:
-        correct += 1
+def show_model_performance(model, examples):
+    correct = 0
+    wrong = 0
+    confusion = {}
+    for inputs,output in examples:
+        if output not in confusion:
+            confusion[output]={}
+        prediction = model.predict(inputs)
+        if prediction not in confusion[output]:
+            confusion[output][prediction] = 0
+        confusion[output][prediction] += 1
+        if prediction != output:
+            wrong += 1
+        else:
+            correct += 1
+    total = len(examples)
+    print
+    print "Confusion matrix:"
+    rows = sorted(confusion.keys())
+    columns = sorted(confusion.keys())
+    print "p/r\t",
+    for x,col_name in enumerate(columns):
+        print "%s\t" % col_name,
+    print
+    for y,row_name in enumerate(rows):
+        print "%s\t" % row_name,
+        for x,col_name in enumerate(columns):
+            print "%d\t" % (confusion.get(col_name,{}).get(row_name,0)),
+        print
+    print
+    print "%2.2f%% accuracy (%2.2f%% error)" % ((correct*100.0 / (wrong + correct)), (wrong*100.0 / (wrong + correct)))
+    print
 
-print "%2.2f%% accuracy (%2.2f%% error)" % ((correct*100.0 / (wrong + correct)), (wrong*100.0 / (wrong + correct)))
+show_model_performance(model, examples)
+
 print "Model saved to",output_filename

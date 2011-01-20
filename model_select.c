@@ -63,6 +63,8 @@ model_t* model_select(trainingdata_t*trainingdata)
     int t;
     int s;
     sanitized_dataset_t*data = dataset_sanitize(trainingdata);
+    if(!data)
+        return 0;
 #define DEBUG
 #ifdef DEBUG
     printf("# %d classes, %d rows of examples\n", data->desired_response->num_classes, data->num_rows);

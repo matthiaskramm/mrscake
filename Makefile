@@ -1,9 +1,11 @@
-all: multimodel ast model predict.so
+all: multimodel ast model predict.so prediction.so
 
 CC=gcc -pg -g -fPIC
 CXX=g++ -pg -g -fPIC
 PYTHON_LIB=-lpython2.6
 PYTHON_INCLUDE=-I/usr/include/python2.6
+RUBY_LIB=-lruby18
+RUBY_INCLUDE=-I/usr/lib/ruby/1.8/i686-linux/ 
 
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
@@ -91,10 +93,15 @@ model: test_model.o $(OBJECTS) lib/libml.a Makefile
 # ------------ python interface --------------
 
 predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
-	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o predict.so $(LIBS) $(PYTHON_LIB) -lstdc++
+	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
 
 python_interpreter: python_interpreter.c Makefile
 	$(CC) $(PYTHON_INCLUDE) python_interpreter.c -o python_interpreter $(PYTHON_LIB)
+
+# ------------ ruby interface ----------------
+
+prediction.so: predict.rb.c model.h $(OBJECTS)
+	$(CC) $(RUBY_INCLUDE) -shared predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ old test code -----------------
 
