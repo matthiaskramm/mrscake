@@ -21,7 +21,9 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include <ruby.h>
+#include <st.h>
 #include "model.h"
+#include "stringpool.h"
 
 static VALUE predict;
 static VALUE DataSet, Model;
@@ -55,25 +57,63 @@ variable_t value_to_variable(VALUE v)
         return variable_make_missing();
     }
 }
-
+static int hash_count(VALUE key, VALUE value, VALUE arg)
+{
+    int*count = (int*)arg;
+    (*count)++;
+    return ST_CONTINUE;
+}
+static int hash_fill(VALUE key, VALUE value, VALUE arg)
+{
+    Check_Type(key, T_SYMBOL);
+    const char*name;
+    if(TYPE(key) == T_SYMBOL) {
+        name = rb_id2name(SYM2ID(key));
+    } else if(TYPE(key) == T_STRING) {
+        name = StringValuePtr(key);
+    }
+    example_t*e = (example_t*)arg;
+    e->inputs[e->num_inputs] = value_to_variable(value);
+    e->input_names[e->num_inputs] = register_string(name);
+    e->num_inputs++;
+    return ST_CONTINUE;
+}
+static example_t*value_to_example(VALUE input)
+{
+    example_t*e = 0;
+    if(TYPE(input) == T_ARRAY) {
+        int len = RARRAY(input)->len;
+        int t;
+        e = example_new(len);
+        for(t=0;t<len;t++) {
+            VALUE item = RARRAY(input)->ptr[t];
+            e->inputs[t] = value_to_variable(item);
+            if(e->inputs[t].type == MISSING) {
+                rb_raise(rb_eArgError, "bad element in array at pos %d", t+1);
+            }
+        }
+    } else if(TYPE(input) == T_HASH) {
+        int len = 0;
+        rb_hash_foreach(input, hash_count, (VALUE)&len);
+        e = example_new(len);
+        e->input_names = (const char**)malloc(sizeof(char*)*len);
+        e->num_inputs = 0;
+        rb_hash_foreach(input, hash_fill, (VALUE)e);
+        if(e->num_inputs != len)
+	    rb_raise(rb_eArgError, "Couldn't process hash");
+    } else {
+	rb_raise(rb_eArgError, "expected array or a hash");
+    }
+    e->desired_response = variable_make_missing();
+    return e;
+}
 static VALUE rb_dataset_add(VALUE cls, VALUE input, VALUE response)
 {
     Get_DataSet(dataset,cls);
-    if(TYPE(input) != T_ARRAY)
-	rb_raise(rb_eArgError, "first argument of add must be an array");
-    int len = RARRAY(input)->len;
-    int t;
-    example_t*e = example_new(len);
-    for(t=0;t<len;t++) {
-        VALUE item = RARRAY(input)->ptr[t];
-        e->inputs[t] = value_to_variable(item);
-        if(e->inputs[t].type == MISSING) {
-            rb_raise(rb_eArgError, "bad element in array at pos %d", t+1);
-        }
-    }
+    example_t*e = value_to_example(input);
     e->desired_response = value_to_variable(response);
     if(e->desired_response.type == MISSING) {
-        rb_raise(rb_eArgError, "bad element in array at pos %d", t+1);
+        rb_raise(rb_eArgError, "bad argument to add(): second parameter must be an int or a symbol");
     }
     trainingdata_add_example(dataset->trainingdata, e);
     return cls;
@@ -162,18 +202,17 @@ static VALUE rb_load_model(VALUE module, VALUE _filename)
 static VALUE rb_model_predict(VALUE cls, VALUE input)
 {
     Get_Model(model,cls);
-    int len = RARRAY(input)->len;
-    row_t*row = row_new(len);
-    if(len != model->model->num_inputs)
-        rb_raise(rb_eArgError, "You supplied %d inputs for a model with %d inputs", len, model->model->num_inputs);
-    int t;
-    for(t=0;t<len;t++) {
-        VALUE item = RARRAY(input)->ptr[t];
-        row->inputs[t] = value_to_variable(item);
-        if(row->inputs[t].type == MISSING) {
-            rb_raise(rb_eArgError, "bad element in array at pos %d", t+1);
-        }
+    if(TYPE(input) != T_ARRAY && TYPE(input) != T_HASH) {
+        rb_raise(rb_eArgError, "First argument to predict() must be an array or a hash");
     }
+
+    example_t*e = value_to_example(input);
+
+    if(e->num_inputs != model->model->num_inputs)
+        rb_raise(rb_eArgError, "You supplied %d inputs for a model with %d inputs", e->num_inputs, model->model->num_inputs);
+
+    row_t*row = example_to_row(e, model->model->column_names);
+
     variable_t prediction = model_predict(model->model, row);
     row_destroy(row);
 
