@@ -52,7 +52,7 @@ variable_t value_to_variable(VALUE v)
     } else if(TYPE(v) == T_FLOAT) {
         return variable_make_continuous(NUM2DBL(v));
     } else if(TYPE(v) == T_FIXNUM) {
-        return variable_make_continuous(INT2DBL(v));
+        return variable_make_continuous(FIX2INT(v));
     } else {
         return variable_make_missing();
     }
