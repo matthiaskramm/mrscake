@@ -1,24 +1,28 @@
-all: multimodel ast model predict.so prediction.so
-
 CC=gcc -pg -g -fPIC
 CXX=g++ -pg -g -fPIC
 PYTHON_LIB=-lpython2.6
 PYTHON_INCLUDE=-I/usr/include/python2.6
-RUBY_LIB=-lruby
-RUBY_INCLUDE=-I/usr/lib/ruby/1.8/universal-darwin10.0
 
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
+# MAC
+RUBY_LIB=-lruby
 LIBS=-lz -lpthread
+RUBY_INCLUDE=-I/usr/lib/ruby/1.8/universal-darwin10.0
+SO=bundle
 ifeq ($(IS_MACOS),)
+    # LINUX
     RUBY_LIB=-lruby18
     LIBS=-lz -lpthread -lrt
     RUBY_INCLUDE=-I/usr/lib/ruby/1.8/i686-linux/ 
+    SO=so
 endif
 
 MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o
 CODE_GENERATORS=codegen_python.o
 OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o
+
+all: multimodel ast model predict.$(SO) prediction.$(SO)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -97,7 +101,7 @@ model: test_model.o $(OBJECTS) lib/libml.a
 
 # ------------ python interface --------------
 
-predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
+predict.$(SO): predict.py.c model.h list.h $(OBJECTS) lib/libml.a
 	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
 
 python_interpreter: python_interpreter.c
@@ -105,7 +109,7 @@ python_interpreter: python_interpreter.c
 
 # ------------ ruby interface ----------------
 
-prediction.so: predict.rb.c model.h $(OBJECTS)
+prediction.$(SO): predict.rb.c model.h $(OBJECTS)
 	$(CC) $(RUBY_INCLUDE) -shared predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ old test code -----------------
