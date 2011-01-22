@@ -136,7 +136,7 @@ void python_write_node_abs(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ")");
 }
-void python_write_node_var(node_t*n, state_t*s)
+void python_write_node_param(node_t*n, state_t*s)
 {
     if(s->model->column_names) {
         strf(s, "%s", s->model->column_names[n->value.i]);

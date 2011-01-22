@@ -74,7 +74,7 @@ struct _node {
     NODE(0x0d, node_exp) \
     NODE(0x0e, node_sqr) \
     NODE(0x0f, node_abs) \
-    NODE(0x10, node_var) \
+    NODE(0x10, node_param) \
     NODE(0x11, node_nop) \
     NODE(0x12, node_constant) \
     NODE(0x13, node_bool) \
@@ -103,7 +103,7 @@ LIST_NODES
 #undef NODE
 
 enum opcodes {
-#define NODE(opcode, name) name##_opcode = opcode,
+#define NODE(opcode, name) opcode_##name = opcode,
 LIST_NODES
 #undef NODE
 };
@@ -111,6 +111,7 @@ LIST_NODES
 extern nodetype_t* nodelist[];
 void nodelist_init();
 uint8_t node_get_opcode(node_t*n);
+char*node_name(node_t*n);
 
 node_t* node_new(nodetype_t*t, node_t*parent);
 node_t* node_new_with_args(nodetype_t*t,...);
@@ -119,7 +120,6 @@ void node_set_child(node_t*n, int num, node_t*child);
 void node_sanitycheck(node_t*n);
 void node_free(node_t*n);
 constant_t node_eval(node_t*n,environment_t* e);
-int node_highest_local(node_t*node);
 void node_print(node_t*n);
 
 #ifdef __cplusplus

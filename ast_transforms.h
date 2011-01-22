@@ -33,4 +33,13 @@ bool node_has_minus_prefix(node_t*n);
 bool node_is_missing(node_t*n);
 bool node_terminates(node_t*n);
 
+constant_type_t node_type(node_t*n, model_t*m);
+int node_array_size(node_t*n);
+
+int node_highest_local(node_t*node);
+constant_type_t*node_local_types(node_t*node, model_t*m, int* num_locals);
+constant_type_t model_param_type(model_t*m, int var);
+bool node_has_child(node_t*n, nodetype_t*type);
+
+
 #endif

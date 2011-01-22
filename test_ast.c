@@ -55,10 +55,10 @@ void test_if()
 	IF
 	    GT
 		ADD
-		    VAR(0)
-		    VAR(1)
+		    PARAM(0)
+		    PARAM(1)
 		END;
-		VAR(2)
+		PARAM(2)
 	    END;
 	THEN
 	    CATEGORY_CONSTANT(1)
@@ -92,7 +92,7 @@ void test_array()
     START_CODE(node)
 	IF
 	    IN
-                VAR(3)
+                PARAM(3)
 		ARRAY_CONSTANT(array_create(3, 1,2,3));
 	    END;
 	THEN

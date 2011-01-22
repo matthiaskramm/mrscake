@@ -33,13 +33,16 @@ extern "C" {
 typedef struct _constant constant_t;
 typedef struct _array array_t;
 
-#define CONSTANT_FLOAT 1
-#define CONSTANT_CATEGORY 2
-#define CONSTANT_INT 3
-#define CONSTANT_BOOL 4
-#define CONSTANT_MISSING 5
-#define CONSTANT_ARRAY 6
-#define CONSTANT_STRING 7
+typedef enum constant_type {
+    CONSTANT_FLOAT=1,
+    CONSTANT_CATEGORY=2,
+    CONSTANT_INT=3,
+    CONSTANT_BOOL=4,
+    CONSTANT_MISSING=5,
+    CONSTANT_ARRAY=6,
+    CONSTANT_STRING=7
+} constant_type_t;
+
 extern char*type_name[];
 
 struct _constant {

@@ -34,7 +34,7 @@ void strf(state_t*state, const char*format, ...)
     char*s = buf;
     while(*s) {
         char*last = s;
-        while(*s && *s!='\n') 
+        while(*s && *s!='\n')
             s++;
         if(s>last) {
             state->writer->write(state->writer, last, s-last);
@@ -102,14 +102,18 @@ char*generate_code(codegen_t*codegen, model_t*m)
     return result;
 }
 
+codegen_t* codegen_default = &codegen_python;
+
 char*model_generate_code(model_t*m, const char*language)
 {
     if(!language) {
-        return generate_code(&codegen_python, m);
+        return generate_code(codegen_default, m);
     } else if(!strcmp(language,"python")) {
         return generate_code(&codegen_python, m);
+    } else if(!strcmp(language,"c")) {
+        return generate_code(&codegen_c, m);
     } else {
-        return generate_code(&codegen_python, m);
+        return generate_code(codegen_default, m);
     }
 }
 

@@ -94,13 +94,13 @@ void node_read_internal_data(node_t*node, reader_t*reader)
     } else if(type==&node_int) {
         int i = (int32_t)read_compressed_uint(reader);
         node->value = int_constant(i);
-    } else if(type==&node_var) {
+    } else if(type==&node_param) {
         int var_index = read_compressed_uint(reader);
         node->value = int_constant(var_index);
     } else if(type==&node_string) {
         char*s = read_string(reader);
         node->value = string_constant(s);
-    } else if(type==&node_constant || type==&node_setlocal || type==&node_getlocal) {
+    } else if(type==&node_constant || type==&node_setlocal || type==&node_getlocal || type==&node_inclocal) {
         node->value = constant_read(reader);
     } else {
         fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, node_get_opcode(node));
@@ -239,7 +239,7 @@ static void node_write_internal_data(node_t*node, writer_t*writer, unsigned flag
         } else {
             write_string(writer, s);
         }
-    } else if(node->type==&node_var) {
+    } else if(node->type==&node_param) {
         int var_index = AS_INT(node->value);
         write_compressed_uint(writer, var_index);
     } else if(node->type==&node_zero_array) {

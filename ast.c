@@ -565,7 +565,7 @@ max_args:3,
 
 // ---------------------- var i ---------------------------------------
 
-constant_t node_var_eval(node_t*n, environment_t* env)
+constant_t node_param_eval(node_t*n, environment_t* env)
 {
     assert(n->value.i >= 0 && n->value.i < env->row->num_inputs);
     variable_t v = env->row->inputs[n->value.i];
@@ -581,11 +581,11 @@ constant_t node_var_eval(node_t*n, environment_t* env)
 	assert(!"bad type for input value");
     }
 }
-nodetype_t node_var =
+nodetype_t node_param =
 {
-name:"var",
+name:"param",
 flags:NODE_FLAG_HAS_VALUE,
-eval: node_var_eval,
+eval: node_param_eval,
 min_args:0,
 max_args:0,
 };
@@ -767,7 +767,7 @@ node_t* node_new_with_args(nodetype_t*t,...)
     node_t*n = node_new(t, 0);
     va_list arglist;
     va_start(arglist, t);
-    if(n->type == &node_var) {
+    if(n->type == &node_param) {
 	n->value = int_constant(va_arg(arglist,int));
     } else if(n->type == &node_category) {
 	n->value = category_constant(va_arg(arglist,category_t));
@@ -906,22 +906,6 @@ void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
         free(o3);
         free(o4);
     }
-}
-
-int node_highest_local(node_t*node)
-{
-    int max = 0;
-    if(node->type == &node_setlocal ||
-       node->type == &node_getlocal) {
-	max = node->value.i;
-    }
-    int t;
-    for(t=0;t<node->num_children;t++) {
-	int l = node_highest_local(node->child[t]);
-	if(l>max)
-	    max = l;
-    }
-    return max;
 }
 
 void node_sanitycheck(node_t*n)

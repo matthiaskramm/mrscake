@@ -91,9 +91,10 @@ model_t* model_select(trainingdata_t*trainingdata)
                 printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
 		node_sanitycheck((node_t*)m->code);
 #endif
+#define SHOW_CODE
 #ifdef SHOW_CODE
 		printf("# -------------------------------\n");
-		printf("%s\n", generate_code(&codegen_python, m));
+		printf("%s\n", generate_code(&codegen_c, m));
 		printf("# -------------------------------\n");
 #endif
                 if(score < best_score) {
