@@ -27,7 +27,7 @@
 environment_t* environment_new(void*node, row_t*row)
 {
     environment_t*e = (environment_t*)malloc(sizeof(environment_t));
-    e->num_locals = node_highest_local((node_t*)node)+1;
+    e->num_locals = node_highest_local((node_t*)node);
     e->locals = (constant_t*)calloc(sizeof(constant_t), e->num_locals);
     e->row = row;
     return e;

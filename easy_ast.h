@@ -91,7 +91,7 @@
 #define MISSING_CONSTANT NODE_BEGIN(&node_missing)
 #define FLOAT_CONSTANT(f) NODE_BEGIN(&node_float, f)
 #define STRING_CONSTANT(s) do {VERIFY_STRING(s);NODE_BEGIN(&node_string, s)}while(0);
-#define ARRAY_CONSTANT(args...) NODE_BEGIN(&node_array, ##args)
+#define ARRAY_CONSTANT(a) INSERT_NODE(node_new_array((a)))
 #define INT_CONSTANT(args...) NODE_BEGIN(&node_int, ##args)
 #define CATEGORY_CONSTANT(args...) NODE_BEGIN(&node_category, ##args)
 
@@ -106,7 +106,7 @@
 
 #define ARRAY_AT_POS_INC NODE_BEGIN(&node_array_at_pos_inc)
 #define ARRAY_ARG_MAX_I NODE_BEGIN(&node_array_arg_max_i)
-#define ARRAY_NEW(size) NODE_BEGIN(&node_zero_array, size)
+#define ARRAY_NEW(size) NODE_BEGIN(&node_zero_int_array, size)
 
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)
 #define VERIFY_STRING(s) do{if(0){(s)[0];};}while(0)

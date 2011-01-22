@@ -171,7 +171,11 @@ void python_write_constant(constant_t*c, state_t*s)
         case CONSTANT_MISSING:
             strf(s, "None");
             break;
-        case CONSTANT_ARRAY:
+        case CONSTANT_MIXED_ARRAY:
+        case CONSTANT_INT_ARRAY:
+        case CONSTANT_FLOAT_ARRAY:
+        case CONSTANT_CATEGORY_ARRAY:
+        case CONSTANT_STRING_ARRAY:
             strf(s, "[");
             for(t=0;t<c->a->size;t++) {
                 if(t)
@@ -194,7 +198,27 @@ void python_write_node_category(node_t*n, state_t*s)
 {
     python_write_constant(&n->value, s);
 }
-void python_write_node_array(node_t*n, state_t*s)
+void python_write_node_mixed_array(node_t*n, state_t*s)
+{
+    python_write_constant(&n->value, s);
+}
+void python_write_node_string_array(node_t*n, state_t*s)
+{
+    python_write_constant(&n->value, s);
+}
+void python_write_node_int_array(node_t*n, state_t*s)
+{
+    python_write_constant(&n->value, s);
+}
+void python_write_node_float_array(node_t*n, state_t*s)
+{
+    python_write_constant(&n->value, s);
+}
+void python_write_node_category_array(node_t*n, state_t*s)
+{
+    python_write_constant(&n->value, s);
+}
+void python_write_node_zero_int_array(node_t*n, state_t*s)
 {
     python_write_constant(&n->value, s);
 }
@@ -272,16 +296,6 @@ void python_write_node_array_arg_max_i(node_t*n, state_t*s)
     strf(s, "max([(v,nr) for nr,v in enumerate(");
     write_node(s, n->child[0]);
     strf(s, ")])[1]");
-}
-void python_write_node_zero_array(node_t*n, state_t*s)
-{
-    int t;
-    strf(s, "[");
-    for(t=0;t<n->value.i;t++) {
-        if(t) strf(s, ",");
-        strf(s, "0");
-    }
-    strf(s, "]");
 }
 void python_write_node_return(node_t*n, state_t*s)
 {

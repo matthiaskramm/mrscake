@@ -94,10 +94,47 @@ constant_t int_constant(int i)
     v.i = i;
     return v;
 }
-constant_t array_constant(array_t*a)
+bool array_is_homogeneous(array_t*a)
+{
+    int t;
+    for(t=0;t<a->size;t++) {
+        if(a->entries[0].type != a->entries[t].type)
+            return false;
+    }
+    return true;
+}
+constant_t int_array_constant(array_t*a)
 {
     constant_t v;
-    v.type = CONSTANT_ARRAY;
+    v.type = CONSTANT_INT_ARRAY;
+    v.a = a;
+    return v;
+}
+constant_t float_array_constant(array_t*a)
+{
+    constant_t v;
+    v.type = CONSTANT_FLOAT_ARRAY;
+    v.a = a;
+    return v;
+}
+constant_t string_array_constant(array_t*a)
+{
+    constant_t v;
+    v.type = CONSTANT_STRING_ARRAY;
+    v.a = a;
+    return v;
+}
+constant_t category_array_constant(array_t*a)
+{
+    constant_t v;
+    v.type = CONSTANT_CATEGORY_ARRAY;
+    v.a = a;
+    return v;
+}
+constant_t mixed_array_constant(array_t*a)
+{
+    constant_t v;
+    v.type = CONSTANT_CATEGORY_ARRAY;
     v.a = a;
     return v;
 }
@@ -125,9 +162,6 @@ bool constant_equals(constant_t*c1, constant_t*c2)
             return !strcmp(c1->s, c2->s);
         case CONSTANT_MISSING:
             return true;
-        case CONSTANT_ARRAY:
-            fprintf(stderr,"FIXME: array comparison not implemented yet");
-            return false;
         default:
             fprintf(stderr, "Can't compare types %s\n", type_name[c1->type]);
             return false;
@@ -155,9 +189,13 @@ void constant_print(constant_t*v)
         case CONSTANT_MISSING:
             printf("<missing>");
         break;
-        case CONSTANT_ARRAY:
+        case CONSTANT_MIXED_ARRAY:
+        case CONSTANT_INT_ARRAY:
+        case CONSTANT_FLOAT_ARRAY:
+        case CONSTANT_CATEGORY_ARRAY:
+        case CONSTANT_STRING_ARRAY:
             printf("[");
-            array_t*a = AS_ARRAY(*v);
+            array_t*a = AS_MIXED_ARRAY(*v);
             for(t=0;t<a->size;t++) {
                 if(t>0)
                     printf(",");
@@ -173,7 +211,11 @@ void constant_print(constant_t*v)
 void constant_clear(constant_t*v)
 {
     switch(v->type) {
-        case CONSTANT_ARRAY:
+        case CONSTANT_INT_ARRAY:
+        case CONSTANT_FLOAT_ARRAY:
+        case CONSTANT_CATEGORY_ARRAY:
+        case CONSTANT_MIXED_ARRAY:
+        case CONSTANT_STRING_ARRAY:
             free(v->a);
             v->a = 0;
         break;
@@ -187,6 +229,18 @@ void constant_clear(constant_t*v)
 
 int constant_check_type(constant_t v, uint8_t type)
 {
+    if(type == CONSTANT_MIXED_ARRAY) {
+        switch(v.type) {
+            case CONSTANT_INT_ARRAY:
+            case CONSTANT_FLOAT_ARRAY:
+            case CONSTANT_CATEGORY_ARRAY:
+            case CONSTANT_MIXED_ARRAY:
+            case CONSTANT_STRING_ARRAY:
+                return 0;
+            default:
+                fprintf(stderr, "expected array, got %s\n", type_name[v.type]);
+        }
+    }
     if(v.type!=type) {
         fprintf(stderr, "expected %s, got %s\n", type_name[type], type_name[v.type]);
     }

@@ -74,17 +74,32 @@ constant_t constant_read(reader_t*reader)
 void node_read_internal_data(node_t*node, reader_t*reader)
 {
     nodetype_t*type = node->type;
-    if(type==&node_array) {
+    if(type==&node_mixed_array ||
+       type==&node_int_array ||
+       type==&node_category_array ||
+       type==&node_string_array ||
+       type==&node_float_array) {
         uint32_t len = read_compressed_uint(reader);
         int t;
         array_t*a = array_new(len);
         for(t=0;t<len;t++) {
             a->entries[t] = constant_read(reader);
         }
-        node->value = array_constant(a);
-    } else if(type==&node_zero_array) {
+        if(type==&node_mixed_array)
+            node->value = mixed_array_constant(a);
+        else if(type==&node_int_array)
+            node->value = int_array_constant(a);
+        else if(type==&node_category_array)
+            node->value = category_array_constant(a);
+        else if(type==&node_string_array)
+            node->value = string_array_constant(a);
+        else if(type==&node_float_array)
+            node->value = float_array_constant(a);
+    } else if(type==&node_zero_int_array) {
         int32_t len = read_compressed_uint(reader);
-        node->value = int_constant(len);
+        array_t*a = array_new(len);
+        array_fill(a, int_constant(0));
+        node->value = int_array_constant(a);
     } else if(type==&node_category) {
         category_t c = read_compressed_uint(reader);
         node->value = category_constant(c);
@@ -194,7 +209,11 @@ static void constant_write(constant_t*value, writer_t*writer, unsigned flags)
             }
             break;
         }
-        case CONSTANT_ARRAY: {
+        case CONSTANT_MIXED_ARRAY:
+        case CONSTANT_INT_ARRAY:
+        case CONSTANT_FLOAT_ARRAY:
+        case CONSTANT_CATEGORY_ARRAY:
+        case CONSTANT_STRING_ARRAY: {
             array_t*a = AS_ARRAY(*value);
             int t;
             assert(a->size <= 255);
@@ -215,7 +234,11 @@ static void constant_write(constant_t*value, writer_t*writer, unsigned flags)
 
 static void node_write_internal_data(node_t*node, writer_t*writer, unsigned flags)
 {
-    if(node->type==&node_array) {
+    if(node->type==&node_int_array ||
+       node->type==&node_float_array ||
+       node->type==&node_category_array ||
+       node->type==&node_mixed_array ||
+       node->type==&node_string_array) {
         array_t*a = node->value.a;
         assert(a->size <= 255);
         write_compressed_uint(writer, a->size);
@@ -242,8 +265,8 @@ static void node_write_internal_data(node_t*node, writer_t*writer, unsigned flag
     } else if(node->type==&node_param) {
         int var_index = AS_INT(node->value);
         write_compressed_uint(writer, var_index);
-    } else if(node->type==&node_zero_array) {
-        int size = AS_INT(node->value);
+    } else if(node->type==&node_zero_int_array) {
+        int size = node->value.a->size;
         write_compressed_uint(writer, size);
     } else if(node->type->flags&NODE_FLAG_HAS_VALUE) {
         constant_write(&node->value, writer, flags);

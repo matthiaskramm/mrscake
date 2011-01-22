@@ -36,6 +36,7 @@ typedef struct _nodetype nodetype_t;
 #define NODE_FLAG_HAS_CHILDREN 1
 #define NODE_FLAG_HAS_VALUE 2
 #define NODE_FLAG_INFIX 4
+#define NODE_FLAG_ARRAY 8
 
 struct _nodetype {
     char*name;
@@ -79,24 +80,28 @@ struct _node {
     NODE(0x12, node_constant) \
     NODE(0x13, node_bool) \
     NODE(0x14, node_category) \
-    NODE(0x15, node_array) \
-    NODE(0x16, node_zero_array) \
-    NODE(0x17, node_float) \
-    NODE(0x18, node_int) \
-    NODE(0x19, node_string) \
-    NODE(0x1a, node_missing) \
-    NODE(0x1b, node_getlocal)  \
-    NODE(0x1c, node_setlocal) \
-    NODE(0x1d, node_inclocal) \
-    NODE(0x1e, node_bool_to_float) \
-    NODE(0x1f, node_equals) \
-    NODE(0x20, node_arg_max) \
-    NODE(0x21, node_arg_max_i) \
-    NODE(0x22, node_array_at_pos) \
-    NODE(0x23, node_return) \
-    NODE(0x24, node_brackets) \
-    NODE(0x25, node_array_at_pos_inc) \
-    NODE(0x26, node_array_arg_max_i) \
+    NODE(0x15, node_string_array) \
+    NODE(0x16, node_float_array) \
+    NODE(0x17, node_category_array) \
+    NODE(0x18, node_int_array) \
+    NODE(0x19, node_zero_int_array) \
+    NODE(0x1a, node_mixed_array) \
+    NODE(0x1b, node_float) \
+    NODE(0x1c, node_int) \
+    NODE(0x1d, node_string) \
+    NODE(0x1e, node_missing) \
+    NODE(0x1f, node_getlocal)  \
+    NODE(0x20, node_setlocal) \
+    NODE(0x21, node_inclocal) \
+    NODE(0x22, node_bool_to_float) \
+    NODE(0x23, node_equals) \
+    NODE(0x24, node_arg_max) \
+    NODE(0x25, node_arg_max_i) \
+    NODE(0x26, node_array_at_pos) \
+    NODE(0x27, node_return) \
+    NODE(0x28, node_brackets) \
+    NODE(0x29, node_array_at_pos_inc) \
+    NODE(0x2a, node_array_arg_max_i) \
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES
@@ -115,11 +120,16 @@ char*node_name(node_t*n);
 
 node_t* node_new(nodetype_t*t, node_t*parent);
 node_t* node_new_with_args(nodetype_t*t,...);
+node_t* node_new_array(array_t*a);
+
+bool node_is_array(node_t*n);
 void node_append_child(node_t*n, node_t*child);
 void node_set_child(node_t*n, int num, node_t*child);
 void node_sanitycheck(node_t*n);
-void node_free(node_t*n);
+void node_destroy(node_t*n);
+void node_destroy_self(node_t*n);
 constant_t node_eval(node_t*n,environment_t* e);
+void node_remove_child(node_t*n, int num);
 void node_print(node_t*n);
 
 #ifdef __cplusplus

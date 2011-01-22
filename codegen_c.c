@@ -19,6 +19,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
+#include <assert.h>
 #include "codegen.h"
 #include "ast_transforms.h"
 
@@ -35,8 +36,16 @@ char* c_type_name(constant_type_t c)
             return "bool";
         case CONSTANT_STRING:
             return "char*";
-        case CONSTANT_ARRAY:
+        case CONSTANT_INT_ARRAY:
+            return "int*";
+        case CONSTANT_FLOAT_ARRAY:
             return "float*";
+        case CONSTANT_CATEGORY_ARRAY:
+            return "int*";
+        case CONSTANT_MIXED_ARRAY:
+            return "void**";
+        case CONSTANT_STRING_ARRAY:
+            return "char**";
         case CONSTANT_MISSING:
             return "void";
         default:
@@ -76,11 +85,13 @@ void c_write_node_if(node_t*n, state_t*s)
         strf(s, "if(");
         write_node(s, n->child[0]);
         strf(s, ")\n");
-        indent(s);write_node(s, n->child[1]);strf(s, ";");dedent(s);
+        indent(s);write_node(s, n->child[1]);
         if(!node_is_missing(n->child[2])) {
+            strf(s, ";");dedent(s);
             strf(s, "\nelse\n");
-            indent(s);write_node(s, n->child[2]);dedent(s);
+            indent(s);write_node(s, n->child[2]);
         }
+        dedent(s);
     }
 }
 void c_write_node_add(node_t*n, state_t*s)
@@ -137,6 +148,30 @@ void c_write_node_gte(node_t*n, state_t*s)
 }
 void c_write_node_in(node_t*n, state_t*s)
 {
+    if(node_is_array(n->child[1])) {
+        array_t*a = n->child[1]->value.a;
+        if(!a->size) {
+            strf(s, "false");
+            return;
+        } else {
+            constant_type_t etype = a->entries[0].type;
+            switch(etype) {
+                case CONSTANT_STRING:
+                    strf(s, "!!strstr(\"");
+                    int t;
+                    for(t=0;t<a->size;t++) {
+                        assert(a->entries[t].type == CONSTANT_STRING);
+                        if(t) 
+                            strf(s, "\\x7f");
+                        write_escaped_string(s, a->entries[t].s);
+                    }
+                    strf(s, "\",");
+                    write_node(s, n->child[0]);
+                    strf(s, ")");
+                    return;
+            }
+        }
+    }
     strf(s, "find_in(");
     write_node(s, n->child[0]);
     strf(s, ",");
@@ -161,9 +196,10 @@ void c_write_node_exp(node_t*n, state_t*s)
 }
 void c_write_node_sqr(node_t*n, state_t*s)
 {
-    strf(s, "pow(");
+    strf(s, "sqr");
+    if(n->child[0]->type!=&node_brackets) strf(s, "(");
     write_node(s, n->child[0]);
-    strf(s, ",2.0)");
+    if(n->child[0]->type!=&node_brackets) strf(s, ")");
 }
 void c_write_node_abs(node_t*n, state_t*s)
 {
@@ -207,7 +243,11 @@ void c_write_constant(constant_t*c, state_t*s)
         case CONSTANT_MISSING:
             strf(s, "NULL");
             break;
-        case CONSTANT_ARRAY:
+        case CONSTANT_INT_ARRAY:
+        case CONSTANT_MIXED_ARRAY:
+        case CONSTANT_FLOAT_ARRAY:
+        case CONSTANT_CATEGORY_ARRAY:
+        case CONSTANT_STRING_ARRAY:
             strf(s, "{");
             for(t=0;t<c->a->size;t++) {
                 if(t)
@@ -230,7 +270,23 @@ void c_write_node_category(node_t*n, state_t*s)
 {
     c_write_constant(&n->value, s);
 }
-void c_write_node_array(node_t*n, state_t*s)
+void c_write_node_string_array(node_t*n, state_t*s)
+{
+    c_write_constant(&n->value, s);
+}
+void c_write_node_int_array(node_t*n, state_t*s)
+{
+    c_write_constant(&n->value, s);
+}
+void c_write_node_float_array(node_t*n, state_t*s)
+{
+    c_write_constant(&n->value, s);
+}
+void c_write_node_mixed_array(node_t*n, state_t*s)
+{
+    c_write_constant(&n->value, s);
+}
+void c_write_node_category_array(node_t*n, state_t*s)
 {
     c_write_constant(&n->value, s);
 }
@@ -328,11 +384,11 @@ void c_write_node_array_at_pos_inc(node_t*n, state_t*s)
     write_node(s, n->child[1]);
     strf(s, "]+=1");
 }
-void c_write_node_zero_array(node_t*n, state_t*s)
+void c_write_node_zero_int_array(node_t*n, state_t*s)
 {
     int t;
     strf(s, "{");
-    for(t=0;t<n->value.i;t++) {
+    for(t=0;t<n->value.a->size;t++) {
         if(t) strf(s, ",");
         strf(s, "0");
     }
@@ -349,10 +405,10 @@ void c_write_node_brackets(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ")");
 }
-static void c_write_function_arg_max(state_t*s, char*type)
+static void c_write_function_arg_max(state_t*s, char*suffix, char*type)
 {
     strf(s,
-"int arg_max(int count, ...)\n"
+"int arg_max%s(int count, ...)\n"
 "{\n"
 "    va_list arglist;\n"
 "    va_start(arglist, count);\n"
@@ -368,7 +424,7 @@ static void c_write_function_arg_max(state_t*s, char*type)
 "    }\n"
 "    va_end(arglist);\n"
 "    return best;\n"
-"}\n", type, type
+"}\n", suffix, type, type
     );
 }
 static void c_write_function_array_arg_max_i(state_t*s)
@@ -389,19 +445,31 @@ static void c_write_function_array_arg_max_i(state_t*s)
 "}\n"
     );
 }
+static void c_write_function_sqr(state_t*s)
+{
+    strf(s, "%s",
+"static inline double sqr(const double v)\n"
+"{\n"
+"    return v*v\n"
+"}\n"
+    );
+}
 void c_write_header(model_t*model, state_t*s)
 {
     node_t*root = (node_t*)model->code;
     constant_type_t type = node_type(root, model);
 
     if(node_has_child(root, &node_arg_max)) {
-        c_write_function_arg_max(s, "double");
+        c_write_function_arg_max(s, "", "double");
     }
     if(node_has_child(root, &node_arg_max_i)) {
-        c_write_function_arg_max(s, "int");
+        c_write_function_arg_max(s, "_i", "int");
     }
     if(node_has_child(root, &node_array_arg_max_i)) {
         c_write_function_array_arg_max_i(s);
+    }
+    if(node_has_child(root, &node_sqr)) {
+        c_write_function_sqr(s);
     }
 
     strf(s, "%s predict(", c_type_name(type));
