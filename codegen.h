@@ -45,11 +45,16 @@ struct _state {
 };
 
 void strf(state_t*s, const char*format, ...);
+void write_escaped_string(state_t*s, const char*p);
 void write_node(state_t*s, node_t*n);
 void indent(state_t*s);
 void dedent(state_t*s);
 
+codegen_t codegen_c;
+codegen_t codegen_ruby;
 codegen_t codegen_python;
+
+codegen_t* codegen_default;
 
 char*generate_code(codegen_t*codegen, model_t*m);
 

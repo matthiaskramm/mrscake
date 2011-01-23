@@ -459,34 +459,95 @@ eval: node_array_arg_max_i_eval,
 min_args:1,
 max_args:1,
 };
-// -------------------------- array ------------------------------------
 
-constant_t node_array_eval(node_t*n, environment_t* env)
+// -------------------------- string_array ------------------------------------
+
+constant_t node_string_array_eval(node_t*n, environment_t* env)
 {
     return n->value;
 }
-nodetype_t node_array =
+nodetype_t node_string_array =
 {
-name:"array",
-flags:NODE_FLAG_HAS_VALUE,
-eval: node_array_eval,
+name:"string_array",
+flags:NODE_FLAG_ARRAY|NODE_FLAG_HAS_VALUE,
+eval: node_string_array_eval,
 min_args:0,
 max_args:0,
 };
 
-// -------------------------- zero_array --------------------------------
+// -------------------------- float_array ------------------------------------
 
-constant_t node_zero_array_eval(node_t*n, environment_t* env)
+constant_t node_float_array_eval(node_t*n, environment_t* env)
 {
-    array_t*a = array_new(AS_INT(n->value));
-    array_fill(a, int_constant(0));
-    return array_constant(a);
+    return n->value;
 }
-nodetype_t node_zero_array =
+nodetype_t node_float_array =
 {
-name:"zero_array",
-flags:NODE_FLAG_HAS_VALUE,
-eval: node_zero_array_eval,
+name:"float_array",
+flags:NODE_FLAG_ARRAY|NODE_FLAG_HAS_VALUE,
+eval: node_float_array_eval,
+min_args:0,
+max_args:0,
+};
+
+// -------------------------- category_array ------------------------------------
+
+constant_t node_category_array_eval(node_t*n, environment_t* env)
+{
+    return n->value;
+}
+nodetype_t node_category_array =
+{
+name:"category_array",
+flags:NODE_FLAG_ARRAY|NODE_FLAG_HAS_VALUE,
+eval: node_category_array_eval,
+min_args:0,
+max_args:0,
+};
+
+// -------------------------- int_array ------------------------------------
+
+constant_t node_int_array_eval(node_t*n, environment_t* env)
+{
+    return n->value;
+}
+nodetype_t node_int_array =
+{
+name:"int_array",
+flags:NODE_FLAG_ARRAY|NODE_FLAG_HAS_VALUE,
+eval: node_int_array_eval,
+min_args:0,
+max_args:0,
+};
+
+// -------------------------- mixed_array ------------------------------------
+
+constant_t node_mixed_array_eval(node_t*n, environment_t* env)
+{
+    return n->value;
+}
+nodetype_t node_mixed_array =
+{
+name:"mixed_array",
+flags:NODE_FLAG_ARRAY|NODE_FLAG_HAS_VALUE,
+eval: node_mixed_array_eval,
+min_args:0,
+max_args:0,
+};
+
+// -------------------------- zero_int_array --------------------------------
+
+constant_t node_zero_int_array_eval(node_t*n, environment_t* env)
+{
+    array_t*a = array_new(n->value.a->size);
+    array_fill(a, int_constant(0));
+    return int_array_constant(a);
+}
+nodetype_t node_zero_int_array =
+{
+name:"zero_int_array",
+flags:NODE_FLAG_ARRAY|NODE_FLAG_HAS_VALUE,
+eval: node_zero_int_array_eval,
 min_args:0,
 max_args:0,
 };
@@ -565,7 +626,7 @@ max_args:3,
 
 // ---------------------- var i ---------------------------------------
 
-constant_t node_var_eval(node_t*n, environment_t* env)
+constant_t node_param_eval(node_t*n, environment_t* env)
 {
     assert(n->value.i >= 0 && n->value.i < env->row->num_inputs);
     variable_t v = env->row->inputs[n->value.i];
@@ -581,11 +642,11 @@ constant_t node_var_eval(node_t*n, environment_t* env)
 	assert(!"bad type for input value");
     }
 }
-nodetype_t node_var =
+nodetype_t node_param =
 {
-name:"var",
+name:"param",
 flags:NODE_FLAG_HAS_VALUE,
-eval: node_var_eval,
+eval: node_param_eval,
 min_args:0,
 max_args:0,
 };
@@ -767,32 +828,90 @@ node_t* node_new_with_args(nodetype_t*t,...)
     node_t*n = node_new(t, 0);
     va_list arglist;
     va_start(arglist, t);
-    if(n->type == &node_var) {
-	n->value = int_constant(va_arg(arglist,int));
-    } else if(n->type == &node_category) {
-	n->value = category_constant(va_arg(arglist,category_t));
-    } else if(n->type == &node_float) {
-	n->value = float_constant(va_arg(arglist,double));
-    } else if(n->type == &node_int) {
-	n->value = int_constant(va_arg(arglist,int));
-    } else if(n->type == &node_array) {
-        array_t*array = va_arg(arglist,array_t*);
-	n->value = array_constant(array);
-    } else if(n->type == &node_string) {
-	n->value = string_constant(va_arg(arglist,char*));
-    } else if(n->type == &node_bool) {
-	n->value = bool_constant(va_arg(arglist,int));
-    } else if(n->type == &node_missing) {
-	n->value = missing_constant();
-    } else if(n->type == &node_zero_array) {
-	n->value = int_constant(va_arg(arglist,int));
-    } else if(n->type == &node_constant) {
-	n->value = va_arg(arglist,constant_t);
-    } else if(n->type == &node_setlocal || n->type == &node_getlocal || n->type == &node_inclocal) {
-	n->value = int_constant(va_arg(arglist,int));
+    switch(node_get_opcode(n)) {
+        case opcode_node_param:
+	    n->value = int_constant(va_arg(arglist,int));
+            break;
+        case opcode_node_category:
+	    n->value = category_constant(va_arg(arglist,category_t));
+            break;
+        case opcode_node_float:
+	    n->value = float_constant(va_arg(arglist,double));
+            break;
+        case opcode_node_int:
+	    n->value = int_constant(va_arg(arglist,int));
+            break;
+        case opcode_node_mixed_array:
+	    n->value = mixed_array_constant(va_arg(arglist,array_t*));
+            break;
+        case opcode_node_string_array:
+	    n->value = string_array_constant(va_arg(arglist,array_t*));
+            break;
+        case opcode_node_float_array:
+	    n->value = float_array_constant(va_arg(arglist,array_t*));
+            break;
+        case opcode_node_int_array:
+	    n->value = int_array_constant(va_arg(arglist,array_t*));
+            break;
+        case opcode_node_category_array:
+	    n->value = category_array_constant(va_arg(arglist,array_t*));
+            break;
+        case opcode_node_string:
+	    n->value = string_constant(va_arg(arglist,char*));
+            break;
+        case opcode_node_bool:
+	    n->value = bool_constant(va_arg(arglist,int));
+            break;
+        case opcode_node_missing:
+	    n->value = missing_constant();
+            break;
+        case opcode_node_zero_int_array: {
+	    int size = va_arg(arglist,int);
+            array_t*a = array_new(size);
+            array_fill(a, int_constant(0));
+            n->value = int_array_constant(a);
+            break;
+        }
+        case opcode_node_constant:
+	    n->value = va_arg(arglist,constant_t);
+            break;
+        case opcode_node_setlocal:
+        case opcode_node_getlocal:
+        case opcode_node_inclocal:
+	    n->value = int_constant(va_arg(arglist,int));
+            break;
     }
     va_end(arglist);
     return n;
+}
+
+node_t* node_new_array(array_t*a)
+{
+    if(!a->size) {
+        return node_new_with_args(&node_float_array, a);
+    }
+    if(!array_is_homogeneous(a))
+        return node_new_with_args(&node_mixed_array, a);
+    switch(a->entries[0].type) {
+        case CONSTANT_FLOAT:
+            return node_new_with_args(&node_float_array, a);
+        case CONSTANT_INT:
+            return node_new_with_args(&node_int_array, a);
+        case CONSTANT_CATEGORY:
+            return node_new_with_args(&node_category_array, a);
+        case CONSTANT_BOOL:
+            assert(0);
+            //return node_new_with_args(&node_bool_array, a);
+        case CONSTANT_STRING:
+            return node_new_with_args(&node_string_array, a);
+        case CONSTANT_MISSING:
+            assert(0);
+            //return node_new_with_args(&node_missing_array, a);
+        default:
+            fprintf(stderr,"Arrays of arrays not supported yet");
+            assert(0);
+    }
+    return 0;
 }
 
 void node_append_child(node_t*n, node_t*child)
@@ -853,18 +972,18 @@ void node_destroy(node_t*n)
     free(n);
 }
 
+void node_destroy_self(node_t*n)
+{
+    int t;
+    if(n->type->flags&NODE_FLAG_HAS_VALUE) {
+        constant_clear(&n->value);
+    }
+    free(n);
+}
+
 constant_t node_eval(node_t*n,environment_t* e)
 {
     return n->type->eval(n, e);
-}
-
-bool node_is_primitive(node_t*n)
-{
-    return(n->type == &node_category ||
-           n->type == &node_array ||
-           n->type == &node_float ||
-           n->type == &node_string
-           );
 }
 
 /*
@@ -908,22 +1027,6 @@ void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
     }
 }
 
-int node_highest_local(node_t*node)
-{
-    int max = 0;
-    if(node->type == &node_setlocal ||
-       node->type == &node_getlocal) {
-	max = node->value.i;
-    }
-    int t;
-    for(t=0;t<node->num_children;t++) {
-	int l = node_highest_local(node->child[t]);
-	if(l>max)
-	    max = l;
-    }
-    return max;
-}
-
 void node_sanitycheck(node_t*n)
 {
     int t;
@@ -939,6 +1042,21 @@ void node_sanitycheck(node_t*n)
 	assert(n->child[t]->parent == n);
 	node_sanitycheck(n->child[t]);
     }
+}
+
+void node_remove_child(node_t*n, int num)
+{
+    assert(num < n->num_children);
+    int t;
+    for(t=num;t<n->num_children-1;t++) {
+        ((node_t**)n->child)[t] = n->child[t+1];
+    }
+    n->num_children--;
+}
+
+bool node_is_array(node_t*n)
+{
+    return !!(n->type->flags & NODE_FLAG_ARRAY);
 }
 
 void node_print(node_t*n)

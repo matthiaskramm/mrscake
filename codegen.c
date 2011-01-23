@@ -34,7 +34,7 @@ void strf(state_t*state, const char*format, ...)
     char*s = buf;
     while(*s) {
         char*last = s;
-        while(*s && *s!='\n') 
+        while(*s && *s!='\n')
             s++;
         if(s>last) {
             state->writer->write(state->writer, last, s-last);
@@ -54,6 +54,41 @@ void strf(state_t*state, const char*format, ...)
     }
     state->after_newline = 0;
 }
+void write_escaped_string(state_t*s, const char*p)
+{
+    while(*p) {
+        switch(*p) {
+            case '\n':
+                write_uint8(s->writer, '\\');
+                write_uint8(s->writer, 'n');
+                break;
+            case '\r':
+                write_uint8(s->writer, '\\');
+                write_uint8(s->writer, 'r');
+                break;
+            case '\t':
+                write_uint8(s->writer, '\\');
+                write_uint8(s->writer, 't');
+                break;
+            case '"':
+                write_uint8(s->writer, '\\');
+                write_uint8(s->writer, '"');
+                break;
+            default:
+                if(*p>0x20 && *p<0x7f) {
+                    write_uint8(s->writer, *p);
+                } else {
+                    write_uint8(s->writer, '\\');
+                    write_uint8(s->writer, 'x');
+                    write_uint8(s->writer, "0123456789abcdef"[((*p)>>4)&15]);
+                    write_uint8(s->writer, "0123456789abcdef"[((*p)&15)]);
+                }
+                break;
+        }
+        p++;
+    }
+}
+
 void write_node(state_t*s, node_t*n)
 {
     switch(node_get_opcode(n)) {
@@ -101,15 +136,22 @@ char*generate_code(codegen_t*codegen, model_t*m)
     s.writer->finish(s.writer);
     return result;
 }
+codegen_t* codegen_default = &codegen_python;
 
 char*model_generate_code(model_t*m, const char*language)
 {
     if(!language) {
-        return generate_code(&codegen_python, m);
+        return generate_code(codegen_default, m);
     } else if(!strcmp(language,"python")) {
         return generate_code(&codegen_python, m);
+    } else if(!strcmp(language,"c")) {
+        return generate_code(&codegen_c, m);
+    } else if(!strcmp(language,"c++")) {
+        return generate_code(&codegen_c, m);
+    } else if(!strcmp(language,"ruby")) {
+        return generate_code(&codegen_ruby, m);
     } else {
-        return generate_code(&codegen_python, m);
+        return generate_code(codegen_default, m);
     }
 }
 

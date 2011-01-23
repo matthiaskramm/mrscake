@@ -3,17 +3,17 @@
 
 #include "ast.h"
 
-/* the following convenience macros allow to write code
+/* The macros in this file allow you to write code
    in the following matter:
 
    START_CODE
     IF 
       GT
 	ADD
-	  VAR(1)
-	  VAR(2)
+	  PARAM(1)
+	  PARAM(2)
         END;
-        VAR(3)
+        PARAM(3)
       END;
     THEN
       INT_CONSTANT(1)
@@ -84,14 +84,14 @@
 #define ABS NODE_BEGIN(&node_abs)
 #define NOP NODE_BEGIN(&node_nop)
 
-#define VAR(i) NODE_BEGIN(&node_var, i)
+#define PARAM(i) NODE_BEGIN(&node_param, i)
 
 #define GENERIC_CONSTANT(c) do {NODE_BEGIN(&node_constant, c)}while(0);
 #define BOOL_CONSTANT(b) NODE_BEGIN(&node_bool, ((int)(b)))
 #define MISSING_CONSTANT NODE_BEGIN(&node_missing)
 #define FLOAT_CONSTANT(f) NODE_BEGIN(&node_float, f)
 #define STRING_CONSTANT(s) do {VERIFY_STRING(s);NODE_BEGIN(&node_string, s)}while(0);
-#define ARRAY_CONSTANT(args...) NODE_BEGIN(&node_array, ##args)
+#define ARRAY_CONSTANT(a) INSERT_NODE(node_new_array((a)))
 #define INT_CONSTANT(args...) NODE_BEGIN(&node_int, ##args)
 #define CATEGORY_CONSTANT(args...) NODE_BEGIN(&node_category, ##args)
 
@@ -106,7 +106,7 @@
 
 #define ARRAY_AT_POS_INC NODE_BEGIN(&node_array_at_pos_inc)
 #define ARRAY_ARG_MAX_I NODE_BEGIN(&node_array_arg_max_i)
-#define ARRAY_NEW(size) NODE_BEGIN(&node_zero_array, size)
+#define ARRAY_NEW(size) NODE_BEGIN(&node_zero_int_array, size)
 
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)
 #define VERIFY_STRING(s) do{if(0){(s)[0];};}while(0)

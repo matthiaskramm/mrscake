@@ -410,14 +410,14 @@ node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num)
         START_CODE(program);
             BOOL_TO_FLOAT
                 EQUALS
-                    VAR(x);
+                    PARAM(x);
                     GENERIC_CONSTANT(e->dataset->columns[x]->classes[cls]);
                 END;
             END;
         END_CODE;
         return program;
     } else {
-        return node_new_with_args(&node_var, x);
+        return node_new_with_args(&node_param, x);
     }
 }
 void expanded_columns_destroy(expanded_columns_t*e)
@@ -458,7 +458,14 @@ model_t* model_new(sanitized_dataset_t*dataset)
     bool has_column_names = false;
     int t;
     for(t=0;t<dataset->num_columns;t++) {
-	m->column_types[t] = dataset->columns[t]->is_categorical ? CATEGORICAL : CONTINUOUS;
+	m->column_types[t] = CONTINUOUS;
+        if(dataset->columns[t]->is_categorical) {
+            if(dataset->columns[t]->classes[0].type==CONSTANT_STRING) {
+	        m->column_types[t] = TEXT;
+            } else {
+	        m->column_types[t] = CATEGORICAL;
+            }
+        }
 	m->column_names[t] = dataset->columns[t]->name;
         has_column_names |= !!dataset->columns[t]->name;
     }

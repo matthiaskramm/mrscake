@@ -33,13 +33,20 @@ extern "C" {
 typedef struct _constant constant_t;
 typedef struct _array array_t;
 
-#define CONSTANT_FLOAT 1
-#define CONSTANT_CATEGORY 2
-#define CONSTANT_INT 3
-#define CONSTANT_BOOL 4
-#define CONSTANT_MISSING 5
-#define CONSTANT_ARRAY 6
-#define CONSTANT_STRING 7
+typedef enum constant_type {
+    CONSTANT_FLOAT=1,
+    CONSTANT_CATEGORY=2,
+    CONSTANT_INT=3,
+    CONSTANT_BOOL=4,
+    CONSTANT_MISSING=5,
+    CONSTANT_STRING=7,
+    CONSTANT_INT_ARRAY=8,
+    CONSTANT_FLOAT_ARRAY=9,
+    CONSTANT_CATEGORY_ARRAY=10,
+    CONSTANT_STRING_ARRAY=11,
+    CONSTANT_MIXED_ARRAY=12,
+} constant_type_t;
+
 extern char*type_name[];
 
 struct _constant {
@@ -59,7 +66,11 @@ constant_t bool_constant(bool b);
 constant_t float_constant(float f);
 constant_t category_constant(category_t c);
 constant_t int_constant(int i);
-constant_t array_constant(array_t*a);
+constant_t int_array_constant(array_t*a);
+constant_t float_array_constant(array_t*a);
+constant_t string_array_constant(array_t*a);
+constant_t mixed_array_constant(array_t*a);
+constant_t category_array_constant(array_t*a);
 constant_t string_constant(const char*s);
 
 bool constant_equals(constant_t*c1, constant_t*c2);
@@ -74,6 +85,7 @@ array_t* array_new(int size);
 array_t* array_create(int size, ...);
 void array_fill(array_t*a, constant_t c);
 void array_destroy(array_t*a);
+constant_type_t constant_array_subtype(constant_t*c);
 
 int constant_check_type(constant_t v, uint8_t type);
 constant_t variable_to_constant(variable_t*v);
@@ -83,7 +95,12 @@ variable_t constant_to_variable(constant_t* c);
 #define AS_INT(v) (constant_check_type((v),CONSTANT_INT),(v).i)
 #define AS_CATEGORY(v) (constant_check_type((v),CONSTANT_CATEGORY),(v).c)
 #define AS_BOOL(v) (constant_check_type((v),CONSTANT_BOOL),(v).b)
-#define AS_ARRAY(v) (constant_check_type((v),CONSTANT_ARRAY),(v).a)
+#define AS_INT_ARRAY(v) (constant_check_type((v),CONSTANT_INT_ARRAY),(v).a)
+#define AS_CATEGORY_ARRAY(v) (constant_check_type((v),CONSTANT_CATEGORY_ARRAY),(v).a)
+#define AS_STRING_ARRAY(v) (constant_check_type((v),CONSTANT_STRING_ARRAY),(v).a)
+#define AS_FLOAT_ARRAY(v) (constant_check_type((v),CONSTANT_FLOAT_ARRAY),(v).a)
+#define AS_MIXED_ARRAY(v) (constant_check_type((v),CONSTANT_MIXED_ARRAY),(v).a)
+#define AS_ARRAY(v) (constant_check_type((v),CONSTANT_MIXED_ARRAY),(v).a)
 #define AS_STRING(v) (constant_check_type((v),CONSTANT_STRING),(v).s)
 
 #ifdef __cplusplus

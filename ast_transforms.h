@@ -26,11 +26,22 @@
 
 node_t* node_prepare_for_code_generation(node_t*n);
 node_t* node_insert_brackets(node_t*n) ;
-node_t* node_cascade_returns(node_t*n) ;
+node_t* node_do_cascade_returns(node_t*n) ;
 bool node_has_consumer_parent(node_t*n);
 node_t* node_add_return(node_t*n);
 bool node_has_minus_prefix(node_t*n);
 bool node_is_missing(node_t*n);
 bool node_terminates(node_t*n);
+
+constant_type_t node_type(node_t*n, model_t*m);
+constant_type_t node_array_element_type(node_t*n);
+int node_array_size(node_t*n);
+
+int node_highest_local(node_t*node);
+constant_type_t*node_local_types(node_t*node, model_t*m, int* num_locals);
+constant_type_t model_param_type(model_t*m, int var);
+bool node_has_child(node_t*n, nodetype_t*type);
+node_t* node_optimize(node_t*n);
+
 
 #endif
