@@ -150,6 +150,10 @@ char*model_generate_code(model_t*m, const char*language)
         return generate_code(&codegen_c, m);
     } else if(!strcmp(language,"ruby")) {
         return generate_code(&codegen_ruby, m);
+    } else if(!strcmp(language,"javascript")) {
+        return generate_code(&codegen_js, m);
+    } else if(!strcmp(language,"js")) {
+        return generate_code(&codegen_js, m);
     } else {
         return generate_code(codegen_default, m);
     }

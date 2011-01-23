@@ -259,7 +259,7 @@ void ruby_write_node_bool_to_float(node_t*n, state_t*s)
 {
     strf(s, "(");
     write_node(s, n->child[0]);
-    strf(s, "?1.0:0.0");
+    strf(s, " ? 1.0 : 0.0");
     strf(s, ")");
 }
 void ruby_write_node_equals(node_t*n, state_t*s)

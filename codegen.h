@@ -51,6 +51,7 @@ void indent(state_t*s);
 void dedent(state_t*s);
 
 codegen_t codegen_c;
+codegen_t codegen_js;
 codegen_t codegen_ruby;
 codegen_t codegen_python;
 

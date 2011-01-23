@@ -321,7 +321,7 @@ void c_write_node_setlocal(node_t*n, state_t*s)
 }
 void c_write_node_inclocal(node_t*n, state_t*s)
 {
-    strf(s, "v%d += 1", n->value.i);
+    strf(s, "v%d++", n->value.i);
 }
 void c_write_node_bool_to_float(node_t*n, state_t*s)
 {
@@ -386,7 +386,7 @@ void c_write_node_array_at_pos_inc(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, "[");
     write_node(s, n->child[1]);
-    strf(s, "]+=1");
+    strf(s, "]++");
 }
 void c_write_node_return(node_t*n, state_t*s)
 {
