@@ -60,6 +60,29 @@ void array_destroy(array_t*a)
     free(a);
 }
 
+constant_type_t constant_array_subtype(constant_t*c)
+{
+    switch(c->type) {
+        case CONSTANT_INT_ARRAY:
+            return CONSTANT_INT;
+        break;
+        case CONSTANT_FLOAT_ARRAY:
+            return CONSTANT_FLOAT;
+        break;
+        case CONSTANT_STRING_ARRAY:
+            return CONSTANT_STRING;
+        break;
+        case CONSTANT_CATEGORY_ARRAY:
+            return CONSTANT_CATEGORY;
+        break;
+        case CONSTANT_MIXED_ARRAY:
+            return CONSTANT_MISSING;
+        break;
+        default:
+            assert(!"can't determine array subtype of non-array");
+    }
+}
+
 constant_t bool_constant(bool b)
 {
     constant_t v;

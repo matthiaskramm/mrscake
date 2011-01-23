@@ -238,9 +238,11 @@ int node_array_size(node_t*n)
         case opcode_node_getlocal:
             n = node_find_setlocal(node_find_root(n), n->value.i);
             return node_array_size(n->child[0]);
+        case opcode_node_brackets:
+            return node_array_size(n->child[0]);
 	default:
             fprintf(stderr, "Couldn't do array size deduction for ast node %s\n", n->type->name);
-	    return CONSTANT_MISSING;
+	    return -1;
     }
 }
 bool node_terminates(node_t*n)

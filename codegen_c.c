@@ -154,7 +154,7 @@ void c_write_node_in(node_t*n, state_t*s)
             strf(s, "false");
             return;
         } else {
-            constant_type_t etype = a->entries[0].type;
+            constant_type_t etype = constant_array_subtype(&n->child[1]->value);
             switch(etype) {
                 case CONSTANT_STRING:
                     strf(s, "!!strstr(\"");
@@ -272,23 +272,27 @@ void c_write_node_category(node_t*n, state_t*s)
 }
 void c_write_node_string_array(node_t*n, state_t*s)
 {
-    c_write_constant(&n->value, s);
+    strf(s, "a%x", (long)n->value.a);
 }
 void c_write_node_int_array(node_t*n, state_t*s)
 {
-    c_write_constant(&n->value, s);
+    strf(s, "a%x", (long)n->value.a);
 }
 void c_write_node_float_array(node_t*n, state_t*s)
 {
-    c_write_constant(&n->value, s);
+    strf(s, "a%x", (long)n->value.a);
 }
 void c_write_node_mixed_array(node_t*n, state_t*s)
 {
-    c_write_constant(&n->value, s);
+    strf(s, "a%x", (long)n->value.a);
 }
 void c_write_node_category_array(node_t*n, state_t*s)
 {
-    c_write_constant(&n->value, s);
+    strf(s, "a%x", (long)n->value.a);
+}
+void c_write_node_zero_int_array(node_t*n, state_t*s)
+{
+    strf(s, "a%x", (long)n->value.a);
 }
 void c_write_node_float(node_t*n, state_t*s)
 {
@@ -384,16 +388,6 @@ void c_write_node_array_at_pos_inc(node_t*n, state_t*s)
     write_node(s, n->child[1]);
     strf(s, "]+=1");
 }
-void c_write_node_zero_int_array(node_t*n, state_t*s)
-{
-    int t;
-    strf(s, "{");
-    for(t=0;t<n->value.a->size;t++) {
-        if(t) strf(s, ",");
-        strf(s, "0");
-    }
-    strf(s, "}");
-}
 void c_write_node_return(node_t*n, state_t*s)
 {
     strf(s, "return ");
@@ -454,6 +448,23 @@ static void c_write_function_sqr(state_t*s)
 "}\n"
     );
 }
+void c_enumerate_arrays(node_t*node, state_t*s)
+{
+    if(node_is_array(node)) {
+        strf(s, "%s a%x[%d] = ", 
+                c_type_name(constant_array_subtype(&node->value)),
+                (long)(node->value.a),
+                node->value.a->size
+                );
+        c_write_constant(&node->value, s);
+        strf(s, ";\n");
+    } else {
+        int t;
+        for(t=0;t<node->num_children;t++) {
+            c_enumerate_arrays(node->child[t], s);
+        }
+    }
+}
 void c_write_header(model_t*model, state_t*s)
 {
     node_t*root = (node_t*)model->code;
@@ -492,6 +503,7 @@ void c_write_header(model_t*model, state_t*s)
             strf(s, "%s v%d;\n", c_type_name(types[t]), t);
         }
     }
+    c_enumerate_arrays(root, s);
 
 }
 void c_write_footer(model_t*model, state_t*s)
