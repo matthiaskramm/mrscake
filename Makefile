@@ -22,7 +22,7 @@ MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_c.o
 OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o
 
-all: multimodel ast model predict.$(SO) prediction.$(SO)
+all: multimodel ast model predict.so prediction.$(SO)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -101,7 +101,7 @@ model: test_model.o $(OBJECTS) lib/libml.a
 
 # ------------ python interface --------------
 
-predict.$(SO): predict.py.c model.h list.h $(OBJECTS) lib/libml.a
+predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
 	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
 
 python_interpreter: python_interpreter.c
@@ -121,10 +121,11 @@ test: predict.so
 	python test_python_module.py
 
 local-clean:
-	rm -f svm test ast ann multimodel *.o
+	rm -f svm test ast ann multimodel *.o predict.$(SO) prediction.$(SO)
 
 clean: local-clean
 	rm -f lib/*.o lib/*.a lib/*.gch
+	rm -rf *.dSYM
 
 
 .PHONY: clean all test local-clean
