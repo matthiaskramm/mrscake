@@ -245,7 +245,7 @@ constant_t node_return_eval(node_t*n, environment_t* env)
 }
 nodetype_t node_return =
 {
-name:"()",
+name:"return",
 flags:NODE_FLAG_HAS_CHILDREN,
 eval: node_return_eval,
 min_args:1,

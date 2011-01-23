@@ -307,6 +307,8 @@ node_t* node_do_cascade_returns(node_t*n)
 	case opcode_node_setlocal:
 	case opcode_node_inclocal:
 	    return n;
+	case opcode_node_return:
+	    return n;
 	default: {
 	    node_t*p = node_new(&node_return, n->parent);
 	    node_append_child(p, n);
