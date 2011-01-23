@@ -178,6 +178,9 @@ static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
     if(svm.train_auto(input, response, 0, 0, params, 5)) {
 	m = model_new(d);
         m->code = svm.get_program();
+    } else if(svm.train(input, response, 0, 0, params)) {
+	m = model_new(d);
+        m->code = svm.get_program();
     }
 
     cvReleaseMat(&input);

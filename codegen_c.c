@@ -488,7 +488,7 @@ void c_write_header(model_t*model, state_t*s)
     for(t=0;t<model->num_inputs;t++) {
         if(t) strf(s, ", ");
         if(s->model->column_names) {
-            strf(s, "p%d", c_type_name(model_param_type(s->model,t)), s->model->column_names[t]);
+            strf(s, "%s %s", c_type_name(model_param_type(s->model,t)), s->model->column_names[t]);
         } else {
             strf(s, "%s p%d", c_type_name(model_param_type(s->model,t)), t);
         }

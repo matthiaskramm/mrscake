@@ -169,9 +169,8 @@ void ruby_write_constant(constant_t*c, state_t*s)
             else
                 strf(s, "false");
         case CONSTANT_STRING:
-            strf(s, "\"");
-            write_escaped_string(s, c->s);
-            strf(s, "\"");
+            strf(s, ":");
+            strf(s, "%s", c->s);
             break;
         case CONSTANT_MISSING:
             strf(s, "nil");
@@ -277,7 +276,7 @@ void ruby_write_node_arg_max(node_t*n, state_t*s)
         if(t) strf(s, ",");
         write_node(s, n->child[t]);
     }
-    strf(s, "].each.inject([-9999,0]) {|i,n| [[i[0],n].max,i[1]+1]})[1]");
+    strf(s, "].each.inject([-1,0]) {|i,n| [[i[0],n].max,i[1]+1]})[1]");
 }
 void ruby_write_node_arg_max_i(node_t*n, state_t*s)
 {

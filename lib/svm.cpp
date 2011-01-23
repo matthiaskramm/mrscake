@@ -1401,8 +1401,8 @@ bool CvSVM::do_train( int svm_type, int sample_count, int var_count, const float
         cvSortSamplesByClasses( samples, responses, class_ranges, 0 );
         //check that while cross-validation there were the samples from all the classes
         if( class_ranges[class_count] <= 0 ) {
-            fprintf(stderr, "While cross-validation one or more of the classes have "
-                "been fell out of the sample. Try to enlarge <CvSVMParams::k_fold>");
+            //fprintf(stderr, "While cross-validation one or more of the classes have "
+            //    "been fell out of the sample. Try to enlarge <CvSVMParams::k_fold>");
             return false;
         }
 
