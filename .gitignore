@@ -13,5 +13,6 @@ tags
 gmon.out
 display_model.py
 *.dSYM
+*.bundle
 *.model
 data/*
