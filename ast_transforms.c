@@ -323,8 +323,6 @@ int node_precedence(node_t*n)
             return 1;
 	case opcode_node_setlocal:
             return 2;
-	case opcode_node_exp:
-            return 3;
 	case opcode_node_equals:
 	case opcode_node_lt:
 	case opcode_node_gt:
@@ -337,11 +335,15 @@ int node_precedence(node_t*n)
 	case opcode_node_mul:
 	case opcode_node_div:
             return 6;
-	case opcode_node_sqr:
-            return 8;
+	case opcode_node_neg: // -x
+	case opcode_node_sqr: // x ** 2
+	case opcode_node_exp:
+	case opcode_node_abs:
+	case opcode_node_array_at_pos:
+            return 9;
 	case opcode_node_getlocal:
 	case opcode_node_param:
-            return 9;
+            return 10;
         default:
             return 1024;
     }
