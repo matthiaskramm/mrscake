@@ -50,8 +50,10 @@ void write_node(state_t*s, node_t*n);
 void indent(state_t*s);
 void dedent(state_t*s);
 
-codegen_t codegen_python;
 codegen_t codegen_c;
+codegen_t codegen_ruby;
+codegen_t codegen_python;
+
 codegen_t* codegen_default;
 
 char*generate_code(codegen_t*codegen, model_t*m);

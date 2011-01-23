@@ -1,5 +1,5 @@
-/* codegen_python.c
-   Code generator for Python
+/* codegen_ruby.c
+   Code generator for Ruby
 
    Part of the data prediction package.
    
@@ -21,37 +21,28 @@
 
 #include "codegen.h"
 
-void python_write_node_block(node_t*n, state_t*s)
+void ruby_write_node_block(node_t*n, state_t*s)
 {
     int t;
     for(t=0;t<n->num_children;t++) {
+        if(t)
+            strf(s, "\n");
         write_node(s, n->child[t]);
-        strf(s, "\n");
     }
 }
-void python_write_node_if(node_t*n, state_t*s)
+void ruby_write_node_if(node_t*n, state_t*s)
 {
-    if(!node_terminates(n) && node_has_consumer_parent(n)) {
-        strf(s, "(");
-        write_node(s, n->child[1]);
-        strf(s, " if ");
-        write_node(s, n->child[0]);
-        strf(s, " else ");
-        write_node(s, n->child[2]);
-        strf(s, ")");
-    } else {
-        strf(s, "if ");
-        write_node(s, n->child[0]);
-        strf(s, ":\n");
-        indent(s);write_node(s, n->child[1]);dedent(s);
-        if(!node_is_missing(n->child[2])) {
-            strf(s, "\nelse:\n");
-            indent(s);write_node(s, n->child[2]);dedent(s);
-        }
-        //strf(s, "\n");
+    strf(s, "if ");
+    write_node(s, n->child[0]);
+    strf(s, " then\n");
+    indent(s);write_node(s, n->child[1]);dedent(s);
+    if(!node_is_missing(n->child[2])) {
+        strf(s, "\nelse\n");
+        indent(s);write_node(s, n->child[2]);dedent(s);
     }
+    strf(s, "\nend");
 }
-void python_write_node_add(node_t*n, state_t*s)
+void ruby_write_node_add(node_t*n, state_t*s)
 {
     int t;
     for(t=0;t<n->num_children;t++) {
@@ -59,7 +50,7 @@ void python_write_node_add(node_t*n, state_t*s)
         write_node(s, n->child[t]);
     }
 }
-void python_write_node_sub(node_t*n, state_t*s)
+void ruby_write_node_sub(node_t*n, state_t*s)
 {
     int t;
     for(t=0;t<n->num_children;t++) {
@@ -67,76 +58,78 @@ void python_write_node_sub(node_t*n, state_t*s)
         write_node(s, n->child[t]);
     }
 }
-void python_write_node_mul(node_t*n, state_t*s)
+void ruby_write_node_mul(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "*");
     write_node(s, n->child[1]);
 }
-void python_write_node_div(node_t*n, state_t*s)
+void ruby_write_node_div(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "/");
     write_node(s, n->child[1]);
 }
-void python_write_node_lt(node_t*n, state_t*s)
+void ruby_write_node_lt(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "<");
     write_node(s, n->child[1]);
 }
-void python_write_node_lte(node_t*n, state_t*s)
+void ruby_write_node_lte(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "<=");
     write_node(s, n->child[1]);
 }
-void python_write_node_gt(node_t*n, state_t*s)
+void ruby_write_node_gt(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, ">");
     write_node(s, n->child[1]);
 }
-void python_write_node_gte(node_t*n, state_t*s)
+void ruby_write_node_gte(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, ">=");
     write_node(s, n->child[1]);
 }
-void python_write_node_in(node_t*n, state_t*s)
+void ruby_write_node_in(node_t*n, state_t*s)
 {
-    write_node(s, n->child[0]);
-    strf(s, " in ");
+    strf(s, "!!");
     write_node(s, n->child[1]);
+    strf(s, ".index(");
+    write_node(s, n->child[0]);
+    strf(s, ")");
 }
-void python_write_node_not(node_t*n, state_t*s)
+void ruby_write_node_not(node_t*n, state_t*s)
 {
-    strf(s, "not ");
+    strf(s, "!");
     write_node(s, n->child[0]);
 }
-void python_write_node_neg(node_t*n, state_t*s)
+void ruby_write_node_neg(node_t*n, state_t*s)
 {
     strf(s, "-");
     write_node(s, n->child[0]);
 }
-void python_write_node_exp(node_t*n, state_t*s)
+void ruby_write_node_exp(node_t*n, state_t*s)
 {
-    strf(s, "math.exp(");
+    strf(s, "Math.exp(");
     write_node(s, n->child[0]);
     strf(s, ")");
 }
-void python_write_node_sqr(node_t*n, state_t*s)
+void ruby_write_node_sqr(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "**2");
 }
-void python_write_node_abs(node_t*n, state_t*s)
+void ruby_write_node_abs(node_t*n, state_t*s)
 {
-    strf(s, "abs(");
+    strf(s, "(");
     write_node(s, n->child[0]);
-    strf(s, ")");
+    strf(s, ").abs");
 }
-void python_write_node_param(node_t*n, state_t*s)
+void ruby_write_node_param(node_t*n, state_t*s)
 {
     if(s->model->column_names) {
         strf(s, "%s", s->model->column_names[n->value.i]);
@@ -144,10 +137,10 @@ void python_write_node_param(node_t*n, state_t*s)
         strf(s, "data[%d]", n->value.i);
     }
 }
-void python_write_node_nop(node_t*n, state_t*s)
+void ruby_write_node_nop(node_t*n, state_t*s)
 {
 }
-void python_write_constant(constant_t*c, state_t*s)
+void ruby_write_constant(constant_t*c, state_t*s)
 {
     int t;
     switch(c->type) {
@@ -160,16 +153,16 @@ void python_write_constant(constant_t*c, state_t*s)
             break;
         case CONSTANT_BOOL:
             if(c->b)
-                strf(s, "True");
+                strf(s, "true");
             else
-                strf(s, "False");
+                strf(s, "false");
         case CONSTANT_STRING:
             strf(s, "\"");
             write_escaped_string(s, c->s);
             strf(s, "\"");
             break;
         case CONSTANT_MISSING:
-            strf(s, "None");
+            strf(s, "nil");
             break;
         case CONSTANT_MIXED_ARRAY:
         case CONSTANT_INT_ARRAY:
@@ -180,135 +173,136 @@ void python_write_constant(constant_t*c, state_t*s)
             for(t=0;t<c->a->size;t++) {
                 if(t)
                     strf(s, ",");
-                python_write_constant(&c->a->entries[t], s);
+                ruby_write_constant(&c->a->entries[t], s);
             }
             strf(s, "]");
             break;
     }
 }
-void python_write_node_constant(node_t*n, state_t*s)
+void ruby_write_node_constant(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_bool(node_t*n, state_t*s)
+void ruby_write_node_bool(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_category(node_t*n, state_t*s)
+void ruby_write_node_category(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_mixed_array(node_t*n, state_t*s)
+void ruby_write_node_mixed_array(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_string_array(node_t*n, state_t*s)
+void ruby_write_node_string_array(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_int_array(node_t*n, state_t*s)
+void ruby_write_node_int_array(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_float_array(node_t*n, state_t*s)
+void ruby_write_node_float_array(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_category_array(node_t*n, state_t*s)
+void ruby_write_node_category_array(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_zero_int_array(node_t*n, state_t*s)
+void ruby_write_node_zero_int_array(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_float(node_t*n, state_t*s)
+void ruby_write_node_float(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_int(node_t*n, state_t*s)
+void ruby_write_node_int(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_string(node_t*n, state_t*s)
+void ruby_write_node_string(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_missing(node_t*n, state_t*s)
+void ruby_write_node_missing(node_t*n, state_t*s)
 {
-    python_write_constant(&n->value, s);
+    ruby_write_constant(&n->value, s);
 }
-void python_write_node_getlocal(node_t*n, state_t*s)
+void ruby_write_node_getlocal(node_t*n, state_t*s)
 {
     strf(s, "v%d", n->value.i);
 }
-void python_write_node_setlocal(node_t*n, state_t*s)
+void ruby_write_node_setlocal(node_t*n, state_t*s)
 {
     strf(s, "v%d = ", n->value.i);
     write_node(s, n->child[0]);
 }
-void python_write_node_inclocal(node_t*n, state_t*s)
+void ruby_write_node_inclocal(node_t*n, state_t*s)
 {
     strf(s, "v%d += 1", n->value.i);
 }
-void python_write_node_bool_to_float(node_t*n, state_t*s)
+void ruby_write_node_bool_to_float(node_t*n, state_t*s)
 {
-    strf(s, "float(");
+    strf(s, "(");
     write_node(s, n->child[0]);
+    strf(s, "?1.0:0.0");
     strf(s, ")");
 }
-void python_write_node_equals(node_t*n, state_t*s)
+void ruby_write_node_equals(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, " == ");
     write_node(s, n->child[1]);
 }
-void python_write_node_arg_max(node_t*n, state_t*s)
+void ruby_write_node_arg_max(node_t*n, state_t*s)
 {
-    strf(s, "max([(v,nr) for nr,v in enumerate([");
+    strf(s, "([");
     int t;
     for(t=0;t<n->num_children;t++) {
         if(t) strf(s, ",");
         write_node(s, n->child[t]);
     }
-    strf(s, "])])[1]");
+    strf(s, "].each.inject([-9999,0]) {|i,n| [[i[0],n].max,i[1]+1]})[1]");
 }
-void python_write_node_arg_max_i(node_t*n, state_t*s)
+void ruby_write_node_arg_max_i(node_t*n, state_t*s)
 {
-    python_write_node_arg_max(n, s);
+    ruby_write_node_arg_max(n, s);
 }
-void python_write_node_array_at_pos(node_t*n, state_t*s)
+void ruby_write_node_array_at_pos(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "[");
     write_node(s, n->child[1]);
     strf(s, "]");
 }
-void python_write_node_array_at_pos_inc(node_t*n, state_t*s)
+void ruby_write_node_array_at_pos_inc(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "[");
     write_node(s, n->child[1]);
     strf(s, "]+=1");
 }
-void python_write_node_array_arg_max_i(node_t*n, state_t*s)
+void ruby_write_node_array_arg_max_i(node_t*n, state_t*s)
 {
-    strf(s, "max([(v,nr) for nr,v in enumerate(");
+    strf(s, "(");
     write_node(s, n->child[0]);
-    strf(s, ")])[1]");
+    strf(s, ".each.inject([-9999,0]) {|i,n| [[i[0],n].max,i[1]+1]})[1]");
 }
-void python_write_node_return(node_t*n, state_t*s)
+void ruby_write_node_return(node_t*n, state_t*s)
 {
     strf(s, "return ");
     write_node(s, n->child[0]);
 }
-void python_write_node_brackets(node_t*n, state_t*s)
+void ruby_write_node_brackets(node_t*n, state_t*s)
 {
     strf(s, "(");
     write_node(s, n->child[0]);
     strf(s, ")");
 }
-void python_write_header(model_t*model, state_t*s)
+void ruby_write_header(model_t*model, state_t*s)
 {
     strf(s, "def predict(");
     if(s->model->column_names) {
@@ -321,20 +315,21 @@ void python_write_header(model_t*model, state_t*s)
     } else {
         strf(s, "data");
     }
-    strf(s, "):\n");
+    strf(s, ")\n");
     indent(s);
 }
-void python_write_footer(model_t*model, state_t*s)
+void ruby_write_footer(model_t*model, state_t*s)
 {
     dedent(s);
+    strf(s, "\nend\n");
 }
 
 
-codegen_t codegen_python = {
-#define NODE(opcode, name) write_##name: python_write_##name,
+codegen_t codegen_ruby = {
+#define NODE(opcode, name) write_##name: ruby_write_##name,
 LIST_NODES
 #undef NODE
-    write_header: python_write_header,
-    write_footer: python_write_footer,
+    write_header: ruby_write_header,
+    write_footer: ruby_write_footer,
 };
 

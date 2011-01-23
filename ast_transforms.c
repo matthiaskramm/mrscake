@@ -385,6 +385,14 @@ bool node_has_child(node_t*node, nodetype_t*type)
     }
     return false;
 }
+bool float_is_zero(double f)
+{
+    return (fabs(f)<0.000001);
+}
+bool float_is_one(double f)
+{
+    return (fabs(f-1.0)<0.000001);
+}
 node_t* node_optimize(node_t*n)
 {
     int t,num;
@@ -421,14 +429,14 @@ node_t* node_optimize(node_t*n)
                     a
              */
             if(n->child[1]->type == &node_float &&
-               fabs(n->child[1]->value.f - 1.0) <= FLT_EPSILON) {
+               float_is_one(n->child[1]->value.f)) {
                 node_t*new_node = n->child[0];
                 node_destroy(n->child[1]);
                 node_destroy_self(n);
                 return new_node;
             }
             if(n->child[0]->type == &node_float &&
-               fabs(n->child[0]->value.f - 1.0) <= FLT_EPSILON) {
+               float_is_one(n->child[0]->value.f)) {
                 node_t*new_node = n->child[1];
                 node_destroy(n->child[0]);
                 node_destroy_self(n);
@@ -442,14 +450,14 @@ node_t* node_optimize(node_t*n)
                     0.0
              */
             if(n->child[0]->type == &node_float &&
-               fabs(n->child[0]->value.f)<=FLT_EPSILON) {
+               float_is_zero(n->child[0]->value.f)) {
                 node_t*new_node = n->child[0];
                 node_destroy(n->child[1]);
                 node_destroy_self(n);
                 return new_node;
             }
             if(n->child[1]->type == &node_float &&
-               fabs(n->child[1]->value.f)<=FLT_EPSILON) {
+               float_is_zero(n->child[1]->value.f)) {
                 node_t*new_node = n->child[1];
                 node_destroy(n->child[0]);
                 node_destroy_self(n);
@@ -463,7 +471,7 @@ node_t* node_optimize(node_t*n)
                     a
              */
             if(n->child[1]->type == &node_float &&
-               fabs(n->child[1]->value.f)<=FLT_EPSILON) {
+               float_is_zero(n->child[1]->value.f)) {
                 node_t*new_node = n->child[0];
                 node_destroy_self(n);
                 return new_node;
@@ -476,7 +484,7 @@ node_t* node_optimize(node_t*n)
                     a
              */
             if(n->child[1]->type == &node_float &&
-               fabs(n->child[1]->value.f - 1.0)<=FLT_EPSILON) {
+               float_is_one(n->child[1]->value.f)) {
                 node_t*new_node = n->child[0];
                 node_destroy_self(n);
                 return new_node;
@@ -492,7 +500,7 @@ node_t* node_optimize(node_t*n)
             for(t=0;t<n->num_children;t++) {
                 node_set_child(n, num, n->child[t]);
                 if(n->child[t]->type != &node_float ||
-                   !(fabs(n->child[t]->value.f)<=FLT_EPSILON)) {
+                   !float_is_zero(n->child[t]->value.f)) {
                     num++;
                 }
             }

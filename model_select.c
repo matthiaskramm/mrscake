@@ -95,7 +95,7 @@ model_t* model_select(trainingdata_t*trainingdata)
 #ifdef SHOW_CODE
                 //node_print((node_t*)m->code);
 		printf("# -------------------------------\n");
-		printf("%s\n", generate_code(&codegen_c, m));
+		printf("%s\n", generate_code(&codegen_ruby, m));
 		printf("# -------------------------------\n");
 #endif
                 if(score < best_score) {

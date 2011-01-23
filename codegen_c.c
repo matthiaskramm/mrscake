@@ -1,5 +1,5 @@
-/* codegen_python.c
-   Code generator for Python
+/* codegen_c.c
+   Code generator for C
 
    Part of the data prediction package.
    
