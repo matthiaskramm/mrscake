@@ -276,7 +276,7 @@ void ruby_write_node_arg_max(node_t*n, state_t*s)
         if(t) strf(s, ",");
         write_node(s, n->child[t]);
     }
-    strf(s, "].each.inject([-1,0]) {|i,n| [[i[0],n].max,i[1]+1]})[1]");
+    strf(s, "].each.inject([]) {|i,n| [i,[n,i[1]+1]].max})[1]");
 }
 void ruby_write_node_arg_max_i(node_t*n, state_t*s)
 {
@@ -300,7 +300,7 @@ void ruby_write_node_array_arg_max_i(node_t*n, state_t*s)
 {
     strf(s, "(");
     write_node(s, n->child[0]);
-    strf(s, ".each.inject([-9999,0]) {|i,n| [[i[0],n].max,i[1]+1]})[1]");
+    strf(s, ".each.inject([]) {|i,n| [i,[n,i[1]+1]].max})[1]");
 }
 void ruby_write_node_return(node_t*n, state_t*s)
 {

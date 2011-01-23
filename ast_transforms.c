@@ -324,6 +324,8 @@ int node_precedence(node_t*n)
 	case opcode_node_if:
             return 1;
 	case opcode_node_setlocal:
+	case opcode_node_inclocal:
+	case opcode_node_array_at_pos_inc: // x[y]+=1
             return 2;
 	case opcode_node_equals:
 	case opcode_node_lt:
@@ -341,7 +343,10 @@ int node_precedence(node_t*n)
 	case opcode_node_sqr: // x ** 2
 	case opcode_node_exp:
 	case opcode_node_abs:
+	case opcode_node_arg_max_i:
+	case opcode_node_arg_max:
 	case opcode_node_array_at_pos:
+	case opcode_node_array_arg_max_i:
             return 9;
 	case opcode_node_getlocal:
 	case opcode_node_param:
