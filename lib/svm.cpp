@@ -460,10 +460,12 @@ bool CvSVMSolver::create( int _sample_count, int _var_count, const float** _samp
 
     // the size of Q matrix row headers
     rows_hdr_size = sample_count*sizeof(rows[0]);
-    if( rows_hdr_size > storage->block_size )
+    if( rows_hdr_size > storage->block_size - sizeof(CvMemBlock) ) {
         CV_ERROR( CV_StsOutOfRange, "Too small storage block size" );
+    }
 
     lru_list.prev = lru_list.next = &lru_list;
+
     rows = (CvSVMKernelRow*)cvMemStorageAlloc( storage, rows_hdr_size );
     memset( rows, 0, rows_hdr_size );
 
@@ -1566,7 +1568,7 @@ bool CvSVM::train( const CvMat* _train_data, const CvMat* _responses,
 
     // make the storage block size large enough to fit all
     // the temporary vectors and output support vectors.
-    block_size = MAX( block_size, sample_count*(int)sizeof(CvSVMKernelRow));
+    block_size = MAX( block_size, sample_count*(int)sizeof(CvSVMKernelRow) + 1024);
     block_size = MAX( block_size, sample_count*2*(int)sizeof(double) + 1024 );
     block_size = MAX( block_size, sample_size*2 + 1024 );
 
@@ -1735,7 +1737,7 @@ bool CvSVM::train_auto( const CvMat* _train_data, const CvMat* _responses,
 
     // make the storage block size large enough to fit all
     // the temporary vectors and output support vectors.
-    block_size = MAX( block_size, sample_count*(int)sizeof(CvSVMKernelRow));
+    block_size = MAX( block_size, sample_count*(int)sizeof(CvSVMKernelRow) + 1024);
     block_size = MAX( block_size, sample_count*2*(int)sizeof(double) + 1024 );
     block_size = MAX( block_size, sample_size*2 + 1024 );
 
