@@ -37,7 +37,7 @@ typedef struct _sanitized_dataset {
     int num_columns;
     int num_rows;
     column_t**columns;
-    
+
     column_t*desired_response;
 } sanitized_dataset_t;
 
@@ -46,9 +46,10 @@ struct _column {
 
     int num_classes;
     constant_t*classes;
+    int* class_occurence_count;
 
     const char*name;
-    
+
     union {
         float f;
         category_t c;
@@ -79,7 +80,7 @@ node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num);
 void expanded_columns_destroy(expanded_columns_t*e);
 
 model_t* model_new(sanitized_dataset_t*dataset);
-example_t**example_list_to_array(trainingdata_t*d);
+example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags);
 node_t* parameter_code(sanitized_dataset_t*d, int num);
 array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*d);
 void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y);

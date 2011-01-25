@@ -170,5 +170,9 @@ void model_destroy(model_t*m)
 {
     if(m->code)
         node_destroy(m->code);
+    if(m->column_types)
+        free(m->column_types);
+    if(m->column_names)
+        free(m->column_names);
     free(m);
 }

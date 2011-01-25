@@ -40,7 +40,8 @@ int main()
     }
     model_t*m = model_select(data);
 
-    printf("%s\n", model_generate_code(m, "python"));
+    char*code = model_generate_code(m, "python");
+    printf("%s\n", code);
 
     model_destroy(m);
 
