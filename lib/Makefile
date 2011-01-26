@@ -20,6 +20,7 @@ precomp_core.hpp.gch: precomp_core.hpp
 
 libml.a: $(HEADERS) $(OBJECTS)
 	ar cru libml.a $(OBJECTS)
+	ranlib libml.a
 
 clean:
 	rm -f *.gch $(OBJECTS) libml.a

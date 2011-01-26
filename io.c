@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
