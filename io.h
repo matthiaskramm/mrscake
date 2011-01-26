@@ -103,6 +103,7 @@ void write_compressed_uint(writer_t*w, uint32_t b);
 
 reader_t* filereader_new(int handle);
 reader_t* filereader_new2(const char*filename);
+reader_t* filereader_with_timeout_new(int handle, int seconds);
 reader_t* zlibinflate_new(reader_t*input);
 reader_t* memreader_new(void*data, int length);
 reader_t* nullreader_new();

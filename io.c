@@ -69,40 +69,78 @@ reader_t*nullreader_new()
 }
 /* ---------------------------- file reader ------------------------------- */
 
-static int reader_fileread(reader_t*r, void* data, int len) 
+typedef struct _filereader_internal {
+    int handle;
+    int timeout;
+} filereader_internal_t;
+
+static int reader_fileread(reader_t*r, void* data, int len)
 {
-    int handle = *(int*)r->internal;
-    int ret = read(handle, data, len);
+    filereader_internal_t*i = (filereader_internal_t*)r->internal;
+    int ret = read(i->handle, data, len);
+    if(ret>=0)
+	r->pos += ret;
+    return ret;
+}
+static int reader_fileread_with_timeout(reader_t*r, void* data, int len)
+{
+    filereader_internal_t*i = (filereader_internal_t*)r->internal;
+    struct timeval timeout;
+    timeout.tv_sec = i->timeout;
+    timeout.tv_usec = 0;
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(i->handle, &readfds);
+    int ret;
+    ret = select(i->handle+1, &readfds, NULL, NULL, &timeout);
+    if(ret<0) {
+        perror("select");
+        return -1;
+    }
+    if(!FD_ISSET(i->handle, &readfds)) {
+        return -1;
+    }
+    ret = read(i->handle, data, len);
     if(ret>=0)
 	r->pos += ret;
     return ret;
 }
 static void reader_fileread_dealloc(reader_t*r)
 {
+    filereader_internal_t*i = (filereader_internal_t*)r->internal;
     if(r->type == READER_TYPE_FILE2) {
-        int handle = *(int*)r->internal;
-	close(handle);
-        free(r->internal);
+	close(i->handle);
     }
+    free(r->internal);
     free(r);
 }
 static int reader_fileread_seek(reader_t*r, int pos)
 {
-    int handle = *(int*)r->internal;
-    return lseek(handle, pos, SEEK_SET);
+    filereader_internal_t*i = (filereader_internal_t*)r->internal;
+    return lseek(i->handle, pos, SEEK_SET);
 }
 reader_t* filereader_new(int handle)
 {
+    filereader_internal_t*i = (filereader_internal_t*)malloc(sizeof(filereader_internal_t));
     reader_t*r = (reader_t*)malloc(sizeof(reader_t));
     r->read = reader_fileread;
     r->seek = reader_fileread_seek;
     r->dealloc = reader_fileread_dealloc;
-    r->internal = malloc(sizeof(int));
-    *(int*)r->internal = handle;
+    r->internal = i;
     r->type = READER_TYPE_FILE;
     r->mybyte = 0;
     r->bitpos = 8;
     r->pos = 0;
+    i->handle = handle;
+    return r;
+}
+reader_t* filereader_with_timeout_new(int handle, int seconds)
+{
+    reader_t*r = filereader_new(handle);
+    r->read = reader_fileread_with_timeout;
+    filereader_internal_t*i = (filereader_internal_t*)r->internal;
+    i->timeout = seconds;
     return r;
 }
 reader_t* filereader_new2(const char*filename)
