@@ -539,9 +539,8 @@ max_args:0,
 
 constant_t node_zero_int_array_eval(node_t*n, environment_t* env)
 {
-    array_t*a = array_new(n->value.a->size);
-    array_fill(a, int_constant(0));
-    return int_array_constant(a);
+    array_fill(n->value.a, int_constant(0));
+    return n->value;
 }
 nodetype_t node_zero_int_array =
 {

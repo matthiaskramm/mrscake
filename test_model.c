@@ -42,6 +42,7 @@ int main()
 
     char*code = model_generate_code(m, "python");
     printf("%s\n", code);
+    free(code);
 
     model_destroy(m);
 
