@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "model.h"
@@ -62,72 +63,34 @@ model_collection_t collections[] = {
     {ann_models, &num_ann_models},
 };
 
-model_t* model_select(trainingdata_t*trainingdata)
+typedef struct _job {
+    model_factory_t*factory;
+    model_t*model;
+} job_t;
+
+static job_t* generate_jobs(int*num_jobs)
 {
-    model_t*best_model = 0;
-    model_factory_t*best_factory = 0;
-    int best_score = INT_MAX;
     int t;
     int s;
-    sanitized_dataset_t*data = dataset_sanitize(trainingdata);
-    if(!data)
-        return 0;
-#define DEBUG
-#ifdef DEBUG
-    printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
-            data->num_columns, sanitized_dataset_count_expanded_columns(data));
-#endif
+    int num = 0;
+    for(s=0;s<NUM(collections);s++) {
+        model_collection_t*collection = &collections[s];
+	num += *collection->num_models;
+    }
+    *num_jobs = num;
+    job_t*jobs = malloc(sizeof(job_t)*num);
+    int pos = 0;
     for(s=0;s<NUM(collections);s++) {
         model_collection_t*collection = &collections[s];
         for(t=0;t<*collection->num_models;t++) {
             model_factory_t*factory = collection->models[t];
-#ifdef DEBUG
-            printf("# Trying %s... ", factory->name);fflush(stdout);
-#endif
-            model_t*m = train_model(factory, data);
-
-            if(m) {
-                m->name = factory->name;
-                int size = model_size(m);
-#ifdef DEBUG
-                printf("model size %d", size);fflush(stdout);
-#endif
-                int errors = model_errors(m, data);
-                int score = size + errors * sizeof(uint32_t);
-#ifdef DEBUG
-                printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
-		node_sanitycheck((node_t*)m->code);
-#endif
-//#define SHOW_CODE
-#ifdef SHOW_CODE
-                //node_print((node_t*)m->code);
-		printf("# -------------------------------\n");
-		printf("%s\n", generate_code(&codegen_js, m));
-		printf("# -------------------------------\n");
-#endif
-                if(score < best_score) {
-                    if(best_model) {
-                        model_destroy(best_model);
-                    }
-                    best_score = score;
-                    best_factory = factory;
-                    best_model = m;
-                } else {
-                    model_destroy(m);
-                }
-            } else {
-#ifdef DEBUG
-                printf("failed\n");
-#endif
-            }
+	    jobs[pos].factory = factory;
+	    jobs[pos].model = NULL;
+	    pos++;
         }
     }
-            
-    sanitized_dataset_destroy(data);
-#ifdef DEBUG
-    printf("# Using %s.\n", best_factory->name);
-#endif
-    return best_model;
+    assert(pos==num);
+    return jobs;
 }
 
 #define FORK_FOR_TRAINING
@@ -171,6 +134,83 @@ model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data)
         return m;
     }
 #endif
+}
+
+static void process_jobs(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
+{
+    int t;
+    for(t=0;t<num_jobs;t++) {
+#ifdef DEBUG
+	printf("# Trying %s... ", factory->name);fflush(stdout);
+#endif
+	jobs[t].model = train_model(jobs[t].factory, data);
+	jobs[t].model->name = jobs[t].factory->name;
+    }
+}
+
+model_t* model_select(trainingdata_t*trainingdata)
+{
+    model_t*best_model = 0;
+    int best_score = INT_MAX;
+    int t;
+    sanitized_dataset_t*data = dataset_sanitize(trainingdata);
+    if(!data)
+        return 0;
+#define DEBUG
+#ifdef DEBUG
+    printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
+            data->num_columns, sanitized_dataset_count_expanded_columns(data));
+#endif
+
+    int num_jobs = 0;
+    job_t*jobs = generate_jobs(&num_jobs);
+
+    process_jobs(jobs, num_jobs, data);
+
+    for(t=0;t<num_jobs;t++) {
+	model_t*m = jobs[t].model;
+	printf("# %s: ", m->name);fflush(stdout);
+	if(m) {
+	    int size = model_size(m);
+#ifdef DEBUG
+	    printf("model size %d", size);fflush(stdout);
+#endif
+	    int errors = model_errors(m, data);
+	    int score = size + errors * sizeof(uint32_t);
+#ifdef DEBUG
+	    printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
+	    node_sanitycheck((node_t*)m->code);
+#endif
+//#define SHOW_CODE
+#ifdef SHOW_CODE
+	    //node_print((node_t*)m->code);
+	    printf("# -------------------------------\n");
+	    printf("%s\n", generate_code(&codegen_js, m));
+	    printf("# -------------------------------\n");
+#endif
+	    if(score < best_score) {
+		if(best_model) {
+		    model_destroy(best_model);
+		}
+		best_score = score;
+		best_model = m;
+	    } else {
+		model_destroy(m);
+	    }
+	} else {
+#ifdef DEBUG
+	    printf("failed\n");
+#endif
+	}
+	jobs[t].model = 0;
+    }
+    free(jobs);
+            
+    sanitized_dataset_destroy(data);
+#ifdef DEBUG
+    printf("# Using %s.\n", best_model->name);
+#endif
+    return best_model;
 }
 
 int model_errors(model_t*m, sanitized_dataset_t*s)
