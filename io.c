@@ -31,6 +31,7 @@
 #define __USE_LARGEFILE64
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/select.h>
 
 #include "config.h"
 
@@ -58,6 +59,7 @@ static int reader_nullseek(reader_t*r, int pos)
 reader_t*nullreader_new()
 {
     reader_t*r = (reader_t*)malloc(sizeof(reader_t));
+    r->error = NULL;
     r->read = reader_nullread;
     r->seek = reader_nullseek;
     r->dealloc = reader_nullread_dealloc;
@@ -94,15 +96,27 @@ static int reader_fileread_with_timeout(reader_t*r, void* data, int len)
     FD_ZERO(&readfds);
     FD_SET(i->handle, &readfds);
     int ret;
-    ret = select(i->handle+1, &readfds, NULL, NULL, &timeout);
-    if(ret<0) {
-        perror("select");
-        return -1;
+    while(1) {
+        ret = select(i->handle+1, &readfds, NULL, NULL, &timeout);
+        if(ret<0) {
+            if(errno == EINTR || errno == EAGAIN)
+                continue;
+            perror("select");
+            r->error = strerror(errno);
+            return -1;
+        }
+        if(ret>=0)
+            break;
     }
     if(!FD_ISSET(i->handle, &readfds)) {
+        fprintf(stderr, "timeout");
+        r->error = "timeout";
         return -1;
     }
     ret = read(i->handle, data, len);
+    if(ret<0) {
+        perror("read");
+    }
     if(ret>=0)
 	r->pos += ret;
     return ret;
@@ -125,6 +139,7 @@ reader_t* filereader_new(int handle)
 {
     filereader_internal_t*i = (filereader_internal_t*)malloc(sizeof(filereader_internal_t));
     reader_t*r = (reader_t*)malloc(sizeof(reader_t));
+    r->error = NULL;
     r->read = reader_fileread;
     r->seek = reader_fileread_seek;
     r->dealloc = reader_fileread_dealloc;
@@ -212,6 +227,7 @@ reader_t* memreader_new(void*newdata, int newlength)
     memread_t*mr = (memread_t*)malloc(sizeof(memread_t));
     mr->data = (unsigned char*)newdata;
     mr->length = newlength;
+    r->error = NULL;
     r->read = reader_memread;
     r->seek = reader_memseek;
     r->dealloc = reader_memread_dealloc;
@@ -240,6 +256,7 @@ static int reader_zzip_seek(reader_t*reader, int pos)
 reader_t* zzipreader_new(ZZIP_FILE*z)
 {
     reader_t*r = (reader_t*)malloc(sizeof(reader_t));
+    r->error = NULL;
     r->read = reader_zzip_read;
     r->seek = reader_zzip_seek;
     r->dealloc = reader_zzip_dealloc;
@@ -585,6 +602,7 @@ reader_t*zlibinflatereader_new(reader_t*input)
     memset(z, 0, sizeof(zlibinflate_t));
     int ret;
     memset(r, 0, sizeof(reader_t));
+    r->error = NULL;
     r->internal = z;
     r->read = reader_zlibinflate;
     r->seek = reader_zlibseek;
@@ -827,8 +845,9 @@ void reader_resetbits(reader_t*r)
 uint8_t read_uint8(reader_t*r)
 {
     uint8_t b = 0;
-    if(r->read(r, &b, 1)<1) {
-	fprintf(stderr, "io.c:read_uint8: Read over end of memory region\n");
+    int ret = r->read(r, &b, 1);
+    if(ret<1) {
+	fprintf(stderr, "io.c:read_uint8: Couldn't read uint8 (%d)\n", ret);
         return 0;
     }
     return b;
@@ -836,11 +855,13 @@ uint8_t read_uint8(reader_t*r)
 uint16_t read_uint16(reader_t*r)
 {
     uint8_t b1=0,b2=0;
-    if(r->read(r, &b1, 1)<1) {
-	fprintf(stderr, "io.c:read_uint16: Read over end of memory region\n");
+    int ret = r->read(r, &b1, 1);
+    if(ret<1) {
+	fprintf(stderr, "io.c:read_uint16: Couldn't read byte (%d)\n", ret);
     }
-    if(r->read(r, &b2, 1)<1) {
-	fprintf(stderr, "io.c:read_uint16: Read over end of memory region\n");
+    ret = r->read(r, &b2, 1);
+    if(ret<1) {
+	fprintf(stderr, "io.c:read_uint16: Couldn't read byte (%d)\n", ret);
     }
     return b1|b2<<8;
 }

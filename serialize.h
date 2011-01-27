@@ -22,6 +22,8 @@
 #ifndef __serialize_h__
 #define __serialize_h__
 
+#include "io.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,8 +33,10 @@ extern "C" {
 node_t* node_read(reader_t*read);
 void node_write(node_t*node, writer_t*writer, unsigned flags);
 
+model_t* model_read(reader_t*r);
 model_t* model_load(const char*filename);
 void model_save(model_t*m, const char*filename);
+void model_write(model_t*m, writer_t*w);
 
 #ifdef __cplusplus
 }

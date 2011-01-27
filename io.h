@@ -58,6 +58,8 @@ typedef struct _reader
     unsigned char mybyte;
     unsigned char bitpos;
     int pos;
+
+    char*error;
 } reader_t;
 
 typedef struct _writer

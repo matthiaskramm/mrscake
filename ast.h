@@ -125,7 +125,7 @@ node_t* node_new_array(array_t*a);
 bool node_is_array(node_t*n);
 void node_append_child(node_t*n, node_t*child);
 void node_set_child(node_t*n, int num, node_t*child);
-void node_sanitycheck(node_t*n);
+bool node_sanitycheck(node_t*n);
 void node_destroy(node_t*n);
 void node_destroy_self(node_t*n);
 constant_t node_eval(node_t*n,environment_t* e);

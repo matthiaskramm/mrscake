@@ -64,14 +64,16 @@ constant_t constant_read(reader_t*reader)
         case CONSTANT_MISSING: {
             break;
         }
-        default:
+        default: {
             fprintf(stderr, "Can't deserialize constant type %d\n", c.type);
-            exit(1);
+            c.type = 0;
+            break;
+        }
     }
     return c;
 }
 
-void node_read_internal_data(node_t*node, reader_t*reader)
+bool node_read_internal_data(node_t*node, reader_t*reader)
 {
     nodetype_t*type = node->type;
     if(type==&node_mixed_array ||
@@ -84,6 +86,8 @@ void node_read_internal_data(node_t*node, reader_t*reader)
         array_t*a = array_new(len);
         for(t=0;t<len;t++) {
             a->entries[t] = constant_read(reader);
+            if(!a->entries[t].type)
+                return false;
         }
         if(type==&node_mixed_array)
             node->value = mixed_array_constant(a);
@@ -117,10 +121,13 @@ void node_read_internal_data(node_t*node, reader_t*reader)
         node->value = string_constant(s);
     } else if(type==&node_constant || type==&node_setlocal || type==&node_getlocal || type==&node_inclocal) {
         node->value = constant_read(reader);
+        if(!node->value.type)
+            return false;
     } else {
         fprintf(stderr, "Don't know how to deserialize node '%s' (%02x)\n", type->name, node_get_opcode(node));
-        return;
+        return false;
     }
+    return true;
 }
 
 typedef struct _nodestack {
@@ -153,11 +160,13 @@ node_t* node_read(reader_t*reader)
     do {
         uint8_t opcode = read_uint8(reader);
         nodetype_t*type = opcode_to_node(opcode);
-        assert(type);
+        if(!type)
+            return NULL;
         node_t*node = node_new(type, stack?stack->node:0);
         stack = stack_new(node, stack);
         if(type->flags & NODE_FLAG_HAS_VALUE) {
-            node_read_internal_data(node, reader);
+            if(!node_read_internal_data(node, reader))
+                return NULL;
         }
         if(type->flags&NODE_FLAG_HAS_CHILDREN) {
             if(type->min_args == type->max_args) {
@@ -174,9 +183,12 @@ node_t* node_read(reader_t*reader)
             top_node = stack->node;
             stack = stack_pop(stack);
         }
+        if(reader->error)
+            return NULL;
     } while(stack);
 
-    node_sanitycheck(top_node);
+    if(!node_sanitycheck(top_node))
+        return NULL;
 
     return top_node;
 }
@@ -291,11 +303,12 @@ void node_write(node_t*node, writer_t*writer, unsigned flags)
         }
     }
 }
-model_t* model_load(const char*filename)
+model_t* model_read(reader_t*r)
 {
     model_t*m = (model_t*)calloc(1, sizeof(model_t));
-    reader_t *r = filereader_new2(filename);
     m->name = register_and_free_string(read_string(r));
+    if(!*m->name)
+        return NULL;
     m->num_inputs = read_compressed_uint(r);
     uint8_t flags = read_uint8(r);
     int t;
@@ -313,13 +326,22 @@ model_t* model_load(const char*filename)
         }
     }
     m->code = (void*)node_read(r);
+    if(!m->code) {
+        free(m);
+        return NULL;
+    }
+    return m;
+}
+model_t* model_load(const char*filename)
+{
+    reader_t *r = filereader_new2(filename);
+    model_t*m = model_read(r);
     r->dealloc(r);
     return m;
 }
-void model_save(model_t*m, const char*filename)
+void model_write(model_t*m, writer_t*w)
 {
-    node_t*code = (node_t*)m->code;
-    writer_t *w = filewriter_new2(filename);
+    assert(m->name && m->name[0]);
     write_string(w, m->name);
     write_compressed_uint(w, m->num_inputs);
     uint8_t flags = 0;
@@ -328,7 +350,7 @@ void model_save(model_t*m, const char*filename)
     if(m->column_types)
         flags |= 2;
     write_uint8(w, flags);
-    
+
     if(m->column_names) {
         int t;
         for(t=0;t<m->num_inputs;t++) {
@@ -341,7 +363,13 @@ void model_save(model_t*m, const char*filename)
             write_compressed_uint(w, m->column_types[t]);
         }
     }
-    node_write(code, w, 0);
+    node_t*node = (node_t*)m->code;
+    node_write(node, w, 0);
+}
+void model_save(model_t*m, const char*filename)
+{
+    writer_t *w = filewriter_new2(filename);
+    model_write(m, w);
     w->finish(w);
 }
 

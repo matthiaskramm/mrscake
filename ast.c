@@ -1027,21 +1027,25 @@ void node_print2(node_t*n, const char*p1, const char*p2, FILE*fi)
     }
 }
 
-void node_sanitycheck(node_t*n)
+bool node_sanitycheck(node_t*n)
 {
     int t;
     for(t=0;t<n->num_children;t++) {
-	assert(n->child[t]);
-	assert(n->child[t] != n);
+	if(!n->child[t])
+            return false;
+	if(n->child[t] == n)
+            return false;
 	if(n->child[t]->parent != n) {
 	    printf("%s -> %s (references back to: %s)", 
 		    n->type->name, n->child[t]->type->name, 
 		    n->child[t]->parent?n->child[t]->parent->type->name:"(null)"
 		    );
 	}
-	assert(n->child[t]->parent == n);
+	if(n->child[t]->parent != n)
+            return false;
 	node_sanitycheck(n->child[t]);
     }
+    return true;
 }
 
 void node_remove_child(node_t*n, int num)

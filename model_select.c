@@ -21,6 +21,13 @@
 
 #include <limits.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "model.h"
 #include "model_select.h"
 #include "ast.h"
@@ -77,7 +84,7 @@ model_t* model_select(trainingdata_t*trainingdata)
 #ifdef DEBUG
             printf("# Trying %s... ", factory->name);fflush(stdout);
 #endif
-            model_t*m = factory->train(factory, data);
+            model_t*m = train_model(factory, data);
 
             if(m) {
                 m->name = factory->name;
@@ -121,6 +128,49 @@ model_t* model_select(trainingdata_t*trainingdata)
     printf("# Using %s.\n", best_factory->name);
 #endif
     return best_model;
+}
+
+#define FORK_FOR_TRAINING
+model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data)
+{
+#ifndef FORK_FOR_TRAINING
+    model_t* m = factory->train(factory, data);
+    m->name = factory->name;
+    return m;
+#else
+    int p[2];
+    int ret = pipe(p);
+    int read_fd = p[0];
+    int write_fd = p[1];
+    if(ret) {
+        perror("create pipe");
+        exit(-1);
+    }
+    pid_t pid = fork();
+    if(!pid) {
+        //child
+        close(read_fd); // close read
+        model_t*m = factory->train(factory, data);
+        m->name = factory->name;
+        writer_t*w = filewriter_new(write_fd);
+        model_write(m, w);
+        w->finish(w);
+        close(write_fd); // close write
+        _exit(0);
+    } else {
+        //parent
+        close(write_fd); // close write
+        reader_t*r = filereader_with_timeout_new(read_fd, 300);
+        model_t*m = model_read(r);
+        r->dealloc(r);
+        close(read_fd); // close read
+        ret = waitpid(pid, NULL, WNOHANG);
+        if(ret < 0) {
+            kill(pid, SIGKILL);
+        }
+        return m;
+    }
+#endif
 }
 
 int model_errors(model_t*m, sanitized_dataset_t*s)

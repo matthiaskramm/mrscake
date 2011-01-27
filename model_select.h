@@ -41,6 +41,7 @@ typedef model_t*(*training_function_t)(model_factory_t*factory, sanitized_datase
 model_t* model_select(trainingdata_t*);
 int model_errors(model_t*m, sanitized_dataset_t*s);
 int model_score(model_t*m, sanitized_dataset_t*d);
+model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data);
 
 #ifdef __cplusplus
 }
