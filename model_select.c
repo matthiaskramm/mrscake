@@ -98,7 +98,9 @@ model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data)
 {
 #ifndef FORK_FOR_TRAINING
     model_t* m = factory->train(factory, data);
-    m->name = factory->name;
+    if(m) {
+        m->name = factory->name;
+    }
     return m;
 #else
     int p[2];
@@ -114,7 +116,9 @@ model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data)
         //child
         close(read_fd); // close read
         model_t*m = factory->train(factory, data);
-        m->name = factory->name;
+        if(m) {
+            m->name = factory->name;
+        }
         writer_t*w = filewriter_new(write_fd);
         model_write(m, w);
         w->finish(w);
@@ -144,7 +148,6 @@ static void process_jobs(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
 	printf("# Trying %s... ", factory->name);fflush(stdout);
 #endif
 	jobs[t].model = train_model(jobs[t].factory, data);
-	jobs[t].model->name = jobs[t].factory->name;
     }
 }
 
@@ -169,7 +172,7 @@ model_t* model_select(trainingdata_t*trainingdata)
 
     for(t=0;t<num_jobs;t++) {
 	model_t*m = jobs[t].model;
-	printf("# %s: ", m->name);fflush(stdout);
+	printf("# %s: ", jobs[t].factory->name);fflush(stdout);
 	if(m) {
 	    int size = model_size(m);
 #ifdef DEBUG
@@ -247,7 +250,7 @@ int model_size(model_t*m)
 
 int training_set_size(int total_size)
 {
-    if(total_size < 20) {
+    if(total_size < 25) {
         return total_size;
     } else {
         return (total_size+1)>>1;
