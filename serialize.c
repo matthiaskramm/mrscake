@@ -341,6 +341,11 @@ model_t* model_load(const char*filename)
 }
 void model_write(model_t*m, writer_t*w)
 {
+    if(!m) {
+        /* null model */
+        write_uint8(w, 0);
+        return;
+    }
     assert(m->name && m->name[0]);
     write_string(w, m->name);
     write_compressed_uint(w, m->num_inputs);

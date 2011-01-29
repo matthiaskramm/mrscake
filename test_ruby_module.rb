@@ -52,5 +52,5 @@ p model.predict({:bananas=>0.5,:oranges=>1.0,:name=>:bli})
 p model.predict({:bananas=>0.8,:oranges=>-1.0,:name=>:bla})
 p model.predict({:bananas=>0.9,:oranges=>1.0,:name=>:bla})
 
-puts model.generate_code("python")
+puts model.generate_code("ruby")
 

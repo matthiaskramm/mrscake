@@ -374,7 +374,9 @@ static model_t*rtrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d
     CvMLDataFromExamples data(d);
     CodeGeneratingRTrees rtrees(d);
     int max_trees = get_max_trees(factory, d);
-    CvRTParams params(16, 2, 0, false, 16, 0, true, 0, get_max_trees(factory, d), 0, CV_TERMCRIT_ITER);
+    if(!max_trees)
+        return 0;
+    CvRTParams params(16, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
     rtrees.train(&data, params);
     model_t*m = model_new(d);
     m->code = rtrees.get_program();
@@ -390,7 +392,10 @@ static model_t*ertrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*
     }
     CvMLDataFromExamples data(d);
     CodeGeneratingERTrees ertrees(d);
-    CvRTParams params(16, 2, 0, false, 16, 0, true, 0, get_max_trees(factory, d), 0, CV_TERMCRIT_ITER);
+    int max_trees = get_max_trees(factory, d);
+    if(!max_trees)
+        return 0;
+    CvRTParams params(16, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
     ertrees.train(&data, params);
     model_t*m = model_new(d);
     m->code = ertrees.get_program();
