@@ -402,6 +402,33 @@ bool float_is_one(double f)
 {
     return (fabs(f-1.0)<0.000001);
 }
+bool node_equals_node(node_t*n1, node_t*n2)
+{
+    if(n1->type != n2->type)
+        return false;
+    if(n1->num_children != n2->num_children)
+        return false;
+    if(n1->type->flags&NODE_FLAG_HAS_VALUE) {
+        printf("%d %d\n", n1->value.type, n2->value.type);
+        if(n1->value.type == CONSTANT_STRING)
+            printf("n1: %s\n", n1->value.s);
+        if(n2->value.type == CONSTANT_STRING)
+            printf("n2: %s\n", n2->value.s);
+        if(!constant_equals(&n1->value, &n2->value)) {
+            printf("false\n");
+            return false;
+        }
+        printf("true\n");
+    }
+    if(n1->type->flags&NODE_FLAG_HAS_CHILDREN) {
+        int t;
+        for(t=0;t<n1->num_children;t++) {
+            if(!node_equals_node(n1->child[t], n2->child[t]))
+                return false;
+        }
+    }
+    return true;
+}
 node_t* node_optimize(node_t*n)
 {
     int t,num;
@@ -517,6 +544,23 @@ node_t* node_optimize(node_t*n)
                 node_set_child(n, num++, node_new_with_args(&node_float, 0.0));
             }
             n->num_children = num;
+            break;
+	case opcode_node_if:
+            /* convert 
+                    if 
+                        c
+                    then
+                        a
+                    else
+                        a
+               to
+                    a
+             */
+            if(node_equals_node(n->child[1], n->child[2])) {
+                node_t*new_node = n->child[1];
+                node_destroy_self(n);
+                return n->child[1];
+            }
             break;
     }
     for(t=0;t<n->num_children;t++) {

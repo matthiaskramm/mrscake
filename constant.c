@@ -27,7 +27,9 @@
 #include "constant.h"
 #include "stringpool.h"
 
-char*type_name[] = {"undefined","float","category","int","bool","missing","array","string"};
+char*type_name[] = {"undefined","float","category","int","bool","missing","deprecated array","string",
+                    "int_array", "float_array", "category_array", "string_array", "mixed_array"};
+
 
 array_t* array_new(int size)
 {
@@ -186,7 +188,8 @@ bool constant_equals(constant_t*c1, constant_t*c2)
         case CONSTANT_MISSING:
             return true;
         default:
-            fprintf(stderr, "Can't compare types %s\n", type_name[c1->type]);
+            /* FIXME */
+            //fprintf(stderr, "Can't compare types %s\n", type_name[c1->type]);
             return false;
     }
 }
