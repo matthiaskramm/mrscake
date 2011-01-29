@@ -409,16 +409,9 @@ bool node_equals_node(node_t*n1, node_t*n2)
     if(n1->num_children != n2->num_children)
         return false;
     if(n1->type->flags&NODE_FLAG_HAS_VALUE) {
-        printf("%d %d\n", n1->value.type, n2->value.type);
-        if(n1->value.type == CONSTANT_STRING)
-            printf("n1: %s\n", n1->value.s);
-        if(n2->value.type == CONSTANT_STRING)
-            printf("n2: %s\n", n2->value.s);
         if(!constant_equals(&n1->value, &n2->value)) {
-            printf("false\n");
             return false;
         }
-        printf("true\n");
     }
     if(n1->type->flags&NODE_FLAG_HAS_CHILDREN) {
         int t;
