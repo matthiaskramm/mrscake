@@ -422,7 +422,7 @@ bool node_equals_node(node_t*n1, node_t*n2)
     }
     return true;
 }
-node_t* node_optimize(node_t*n)
+node_t* node_optimize2(node_t*n, bool*again)
 {
     int t,num;
     switch(node_get_opcode(n)) {
@@ -537,6 +537,11 @@ node_t* node_optimize(node_t*n)
                 node_set_child(n, num++, node_new_with_args(&node_float, 0.0));
             }
             n->num_children = num;
+	    if(num==1) {
+		node_t*new_node = n->child[0];
+		node_destroy_self(n);
+		return new_node;
+	    }
             break;
 	case opcode_node_if:
             /* convert 
@@ -555,9 +560,35 @@ node_t* node_optimize(node_t*n)
                 return n->child[1];
             }
             break;
+	case opcode_node_setlocal:
+            /* convert 
+                    setlocal i
+                        getlocal i
+               to
+                    nop
+             */
+            if(n->child[0]->type == &node_getlocal) {
+		if(n->child[0]->value.i == n->value.i) {
+		    node_t*new_node = node_new(&node_nop, n->parent);
+		    node_destroy(n);
+		    *again = true;
+		    return new_node;
+		}
+            }
+            break;
     }
     for(t=0;t<n->num_children;t++) {
-        node_set_child(n, t, node_optimize(n->child[t]));
+        node_set_child(n, t, node_optimize2(n->child[t], again));
     }
+    return n;
+}
+node_t* node_optimize(node_t*n)
+{
+    bool again;
+    n = node_optimize2(n, &again);
+    do {
+	again = 0;
+	n = node_optimize2(n, &again);
+    } while(again);
     return n;
 }
