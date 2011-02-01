@@ -127,8 +127,8 @@ predict.$(SO_RUBY): predict.rb.c model.h $(OBJECTS)
 # ------------ installation ----------------
 
 install:
-	$(INSTALL) predict.$(RUBY_SO) $(RUBY_INSTALLDIR)/predict.$(RUBY_SO)
-	$(INSTALL) predict.$(PYTHON_SO) $(PYTHON_INSTALLDIR)/predict.$(PYTHON_SO)
+	$(INSTALL) predict.$(SO_RUBY) $(RUBY_INSTALLDIR)/predict.$(SO_RUBY)
+	$(INSTALL) predict.$(SO_PYTHON) $(PYTHON_INSTALLDIR)/predict.$(SO_PYTHON)
 
 # ------------ old test code -----------------
 
