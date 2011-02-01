@@ -113,7 +113,7 @@ python_interpreter: python_interpreter.c
 # ------------ ruby interface ----------------
 
 prediction.$(SO): predict.rb.c model.h $(OBJECTS)
-	$(CC) $(RUBY_INCLUDE) -shared predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
+	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) -shared predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ old test code -----------------
 
