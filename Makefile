@@ -13,25 +13,28 @@ RUBY_LDFLAGS?=-shared
 RUBY_LIB?=-lruby
 RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
 RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin10.0
-SO=bundle
+SO_PYTHON=so
+SO_RUBY=bundle
 
 ifeq ($(IS_MACOS),)
     # Linux defaults
     LIBS=-lz -lpthread -lrt
     PYTHON_LIB?=-lpython2.6
     PYTHON_INCLUDE?=-I/usr/include/python2.6
+    PYTHON_INSTALLDIR?=/usr/lib/python2.6/site-packages/
     RUBY_LDFLAGS?=-shared 
     RUBY_LIB?=-lruby18
     RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/i686-linux/ 
     RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/i686-linux/ 
-    SO=so
+    SO_PYTHON=so
+    SO_RUBY=rb.so
 endif
 
 MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
 OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o
 
-all: multimodel ast model predict.so prediction.$(SO)
+all: multimodel ast model predict.$(SO_PYTHON) predict.$(SO_RUBY)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -110,7 +113,7 @@ model: test_model.o $(OBJECTS) lib/libml.a
 
 # ------------ python interface --------------
 
-predict.so: predict.py.c model.h list.h $(OBJECTS) lib/libml.a
+predict.$(PYTHON_SO): predict.py.c model.h list.h $(OBJECTS) lib/libml.a
 	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
 
 python_interpreter: python_interpreter.c
@@ -118,13 +121,14 @@ python_interpreter: python_interpreter.c
 
 # ------------ ruby interface ----------------
 
-prediction.$(SO): predict.rb.c model.h $(OBJECTS)
+predict.$(RUBY_SO): predict.rb.c model.h $(OBJECTS)
 	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ installation ----------------
 
 install:
-	$(INSTALL) prediction.$(SO) $(RUBY_INSTALLDIR)/predict.$(SO)
+	$(INSTALL) predict.$(RUBY_SO) $(RUBY_INSTALLDIR)/predict.$(RUBY_SO)
+	$(INSTALL) predict.$(PYTHON_SO) $(PYTHON_INSTALLDIR)/predict.$(PYTHON_SO)
 
 # ------------ old test code -----------------
 
