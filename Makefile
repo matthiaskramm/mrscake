@@ -1,20 +1,23 @@
 CC=gcc -pg -g -fPIC
 CXX=g++ -pg -g -fPIC
-PYTHON_LIB=-lpython2.6
-PYTHON_INCLUDE=-I/usr/include/python2.6
 
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
-# MAC
-RUBY_LIB=-lruby
+# Mac defaults
 LIBS=-lz -lpthread
-RUBY_INCLUDE=-I/usr/lib/ruby/1.8/universal-darwin10.0
+PYTHON_LIB?=-lpython2.6
+PYTHON_INCLUDE?=-I/usr/include/python2.6
+RUBY_LIB?=-lruby
+RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
 SO=bundle
+
 ifeq ($(IS_MACOS),)
-    # LINUX
-    RUBY_LIB=-lruby18
+    # Linux defaults
     LIBS=-lz -lpthread -lrt
-    RUBY_INCLUDE=-I/usr/lib/ruby/1.8/i686-linux/ 
+    PYTHON_LIB?=-lpython2.6
+    PYTHON_INCLUDE?=-I/usr/include/python2.6
+    RUBY_LIB?=-lruby18
+    RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/i686-linux/ 
     SO=so
 endif
 
