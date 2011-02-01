@@ -248,6 +248,7 @@ void Init_predict()
     rb_define_alloc_func(DataSet, rb_dataset_allocate);
     rb_define_method(DataSet, "add", rb_dataset_add, 2);
     rb_define_method(DataSet, "get_model", rb_dataset_get_model, 0);
+    rb_define_method(DataSet, "train", rb_dataset_get_model, 0);
     rb_define_method(DataSet, "print", rb_dataset_print, 0);
 
     Model = rb_define_class_under(predict, "Model", rb_cObject);
