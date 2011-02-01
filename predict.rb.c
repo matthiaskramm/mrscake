@@ -240,7 +240,7 @@ static VALUE rb_model_allocate(VALUE cls)
 
 void Init_prediction()
 {
-    predict = rb_define_module("Prediction");
+    predict = rb_define_module("Predict");
 
     rb_define_module_function(predict, "load_model", rb_load_model, 1);
 
