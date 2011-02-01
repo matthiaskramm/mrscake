@@ -7,6 +7,7 @@ IS_MACOS:=$(shell test -d /Library && echo macos)
 LIBS=-lz -lpthread
 PYTHON_LIB?=-lpython2.6
 PYTHON_INCLUDE?=-I/usr/include/python2.6
+RUBY_LDFLAGS?=-shared
 RUBY_LIB?=-lruby
 RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
 SO=bundle
@@ -16,6 +17,7 @@ ifeq ($(IS_MACOS),)
     LIBS=-lz -lpthread -lrt
     PYTHON_LIB?=-lpython2.6
     PYTHON_INCLUDE?=-I/usr/include/python2.6
+    RUBY_LDFLAGS?=-shared 
     RUBY_LIB?=-lruby18
     RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/i686-linux/ 
     SO=so
@@ -113,7 +115,7 @@ python_interpreter: python_interpreter.c
 # ------------ ruby interface ----------------
 
 prediction.$(SO): predict.rb.c model.h $(OBJECTS)
-	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) -shared predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
+	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ old test code -----------------
 
