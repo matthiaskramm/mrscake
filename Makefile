@@ -1,5 +1,6 @@
 CC=gcc -pg -g -fPIC
 CXX=g++ -pg -g -fPIC
+INSTALL=/usr/bin/install -c
 
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
@@ -7,9 +8,11 @@ IS_MACOS:=$(shell test -d /Library && echo macos)
 LIBS=-lz -lpthread
 PYTHON_LIB?=-lpython2.6
 PYTHON_INCLUDE?=-I/usr/include/python2.6
+PYTHON_INSTALLDIR?=/usr/lib/python2.6/
 RUBY_LDFLAGS?=-shared
 RUBY_LIB?=-lruby
 RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
+RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin10.0
 SO=bundle
 
 ifeq ($(IS_MACOS),)
@@ -20,6 +23,7 @@ ifeq ($(IS_MACOS),)
     RUBY_LDFLAGS?=-shared 
     RUBY_LIB?=-lruby18
     RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/i686-linux/ 
+    RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/i686-linux/ 
     SO=so
 endif
 
@@ -116,6 +120,11 @@ python_interpreter: python_interpreter.c
 
 prediction.$(SO): predict.rb.c model.h $(OBJECTS)
 	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
+
+# ------------ installation ----------------
+
+install:
+	$(INSTALL) prediction.$(SO) $(RUBY_INSTALLDIR)/predict.$(SO)
 
 # ------------ old test code -----------------
 
