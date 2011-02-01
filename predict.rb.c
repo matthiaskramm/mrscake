@@ -238,7 +238,7 @@ static VALUE rb_model_allocate(VALUE cls)
 
 // --------------------------------------------------------------------------
 
-void Init_prediction()
+void Init_predict()
 {
     predict = rb_define_module("Predict");
 
