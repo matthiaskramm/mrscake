@@ -113,7 +113,7 @@ model: test_model.o $(OBJECTS) lib/libml.a
 
 # ------------ python interface --------------
 
-predict.$(PYTHON_SO): predict.py.c model.h list.h $(OBJECTS) lib/libml.a
+predict.$(SO_PYTHON): predict.py.c model.h list.h $(OBJECTS) lib/libml.a
 	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
 
 python_interpreter: python_interpreter.c
@@ -121,7 +121,7 @@ python_interpreter: python_interpreter.c
 
 # ------------ ruby interface ----------------
 
-predict.$(RUBY_SO): predict.rb.c model.h $(OBJECTS)
+predict.$(SO_RUBY): predict.rb.c model.h $(OBJECTS)
 	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ installation ----------------
