@@ -1,0 +1,46 @@
+A model selection algorithm built on top of machine
+learning algorithms from OpenCV.
+
+Compile it using
+    make
+    make install
+.
+(Potentially tweak the Makefile first)
+
+It has a Ruby and a Python interface.
+
+Python:
+-------
+
+import predict
+data = predict.DataSet()
+data.train(["a", 1.0, "blue"], output="yes")
+data.train(["a", 3.0, "red"], output="yes")
+data.train(["b", 2.0, "red"], output="no")
+data.train(["b", 3.0, "blue"], output="no")
+data.train(["a", 5.0, "blue"], output="yes")
+data.train(["b", 4.0, "blue"], output="yes")
+model = data.get_model()
+
+result = model.predict(["a", 2.0, "red"])
+
+code = model.generate_code("python") # or: ruby, javascript, c
+
+Ruby:
+-----
+
+require 'predict'
+data = Predict::DataSet.new
+data.add([:a, 1.0, :blue], :yes)
+data.add([:a, 3.0, :red], :yes)
+data.add([:b, 2.0, :red], :no)
+data.add([:b, 3.0, :blue], :no)
+data.add([:a, 5.0, :blue], :yes)
+data.add([:b, 4.0, :blue], :yes)
+model = data.train()
+model.print
+
+result = model.predict([:a, 2.0, :red])
+
+code = model.generate_code("ruby") # or: ruby, javascript, c
+
