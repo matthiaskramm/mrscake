@@ -4,17 +4,19 @@ INSTALL=/usr/bin/install -c
 
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
-# Mac defaults
-LIBS=-lz -lpthread
-PYTHON_LIB?=-lpython2.6
-PYTHON_INCLUDE?=-I/usr/include/python2.6
-PYTHON_INSTALLDIR?=/usr/lib/python2.6/
-RUBY_LDFLAGS?=-shared
-RUBY_LIB?=-lruby
-RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
-RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin10.0
-SO_PYTHON=so
-SO_RUBY=bundle
+ifneq ($(IS_MACOS),)
+    # Mac defaults
+    LIBS=-lz -lpthread
+    PYTHON_LIB?=-lpython2.6
+    PYTHON_INCLUDE?=-I/usr/include/python2.6
+    PYTHON_INSTALLDIR?=/usr/lib/python2.6/
+    RUBY_LDFLAGS?=-shared
+    RUBY_LIB?=-lruby
+    RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
+    RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin10.0
+    SO_PYTHON=so
+    SO_RUBY=bundle
+endif
 
 ifeq ($(IS_MACOS),)
     # Linux defaults
