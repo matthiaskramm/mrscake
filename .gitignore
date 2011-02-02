@@ -16,3 +16,5 @@ display_model.py
 *.bundle
 *.model
 data/*
+tmp*
+[0-9][0-9]*-*
