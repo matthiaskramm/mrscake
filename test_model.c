@@ -38,6 +38,12 @@ int main()
         e->desired_response = variable_make_categorical(t%2);
         trainingdata_add_example(data, e);
     }
+
+    trainingdata_save(data, "/tmp/data.data");
+    trainingdata_destroy(data);
+
+    data = trainingdata_load("/tmp/data.data");
+
     model_t*m = model_select(data);
 
     char*code = model_generate_code(m, "python");

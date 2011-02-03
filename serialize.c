@@ -378,3 +378,99 @@ void model_save(model_t*m, const char*filename)
     w->finish(w);
 }
 
+variable_t variable_read(reader_t*r)
+{
+    char*s;
+    variable_t v;
+    v.type = read_compressed_uint(r);
+    switch(v.type) {
+        case CATEGORICAL:
+            v.category = read_compressed_uint(r);
+            break;
+        case CONTINUOUS:
+            v.value = read_float(r);
+            break;
+        case TEXT:
+            s = read_string(r);
+            v.text = register_string(s);
+            free(s);
+            break;
+    }
+    return v;
+}
+
+void variable_write(variable_t*v, writer_t*w)
+{
+    write_compressed_uint(w, v->type);
+    switch(v->type) {
+        case CATEGORICAL:
+            write_compressed_uint(w, v->category);
+            break;
+        case CONTINUOUS:
+            write_float(w, v->value);
+            break;
+        case TEXT:
+            write_string(w, v->text);
+            break;
+    }
+}
+
+trainingdata_t* trainingdata_read(reader_t*r)
+{
+    int num = read_compressed_uint(r);
+    int t;
+    trainingdata_t*data = trainingdata_new();
+    for(t=0;t<num;t++) {
+        int num_inputs = read_compressed_uint(r);
+        example_t*e = example_new(num_inputs);
+        uint8_t flags = read_uint8(r);
+        if(flags&1) {
+            e->input_names = (const char**)malloc(sizeof(const char*)*num_inputs);
+        }
+        int s;
+        for(s=0;s<num_inputs;s++) {
+            if(e->input_names)
+                e->input_names[s] = read_string(r);
+            e->inputs[s] = variable_read(r);
+        }
+        e->desired_response = variable_read(r);
+        trainingdata_add_example(data, e);
+    }
+    return data;
+}
+trainingdata_t* trainingdata_load(const char*filename)
+{
+    reader_t *r = filereader_new2(filename);
+    trainingdata_t*d = trainingdata_read(r);
+    r->dealloc(r);
+    return d;
+}
+
+void trainingdata_write(trainingdata_t*d, writer_t*w)
+{
+    write_compressed_uint(w, d->num_examples);
+    example_t*e = d->first_example;
+    int count = 0;
+    while(e) {
+        write_compressed_uint(w, e->num_inputs);
+        write_uint8(w, e->input_names ? 1 : 0);
+        int t;
+        for(t=0;t<e->num_inputs;t++) {
+            if(e->input_names)
+                write_string(w, e->input_names[t]);
+            variable_write(&e->inputs[t], w);
+        }
+        variable_write(&e->desired_response, w);
+        e = e->next;
+        count++;
+    }
+    assert(count == d->num_examples);
+}
+void trainingdata_save(trainingdata_t*d, const char*filename)
+{
+    writer_t *w = filewriter_new2(filename);
+    trainingdata_write(d, w);
+    w->finish(w);
+}
+
+

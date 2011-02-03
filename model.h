@@ -83,6 +83,8 @@ trainingdata_t* trainingdata_new();
 void trainingdata_add_example(trainingdata_t*d, example_t*e);
 void trainingdata_print(trainingdata_t*dataset);
 void trainingdata_destroy(trainingdata_t*dataset);
+void trainingdata_save(trainingdata_t*d, const char*filename);
+trainingdata_t* trainingdata_load(const char*filename);
 
 typedef struct _model {
     const char*name;

@@ -38,6 +38,11 @@ model_t* model_load(const char*filename);
 void model_save(model_t*m, const char*filename);
 void model_write(model_t*m, writer_t*w);
 
+trainingdata_t* trainingdata_read(reader_t*r);
+void trainingdata_write(trainingdata_t*d, writer_t*w);
+void trainingdata_save(trainingdata_t*d, const char*filename);
+trainingdata_t* trainingdata_load(const char*filename);
+
 #ifdef __cplusplus
 }
 #endif
