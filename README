@@ -14,13 +14,13 @@ Python:
 
 import predict
 data = predict.DataSet()
-data.train(["a", 1.0, "blue"], output="yes")
-data.train(["a", 3.0, "red"], output="yes")
-data.train(["b", 2.0, "red"], output="no")
-data.train(["b", 3.0, "blue"], output="no")
-data.train(["a", 5.0, "blue"], output="yes")
-data.train(["b", 4.0, "blue"], output="yes")
-model = data.get_model()
+data.add(["a", 1.0, "blue"], output="yes")
+data.add(["a", 3.0, "red"], output="yes")
+data.add(["b", 2.0, "red"], output="no")
+data.add(["b", 3.0, "blue"], output="no")
+data.add(["a", 5.0, "blue"], output="yes")
+data.add(["b", 4.0, "blue"], output="yes")
+model = data.train()
 
 result = model.predict(["a", 2.0, "red"])
 

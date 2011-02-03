@@ -134,6 +134,14 @@ static VALUE rb_dataset_print(VALUE cls)
     trainingdata_print(dataset->trainingdata);
     return cls;
 }
+static VALUE rb_dataset_save(VALUE cls, VALUE _filename)
+{
+    Check_Type(_filename, T_STRING);
+    const char*filename = StringValuePtr(_filename);
+    Get_DataSet(dataset,cls);
+    trainingdata_save(dataset->trainingdata, filename);
+    return cls;
+}
 static void rb_dataset_mark(dataset_internal_t*dataset)
 {
 }
@@ -199,6 +207,18 @@ static VALUE rb_load_model(VALUE module, VALUE _filename)
     }
     return cls;
 }
+static VALUE rb_load_dataset(VALUE module, VALUE _filename)
+{
+    Check_Type(_filename, T_STRING);
+    const char*filename = StringValuePtr(_filename);
+    VALUE cls = rb_dataset_allocate(DataSet);
+    Get_DataSet(dataset,cls);
+    dataset->trainingdata = trainingdata_load(filename);
+    if(!dataset->trainingdata) {
+	rb_raise(rb_eIOError, "couldn't open %s", filename);
+    }
+    return cls;
+}
 static VALUE rb_model_predict(VALUE cls, VALUE input)
 {
     Get_Model(model,cls);
@@ -243,6 +263,7 @@ void Init_predict()
     predict = rb_define_module("Predict");
 
     rb_define_module_function(predict, "load_model", rb_load_model, 1);
+    rb_define_module_function(predict, "load_data", rb_load_dataset, 1);
 
     DataSet = rb_define_class_under(predict, "DataSet", rb_cObject);
     rb_define_alloc_func(DataSet, rb_dataset_allocate);
@@ -250,6 +271,7 @@ void Init_predict()
     rb_define_method(DataSet, "get_model", rb_dataset_get_model, 0);
     rb_define_method(DataSet, "train", rb_dataset_get_model, 0);
     rb_define_method(DataSet, "print", rb_dataset_print, 0);
+    rb_define_method(DataSet, "save", rb_dataset_save, 1);
 
     Model = rb_define_class_under(predict, "Model", rb_cObject);
     rb_define_alloc_func(Model, rb_model_allocate);

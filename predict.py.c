@@ -297,11 +297,11 @@ static int py_dataset_print(PyObject * _self, FILE *fi, int flags)
     trainingdata_print(self->data);
     return 0;
 }
-PyDoc_STRVAR(dataset_train_doc, \
-"train(feature1=value1,feature2=value2,...).should_be(5)\n\n"
+PyDoc_STRVAR(dataset_add_doc, \
+"add({feature1:value1,feature2:value2},output)\n\n"
 "Adds a row of training data to the model.\n"
 );
-static PyObject* py_dataset_train(PyObject * _self, PyObject* args, PyObject* kwargs)
+static PyObject* py_dataset_add(PyObject * _self, PyObject* args, PyObject* kwargs)
 {
     DataSetObject*self = (DataSetObject*)_self;
     static char *kwlist[] = {"input","output",NULL};
@@ -351,6 +351,36 @@ static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* 
     ret->model = model;
     return (PyObject*)ret;
 }
+PyDoc_STRVAR(dataset_save_doc, \
+"save(filename)\n\n"
+"Save training data to a file.\n"
+);
+static PyObject* py_dataset_save(PyObject*_self, PyObject* args, PyObject* kwargs)
+{
+    DataSetObject*self = (DataSetObject*)_self;
+    static char *kwlist[] = {"filename", NULL};
+    const char*filename = 0;
+    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
+	return NULL;
+    trainingdata_save(self->data, filename);
+    return PY_NONE;
+}
+PyDoc_STRVAR(dataset_load_doc, \
+"load_data()\n\n"
+"Load a dataset.\n"
+);
+static PyObject* py_dataset_load(PyObject* module, PyObject* args, PyObject* kwargs)
+{
+    char*filename = 0;
+    static char *kwlist[] = {"filename", NULL};
+    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
+	return NULL;
+    DataSetObject*self = PyObject_New(DataSetObject, &DataSetClass);
+    self->data = trainingdata_load(filename);
+    if(!self->data)
+        return PY_ERROR("Couldn't load model from %s", filename);
+    return (PyObject*)self;
+}
 PyDoc_STRVAR(dataset_new_doc, \
 "DataSet()\n\n"
 "Creates a new (initially empty) dataset.\n"
@@ -367,8 +397,10 @@ static PyObject* py_dataset_new(PyObject* module, PyObject* args, PyObject* kwar
 static PyMethodDef dataset_methods[] =
 {
     /* DataSet functions */
-    {"train", (PyCFunction)py_dataset_train, METH_KEYWORDS, dataset_train_doc},
+    {"add", (PyCFunction)py_dataset_add, METH_KEYWORDS, dataset_add_doc},
+    {"train", (PyCFunction)py_dataset_get_model, METH_KEYWORDS, dataset_get_model_doc},
     {"get_model", (PyCFunction)py_dataset_get_model, METH_KEYWORDS, dataset_get_model_doc},
+    {"save", (PyCFunction)py_dataset_save, METH_KEYWORDS, dataset_save_doc},
     {0,0,0,0}
 };
 
@@ -440,6 +472,7 @@ static PyMethodDef predict_methods[] =
 {
     {"setparameter", (PyCFunction)predict_setparameter, M_FLAGS, predict_setparameter_doc},
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},
+    {"load_data", (PyCFunction)py_dataset_load, M_FLAGS, dataset_load_doc},
 
     {"DataSet", (PyCFunction)py_dataset_new, M_FLAGS, dataset_new_doc},
     {"Model", (PyCFunction)py_model_new, M_FLAGS, model_new_doc},
