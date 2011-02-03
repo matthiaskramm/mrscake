@@ -23,6 +23,8 @@
 #define __serialize_h__
 
 #include "io.h"
+#include "ast.h"
+#include "dataset.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +44,9 @@ trainingdata_t* trainingdata_read(reader_t*r);
 void trainingdata_write(trainingdata_t*d, writer_t*w);
 void trainingdata_save(trainingdata_t*d, const char*filename);
 trainingdata_t* trainingdata_load(const char*filename);
+
+void sanitized_dataset_save(sanitized_dataset_t*d, const char*filename);
+sanitized_dataset_t* sanitized_dataset_load(const char*filename);
 
 #ifdef __cplusplus
 }

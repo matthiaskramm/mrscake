@@ -926,10 +926,14 @@ char*read_string(reader_t*r)
 
 void write_string(writer_t*w, const char*s)
 {
-    int l = strlen(s);
     char zero = 0;
-    w->write(w, (void*)s, l);
-    w->write(w, &zero, 1);
+    if(!s) {
+        w->write(w, &zero, 1);
+    } else {
+        int l = strlen(s);
+        w->write(w, (void*)s, l);
+        w->write(w, &zero, 1);
+    }
 }
 void write_uint8(writer_t*w, uint8_t b)
 {

@@ -79,6 +79,8 @@ node_t* expanded_columns_parameter_init(expanded_columns_t*e);
 node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num);
 void expanded_columns_destroy(expanded_columns_t*e);
 
+column_t*column_new(int num_rows, bool is_categorical);
+
 model_t* model_new(sanitized_dataset_t*dataset);
 example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags);
 node_t* parameter_code(sanitized_dataset_t*d, int num);

@@ -26,6 +26,7 @@
 #include "io.h"
 #include "stringpool.h"
 #include "serialize.h"
+#include "dataset.h"
 
 static nodetype_t* opcode_to_node(uint8_t opcode)
 {
@@ -473,4 +474,87 @@ void trainingdata_save(trainingdata_t*d, const char*filename)
     w->finish(w);
 }
 
-
+void column_write(column_t*c, int num_rows, writer_t*w)
+{
+    write_string(w, c->name);
+    write_uint8(w, c->is_categorical);
+    int y;
+    if(c->is_categorical) {
+        write_compressed_uint(w, c->num_classes);
+        int t;
+        for(t=0;t<c->num_classes;t++) {
+            constant_write(&c->classes[t], w, 0);
+            write_compressed_uint(w, c->class_occurence_count[t]);
+        }
+        for(y=0;y<num_rows;y++) {
+            write_compressed_uint(w, c->entries[y].c);
+        }
+    } else {
+        for(y=0;y<num_rows;y++) {
+            write_float(w, c->entries[y].f);
+        }
+    }
+}
+column_t* column_read(int num_rows, reader_t*r)
+{
+    char*name = read_string(r);
+    char is_categorical = read_uint8(r);
+    column_t* c = column_new(num_rows, is_categorical);
+    c->name = register_string(name);
+    free(name);
+    int y;
+    if(c->is_categorical) {
+        c->num_classes = read_compressed_uint(r);
+        c->classes = malloc(sizeof(c->classes[0])*c->num_classes);
+        c->class_occurence_count = malloc(sizeof(c->class_occurence_count[0])*c->num_classes);
+        int t;
+        for(t=0;t<c->num_classes;t++) {
+            c->classes[t] = constant_read(r);
+            c->class_occurence_count[t] = read_compressed_uint(r);
+        }
+        for(y=0;y<num_rows;y++) {
+            c->entries[y].c = read_compressed_uint(r);
+        }
+    } else {
+        for(y=0;y<num_rows;y++) {
+            c->entries[y].f = read_float(r);
+        }
+    }
+    return c;
+}
+void sanitized_dataset_write(sanitized_dataset_t*d, writer_t*w)
+{
+    write_compressed_uint(w, d->num_columns);
+    write_compressed_uint(w, d->num_rows);
+    int t;
+    for(t=0;t<d->num_columns;t++) {
+        column_write(d->columns[t], d->num_rows, w);
+    }
+    column_write(d->desired_response, d->num_rows, w);
+}
+sanitized_dataset_t*sanitized_dataset_read(reader_t*r)
+{
+    sanitized_dataset_t*d = calloc(1, sizeof(sanitized_dataset_t));
+    d->num_columns = read_compressed_uint(r);
+    d->num_rows = read_compressed_uint(r);
+    d->columns = malloc(sizeof(d->columns[0])*d->num_columns);
+    int t;
+    for(t=0;t<d->num_columns;t++) {
+        d->columns[t] = column_read(d->num_rows, r);
+    }
+    d->desired_response = column_read(d->num_rows, r);
+    return d;
+}
+void sanitized_dataset_save(sanitized_dataset_t*d, const char*filename)
+{
+    writer_t *w = filewriter_new2(filename);
+    sanitized_dataset_write(d, w);
+    w->finish(w);
+}
+sanitized_dataset_t* sanitized_dataset_load(const char*filename)
+{
+    reader_t *r = filereader_new2(filename);
+    sanitized_dataset_t*d = sanitized_dataset_read(r);
+    r->dealloc(r);
+    return d;
+}
