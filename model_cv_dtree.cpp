@@ -520,11 +520,11 @@ model_factory_t* dtree_models[] =
     //(model_factory_t*)&rtrees4_model_factory,
     //(model_factory_t*)&rtrees8_model_factory,
     //(model_factory_t*)&rtrees16_model_factory,
-    (model_factory_t*)&ertrees_model_factory,
-    (model_factory_t*)&ertrees2_model_factory,
-    (model_factory_t*)&ertrees4_model_factory,
-    (model_factory_t*)&ertrees8_model_factory,
-    (model_factory_t*)&ertrees16_model_factory,
+    //(model_factory_t*)&ertrees_model_factory,
+    //(model_factory_t*)&ertrees2_model_factory,
+    //(model_factory_t*)&ertrees4_model_factory,
+    //(model_factory_t*)&ertrees8_model_factory,
+    //(model_factory_t*)&ertrees16_model_factory,
     (model_factory_t*)&gbtrees_model_factory,
 };
 int num_dtree_models = sizeof(dtree_models) / sizeof(dtree_models[0]);
