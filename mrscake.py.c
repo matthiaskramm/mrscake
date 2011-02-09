@@ -1,4 +1,4 @@
-/* predict.py.c
+/* mrscake.py.c
 
    Python wrapper for the prediction API.
 
@@ -455,10 +455,10 @@ static PyTypeObject ModelClass =
 
 //=====================================================================
 
-PyDoc_STRVAR(predict_setparameter_doc, \
+PyDoc_STRVAR(mrcake_setparameter_doc, \
 "setparameter(key,value)\n\n"
 );
-static PyObject* predict_setparameter(PyObject* module, PyObject* args, PyObject* kwargs)
+static PyObject* mrscake_setparameter(PyObject* module, PyObject* args, PyObject* kwargs)
 {
     static char *kwlist[] = {"key", "value", NULL};
     char*key=0,*value=0;
@@ -468,9 +468,9 @@ static PyObject* predict_setparameter(PyObject* module, PyObject* args, PyObject
     return PY_NONE;
 }
 
-static PyMethodDef predict_methods[] =
+static PyMethodDef mrscake_methods[] =
 {
-    {"setparameter", (PyCFunction)predict_setparameter, M_FLAGS, predict_setparameter_doc},
+    {"setparameter", (PyCFunction)mrscake_setparameter, M_FLAGS, mrcake_setparameter_doc},
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},
     {"load_data", (PyCFunction)py_dataset_load, M_FLAGS, dataset_load_doc},
 
@@ -481,35 +481,35 @@ static PyMethodDef predict_methods[] =
     {0, 0, 0, 0}
 };
 
-PyDoc_STRVAR(predict_doc, \
+PyDoc_STRVAR(mrscake_doc, \
 "Data prediction python wrapper\n"
 );
-void predict_free(void*module)
+void mrscake_free(void*module)
 {
     state_t*state = STATE(module);
     memset(state, 0, sizeof(state_t));
 }
 
 #ifdef PYTHON3
-static struct PyModuleDef predict_moduledef = {
+static struct PyModuleDef mrscake_moduledef = {
         PyModuleDef_HEAD_INIT,
-        "predict",
-        predict_doc,
+        "mrscake",
+        mrscake_doc,
         sizeof(state_t),
-        predict_methods,
+        mrscake_methods,
         /*reload*/NULL,
         /*traverse*/NULL,
         /*clear*/NULL,
-        predict_free,
+        mrscake_free,
 };
 #endif
 
-PyObject * PyInit_predict(void)
+PyObject * PyInit_mrscake(void)
 {
 #ifdef PYTHON3
-    PyObject*module = PyModule_Create(&predict_moduledef);
+    PyObject*module = PyModule_Create(&mrscake_moduledef);
 #else
-    PyObject*module = Py_InitModule3("predict", predict_methods, predict_doc);
+    PyObject*module = Py_InitModule3("mrscake", mrscake_methods, mrscake_doc);
     ModelClass.ob_type = &PyType_Type;
     DataSetClass.ob_type = &PyType_Type;
 #endif
@@ -523,7 +523,7 @@ PyObject * PyInit_predict(void)
     return module;
 }
 #ifndef PYTHON3
-void initpredict(void) {
-    PyInit_predict();
+void initmrscake(void) {
+    PyInit_mrscake();
 }
 #endif

@@ -1,5 +1,5 @@
-A model selection algorithm built on top of machine
-learning algorithms from OpenCV.
+mrscake (read: "Mrs. Cake") is a model selection algorithm built 
+on top of machine learning algorithms from OpenCV.
 
 Compile it using
     make
@@ -12,8 +12,8 @@ It has a Ruby and a Python interface.
 Python:
 -------
 
-import predict
-data = predict.DataSet()
+import mrscake
+data = mrscake.DataSet()
 data.add(["a", 1.0, "blue"], output="yes")
 data.add(["a", 3.0, "red"], output="yes")
 data.add(["b", 2.0, "red"], output="no")
@@ -29,8 +29,8 @@ code = model.generate_code("python") # or: ruby, javascript, c
 Ruby:
 -----
 
-require 'predict'
-data = Predict::DataSet.new
+require 'mrscake'
+data = MrsCake::DataSet.new
 data.add([:a, 1.0, :blue], :yes)
 data.add([:a, 3.0, :red], :yes)
 data.add([:b, 2.0, :red], :no)

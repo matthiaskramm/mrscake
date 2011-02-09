@@ -25,7 +25,7 @@
 #include "model.h"
 #include "stringpool.h"
 
-static VALUE predict;
+static VALUE mrscake;
 static VALUE DataSet, Model;
 static ID id_doc;
 
@@ -258,14 +258,14 @@ static VALUE rb_model_allocate(VALUE cls)
 
 // --------------------------------------------------------------------------
 
-void Init_predict()
+void Init_mrscake()
 {
-    predict = rb_define_module("Predict");
+    mrscake = rb_define_module("MrsCake");
 
-    rb_define_module_function(predict, "load_model", rb_load_model, 1);
-    rb_define_module_function(predict, "load_data", rb_load_dataset, 1);
+    rb_define_module_function(mrscake, "load_model", rb_load_model, 1);
+    rb_define_module_function(mrscake, "load_data", rb_load_dataset, 1);
 
-    DataSet = rb_define_class_under(predict, "DataSet", rb_cObject);
+    DataSet = rb_define_class_under(mrscake, "DataSet", rb_cObject);
     rb_define_alloc_func(DataSet, rb_dataset_allocate);
     rb_define_method(DataSet, "add", rb_dataset_add, 2);
     rb_define_method(DataSet, "get_model", rb_dataset_get_model, 0);
@@ -273,7 +273,7 @@ void Init_predict()
     rb_define_method(DataSet, "print", rb_dataset_print, 0);
     rb_define_method(DataSet, "save", rb_dataset_save, 1);
 
-    Model = rb_define_class_under(predict, "Model", rb_cObject);
+    Model = rb_define_class_under(mrscake, "Model", rb_cObject);
     rb_define_alloc_func(Model, rb_model_allocate);
     rb_define_method(Model, "print", rb_model_print, 0);
     rb_define_method(Model, "save", rb_model_save, 1);

@@ -36,7 +36,7 @@ MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
 OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o
 
-all: multimodel ast model predict.$(SO_PYTHON) predict.$(SO_RUBY)
+all: multimodel ast model mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -115,33 +115,33 @@ model: test_model.o $(OBJECTS) lib/libml.a
 
 # ------------ python interface --------------
 
-predict.$(SO_PYTHON): predict.py.c model.h list.h $(OBJECTS) lib/libml.a
-	$(CC) $(PYTHON_INCLUDE) -shared predict.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
+mrscake.$(SO_PYTHON): mrscake.py.c model.h list.h $(OBJECTS) lib/libml.a
+	$(CC) $(PYTHON_INCLUDE) -shared mrscake.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
 
 python_interpreter: python_interpreter.c
 	$(CC) $(PYTHON_INCLUDE) python_interpreter.c -o python_interpreter $(PYTHON_LIB)
 
 # ------------ ruby interface ----------------
 
-predict.$(SO_RUBY): predict.rb.c model.h $(OBJECTS)
-	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) predict.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
+mrscake.$(SO_RUBY): mrscake.rb.c model.h $(OBJECTS)
+	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) mrscake.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ installation ----------------
 
 install:
-	$(INSTALL) predict.$(SO_RUBY) $(RUBY_INSTALLDIR)/predict.$(SO_RUBY)
-	$(INSTALL) predict.$(SO_PYTHON) $(PYTHON_INSTALLDIR)/predict.$(SO_PYTHON)
+	$(INSTALL) mrscake.$(SO_RUBY) $(RUBY_INSTALLDIR)/mrscake.$(SO_RUBY)
+	$(INSTALL) mrscake.$(SO_PYTHON) $(PYTHON_INSTALLDIR)/mrscake.$(SO_PYTHON)
 
 # ------------ old test code -----------------
 
 multimodel: multimodel.o lib/libml.a $(OBJECTS)
 	$(CXX) multimodel.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
-test: predict.so
+test: mrscake.so
 	python test_python_module.py
 
 local-clean:
-	rm -f svm test ast ann multimodel *.o predict.$(SO) prediction.$(SO)
+	rm -f svm test ast ann multimodel *.o mrscake.$(SO) predict.$(SO) prediction.$(SO)
 
 clean: local-clean
 	rm -f lib/*.o lib/*.a lib/*.gch

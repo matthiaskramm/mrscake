@@ -1,6 +1,6 @@
-import predict
+import mrscake
 
-data = predict.DataSet()
+data = mrscake.DataSet()
 data.add([2,1.0,5,1.0,"A",7], output="yes")
 data.add([1,1.3,3,1.0,"B",7], output="yes")
 data.add([2,0.3,3,0.0,"A",3], output="no")
@@ -14,13 +14,13 @@ data.add([2,0.7,3,1.0,"A",7], output="yes")
 data.add([1,1.1,5,0.0,"B",10], output="no")
 
 data.save("/tmp/data.txt")
-data = predict.load_data("/tmp/data.txt")
+data = mrscake.load_data("/tmp/data.txt")
 
 print data
 model = data.get_model()
 print model
 model.save("/tmp/model.dat")
-model = predict.load_model("/tmp/model.dat")
+model = mrscake.load_model("/tmp/model.dat")
 print model
 print model.predict([3,2.0,7,1.0,"A",1])
 print model.predict([3,2.0,7,1.0,"B",1])

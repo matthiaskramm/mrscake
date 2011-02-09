@@ -1,7 +1,7 @@
 $:.unshift "tmp/"
-require 'predict'
+require 'mrscake'
 
-data = Predict::DataSet.new
+data = MrsCake::DataSet.new
 
 data.add([0.3,1.0,:bla], :yes)
 data.add([0.4,1.0,:bla], :yes)
@@ -16,7 +16,7 @@ model = data.get_model()
 model.print
 
 model.save("/tmp/model.dat")
-model = Predict::load_model("/tmp/model.dat")
+model = MrsCake::load_model("/tmp/model.dat")
 
 model.print
 
@@ -28,7 +28,7 @@ p model.predict([0.1,1.0,:blo])
 
 puts model.generate_code("python")
 
-data = Predict::DataSet.new
+data = MrsCake::DataSet.new
 
 data.add({:bananas=>0.3,:oranges=>1.0,:name=>:bla}, :yes)
 data.add({:bananas=>0.4,:oranges=>1.0,:name=>:bla}, :yes)
@@ -43,7 +43,7 @@ model = data.get_model()
 model.print
 
 model.save("/tmp/model.dat")
-model = Predict::load_model("/tmp/model.dat")
+model = MrsCake::load_model("/tmp/model.dat")
 
 model.print
 
