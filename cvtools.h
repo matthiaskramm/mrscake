@@ -24,7 +24,7 @@
 
 #include "lib/ml.hpp"
 #include "lib/core_c.h"
-#include "model.h"
+#include "mrscake.h"
 #include "dataset.h"
 #include "lib/internal.hpp"
 

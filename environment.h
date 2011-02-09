@@ -22,7 +22,7 @@
 #ifndef __environment_h__
 #define __environment_h__
 
-#include "model.h"
+#include "mrscake.h"
 #include "constant.h"
 
 typedef struct _environment {

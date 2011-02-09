@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "model.h"
+#include "mrscake.h"
 #include "ast.h"
 
 int main()

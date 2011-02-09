@@ -23,7 +23,7 @@
 #define __dataset_h__
 
 #include <stdbool.h>
-#include "model.h"
+#include "mrscake.h"
 #include "ast.h"
 
 #ifdef __cplusplus

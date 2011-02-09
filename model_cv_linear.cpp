@@ -20,7 +20,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include "cvtools.h"
-#include "model.h"
+#include "mrscake.h"
 #include "dataset.h"
 #include "easy_ast.h"
 #include "model_select.h"

@@ -29,7 +29,7 @@
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "model.h"
+#include "mrscake.h"
 #include "model_select.h"
 #include "ast.h"
 #include "io.h"

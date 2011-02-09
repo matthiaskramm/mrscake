@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include <assert.h>
-#include "model.h"
+#include "mrscake.h"
 #include "dataset.h"
 #include "dict.h"
 #include "easy_ast.h"

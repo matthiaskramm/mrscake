@@ -21,7 +21,7 @@
 
 #include <stdlib.h>
 #include <memory.h>
-#include "model.h"
+#include "mrscake.h"
 #include "ast.h"
 #include "io.h"
 #include "stringpool.h"

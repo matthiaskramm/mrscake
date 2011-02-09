@@ -22,7 +22,7 @@
 
 #include <ruby.h>
 #include <st.h>
-#include "model.h"
+#include "mrscake.h"
 #include "stringpool.h"
 
 static VALUE mrscake;

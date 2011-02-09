@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "model.h"
+#include "mrscake.h"
 
 #ifdef __cplusplus
 extern "C" {

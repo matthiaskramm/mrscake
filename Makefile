@@ -50,22 +50,22 @@ model.o: model.c constant.h ast.h
 model_select.o: model_select.c constant.h ast.h
 	$(CC) -c $< -o $@
 
-ast.o: ast.c ast.h model.h
+ast.o: ast.c ast.h mrscake.h
 	$(CC) -c $< -o $@
 
 ast_transforms.o: ast_transforms.c ast_transforms.h ast.h
 	$(CC) -c $< -o $@
 
-constant.o: constant.c constant.h model.h
+constant.o: constant.c constant.h mrscake.h
 	$(CC) -c $< -o $@
 
-environment.o: environment.c environment.h model.h
+environment.o: environment.c environment.h mrscake.h
 	$(CC) -c $< -o $@
 
-dataset.o: dataset.c dataset.h model.h
+dataset.o: dataset.c dataset.h mrscake.h
 	$(CC) -c $< -o $@
 
-dict.o: dict.c dict.h model.h
+dict.o: dict.c dict.h mrscake.h
 	$(CC) -c $< -o $@
 
 list.o: list.c list.h
@@ -89,22 +89,22 @@ io.o: io.c io.h
 cvtools.o: cvtools.cpp lib/ml.hpp dataset.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_dtree.o: model_cv_dtree.cpp model.h ast.h cvtools.h dataset.h easy_ast.h
+model_cv_dtree.o: model_cv_dtree.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_svm.o: model_cv_svm.cpp model.h ast.h cvtools.h dataset.h easy_ast.h
+model_cv_svm.o: model_cv_svm.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_ann.o: model_cv_ann.cpp model.h ast.h cvtools.h dataset.h easy_ast.h
+model_cv_ann.o: model_cv_ann.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_linear.o: model_cv_linear.cpp model.h ast.h cvtools.h dataset.h easy_ast.h
+model_cv_linear.o: model_cv_linear.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
-test_model.o: test_model.c model.h
+test_model.o: test_model.c mrscake.h
 	$(CC) -c $< -o $@
 
-test_ast.o: test_ast.c model.h ast.h
+test_ast.o: test_ast.c mrscake.h ast.h
 	$(CC) -c $< -o $@
 
 ast: test_ast.o $(OBJECTS) lib/libml.a
@@ -115,7 +115,7 @@ model: test_model.o $(OBJECTS) lib/libml.a
 
 # ------------ python interface --------------
 
-mrscake.$(SO_PYTHON): mrscake.py.c model.h list.h $(OBJECTS) lib/libml.a
+mrscake.$(SO_PYTHON): mrscake.py.c mrscake.h list.h $(OBJECTS) lib/libml.a
 	$(CC) $(PYTHON_INCLUDE) -shared mrscake.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
 
 python_interpreter: python_interpreter.c
@@ -123,7 +123,7 @@ python_interpreter: python_interpreter.c
 
 # ------------ ruby interface ----------------
 
-mrscake.$(SO_RUBY): mrscake.rb.c model.h $(OBJECTS)
+mrscake.$(SO_RUBY): mrscake.rb.c mrscake.h $(OBJECTS)
 	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) mrscake.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ installation ----------------

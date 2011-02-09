@@ -21,7 +21,7 @@
 #include <Python.h>
 #include <stdarg.h>
 #include <setjmp.h>
-#include "model.h"
+#include "mrscake.h"
 #include "list.h"
 #include "stringpool.h"
 
