@@ -43,6 +43,8 @@ int model_errors(model_t*m, sanitized_dataset_t*s);
 int model_score(model_t*m, sanitized_dataset_t*d);
 model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data);
 
+model_factory_t* model_factory_get_by_name(const char*name);
+
 #ifdef __cplusplus
 }
 #endif

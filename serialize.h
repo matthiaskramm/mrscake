@@ -47,6 +47,8 @@ trainingdata_t* trainingdata_load(const char*filename);
 
 void sanitized_dataset_save(sanitized_dataset_t*d, const char*filename);
 sanitized_dataset_t* sanitized_dataset_load(const char*filename);
+void sanitized_dataset_write(sanitized_dataset_t*d, writer_t*w);
+sanitized_dataset_t*sanitized_dataset_read(reader_t*r);
 
 #ifdef __cplusplus
 }

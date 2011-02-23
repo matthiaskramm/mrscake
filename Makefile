@@ -36,7 +36,7 @@ MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
 OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o
 
-all: multimodel ast model mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
+all: multimodel ast model server mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -83,6 +83,9 @@ codegen.o: codegen.c codegen.h
 codegen_python.o: codegen_python.c codegen.h
 	$(CC) -c $< -o $@
 
+server.o: server.c
+	$(CC) -c $< -o $@
+
 io.o: io.c io.h
 	$(CC) -c $< -o $@
 
@@ -112,6 +115,9 @@ ast: test_ast.o $(OBJECTS) lib/libml.a
 
 model: test_model.o $(OBJECTS) lib/libml.a
 	$(CXX) test_model.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+
+server: server.o $(OBJECTS) lib/libml.a
+	$(CXX) server.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 # ------------ python interface --------------
 

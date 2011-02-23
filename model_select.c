@@ -68,6 +68,21 @@ typedef struct _job {
     model_t*model;
 } job_t;
 
+model_factory_t* model_factory_get_by_name(const char*name)
+{
+    int s,t;
+    for(s=0;s<NUM(collections);s++) {
+        model_collection_t*collection = &collections[s];
+        for(t=0;t<*collection->num_models;t++) {
+            model_factory_t*factory = collection->models[t];
+            if(!strcmp(factory, name)) {
+                return factory;
+            }
+        }
+    }
+    return 0;
+}
+
 static job_t* generate_jobs(int*num_jobs)
 {
     int t;
