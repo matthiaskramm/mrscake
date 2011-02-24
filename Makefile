@@ -119,8 +119,11 @@ ast: test_ast.o $(OBJECTS) lib/libml.a
 model: test_model.o $(OBJECTS) lib/libml.a
 	$(CXX) test_model.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
-server: test_server.o $(OBJECTS) lib/libml.a
+test_server: test_server.o $(OBJECTS) lib/libml.a
 	$(CXX) test_server.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+
+server: server.o $(OBJECTS) lib/libml.a
+	$(CXX) server.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 # ------------ python interface --------------
 
