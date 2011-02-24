@@ -500,7 +500,10 @@ column_t* column_read(int num_rows, reader_t*r)
     char*name = read_string(r);
     char is_categorical = read_uint8(r);
     column_t* c = column_new(num_rows, is_categorical);
-    c->name = register_string(name);
+    if(*name) 
+        c->name = register_string(name);
+    else
+        c->name = 0;
     free(name);
     int y;
     if(c->is_categorical) {

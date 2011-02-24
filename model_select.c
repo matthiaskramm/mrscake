@@ -36,6 +36,7 @@
 #include "dataset.h"
 #include "codegen.h"
 #include "serialize.h"
+#include "net.h"
 
 #define NUM(l) (sizeof(l)/sizeof((l)[0]))
 
@@ -75,7 +76,7 @@ model_factory_t* model_factory_get_by_name(const char*name)
         model_collection_t*collection = &collections[s];
         for(t=0;t<*collection->num_models;t++) {
             model_factory_t*factory = collection->models[t];
-            if(!strcmp(factory, name)) {
+            if(!strcmp(factory->name, name)) {
                 return factory;
             }
         }
@@ -164,6 +165,30 @@ static void process_jobs(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
 #endif
 	jobs[t].model = train_model(jobs[t].factory, data);
     }
+}
+
+static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
+{
+    remote_job_t**r = malloc(sizeof(reader_t*)*num_jobs);
+
+    int t;
+    for(t=0;t<num_jobs;t++) {
+	printf("Starting %s\n", jobs[t].factory->name);fflush(stdout);
+	r[t] = remote_job_start(jobs[t].factory->name, data);
+        jobs[t].model = 0;
+    }
+    int open_jobs = num_jobs;
+    while(open_jobs) {
+        int t;
+        for(t=0;t<num_jobs;t++) {
+            if(!jobs[t].model && remote_job_is_ready(r[t])) {
+	        printf("Finished: %s\n", jobs[t].factory->name);fflush(stdout);
+                jobs[t].model = remote_job_read_result(r[t]);
+                open_jobs--;
+            }
+        }
+    }
+    free(r);
 }
 
 model_t* model_select(trainingdata_t*trainingdata)
