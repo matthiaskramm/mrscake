@@ -36,6 +36,7 @@
 #include "dataset.h"
 #include "model_select.h"
 #include "serialize.h"
+#include "settings.h"
 
 #define TIME_LIMIT 3600
 #define NUM_WORKERS 32
@@ -81,7 +82,7 @@ void process_request(int socket)
     sanitized_dataset_t* dataset = sanitized_dataset_read(r);
     printf("worker %d: %d rows of data\n", getpid(), dataset->num_rows);
 
-    model_t*m = factory->train(factory, dataset);
+    model_t*m = train_model(factory, dataset);
     if(m) {
         m->name = factory->name;
     }
@@ -261,7 +262,7 @@ bool remote_job_is_ready(remote_job_t*j)
 
 model_t* remote_job_read_result(remote_job_t*j)
 {
-    reader_t*r = filereader_with_timeout_new(j->socket, 10);
+    reader_t*r = filereader_with_timeout_new(j->socket, remote_read_timeout);
     model_t*m = model_read(r);
     r->dealloc(r);
     free(j);

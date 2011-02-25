@@ -37,6 +37,7 @@
 #include "codegen.h"
 #include "serialize.h"
 #include "net.h"
+#include "settings.h"
 
 #define NUM(l) (sizeof(l)/sizeof((l)[0]))
 
@@ -143,7 +144,7 @@ model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data)
     } else {
         //parent
         close(write_fd); // close write
-        reader_t*r = filereader_with_timeout_new(read_fd, 300);
+        reader_t*r = filereader_with_timeout_new(read_fd, remote_read_timeout);
         model_t*m = model_read(r);
         r->dealloc(r);
         close(read_fd); // close read
@@ -167,8 +168,6 @@ static void process_jobs(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
     }
 }
 
-#define REMOTE_TIMEOUT 10
-
 static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
 {
     remote_job_t**r = malloc(sizeof(reader_t*)*num_jobs);
@@ -183,18 +182,23 @@ static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*
     while(open_jobs) {
         int t;
         for(t=0;t<num_jobs;t++) {
-            if(!jobs[t].model && remote_job_is_ready(r[t])) {
-	        printf("Finished: %s\n", jobs[t].factory->name);fflush(stdout);
-                jobs[t].model = remote_job_read_result(r[t]);
-                open_jobs--;
-            } else if(remote_job_age(r[t]) > REMOTE_TIMEOUT) {
-                remote_job_cancel(r[t]);
-                open_jobs--;
+            if(r[t]) {
+                if(!jobs[t].model && remote_job_is_ready(r[t])) {
+                    printf("Finished: %s\n", jobs[t].factory->name);fflush(stdout);
+                    jobs[t].model = remote_job_read_result(r[t]);
+                    r[t] = 0;
+                    open_jobs--;
+                } else if(remote_job_age(r[t]) > remote_read_timeout) {
+                    remote_job_cancel(r[t]);
+                    r[t] = 0;
+                    open_jobs--;
+                }
             }
         }
     }
     free(r);
 }
+#define process_jobs process_jobs_remotely
 
 model_t* model_select(trainingdata_t*trainingdata)
 {
