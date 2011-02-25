@@ -80,6 +80,9 @@ serialize.o: serialize.c serialize.h ast.h constant.h
 stringpool.o: stringpool.c stringpool.h
 	$(CC) -c $< -o $@
 
+settings.o: settings.c settings.h
+	$(CC) -c $< -o $@
+
 codegen.o: codegen.c codegen.h
 	$(CC) -c $< -o $@
 

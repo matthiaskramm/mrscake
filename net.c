@@ -190,7 +190,6 @@ int connect_to_host(char *host, int port)
     int i, ret;
     char buf_ip[100];
     struct sockaddr_in sin;
-    int timeout = 120;
 
     struct hostent *he = gethostbyname(host);
     if(!he) {
@@ -262,7 +261,7 @@ bool remote_job_is_ready(remote_job_t*j)
 
 model_t* remote_job_read_result(remote_job_t*j)
 {
-    reader_t*r = filereader_with_timeout_new(j->socket, remote_read_timeout);
+    reader_t*r = filereader_with_timeout_new(j->socket, config_remote_read_timeout);
     model_t*m = model_read(r);
     r->dealloc(r);
     free(j);

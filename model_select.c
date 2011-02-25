@@ -144,7 +144,7 @@ model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data)
     } else {
         //parent
         close(write_fd); // close write
-        reader_t*r = filereader_with_timeout_new(read_fd, remote_read_timeout);
+        reader_t*r = filereader_with_timeout_new(read_fd, config_remote_read_timeout);
         model_t*m = model_read(r);
         r->dealloc(r);
         close(read_fd); // close read
@@ -188,7 +188,7 @@ static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*
                     jobs[t].model = remote_job_read_result(r[t]);
                     r[t] = 0;
                     open_jobs--;
-                } else if(remote_job_age(r[t]) > remote_read_timeout) {
+                } else if(remote_job_age(r[t]) > config_remote_read_timeout) {
                     remote_job_cancel(r[t]);
                     r[t] = 0;
                     open_jobs--;
@@ -198,7 +198,6 @@ static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*
     }
     free(r);
 }
-#define process_jobs process_jobs_remotely
 
 model_t* model_select(trainingdata_t*trainingdata)
 {
@@ -217,7 +216,11 @@ model_t* model_select(trainingdata_t*trainingdata)
     int num_jobs = 0;
     job_t*jobs = generate_jobs(&num_jobs);
 
-    process_jobs(jobs, num_jobs, data);
+    if(config_do_remote_processing) {
+        process_jobs_remotely(jobs, num_jobs, data);
+    } else {
+        process_jobs(jobs, num_jobs, data);
+    }
 
     for(t=0;t<num_jobs;t++) {
 	model_t*m = jobs[t].model;

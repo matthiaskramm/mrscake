@@ -21,6 +21,10 @@
 
 #ifndef __settings_h__
 #define __settings_h__
-extern int remote_read_timeout;
-extern int model_timeout;
+
+#include <stdbool.h>
+
+extern int config_remote_read_timeout;
+extern int config_model_timeout;
+extern bool config_do_remote_processing;
 #endif
