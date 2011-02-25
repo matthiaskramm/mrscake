@@ -167,6 +167,8 @@ static void process_jobs(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
     }
 }
 
+#define REMOTE_TIMEOUT 10
+
 static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
 {
     remote_job_t**r = malloc(sizeof(reader_t*)*num_jobs);
@@ -184,6 +186,9 @@ static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*
             if(!jobs[t].model && remote_job_is_ready(r[t])) {
 	        printf("Finished: %s\n", jobs[t].factory->name);fflush(stdout);
                 jobs[t].model = remote_job_read_result(r[t]);
+                open_jobs--;
+            } else if(remote_job_age(r[t]) > REMOTE_TIMEOUT) {
+                remote_job_cancel(r[t]);
                 open_jobs--;
             }
         }

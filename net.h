@@ -22,15 +22,18 @@
 #ifndef __server_h__
 #define __server_h__
 
+#include <time.h>
 #include "dataset.h"
 
 typedef struct _remote_job {
     int socket;
+    time_t start_time;
 } remote_job_t;
 
 int connect_to_host(char *host, int port);
 model_t* process_job_remotely(const char*model_name, sanitized_dataset_t*dataset);
 remote_job_t* remote_job_start(const char*model_name, sanitized_dataset_t*dataset);
 bool remote_job_is_ready(remote_job_t*j);
+time_t remote_job_age(remote_job_t*j);
 model_t* remote_job_read_result(remote_job_t*j);
 #endif

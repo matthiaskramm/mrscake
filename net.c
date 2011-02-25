@@ -239,6 +239,7 @@ remote_job_t* remote_job_start(const char*model_name, sanitized_dataset_t*datase
 
     remote_job_t*j = malloc(sizeof(remote_job_t));
     j->socket = sock;
+    j->start_time = time(0);
     return j;
 }
 
@@ -265,6 +266,17 @@ model_t* remote_job_read_result(remote_job_t*j)
     r->dealloc(r);
     free(j);
     return m;
+}
+
+void remote_job_cancel(remote_job_t*j)
+{
+    close(j->socket);
+    free(j);
+}
+
+time_t remote_job_age(remote_job_t*j)
+{
+    return time(0) - j->start_time;
 }
 
 model_t* process_job_remotely(const char*model_name, sanitized_dataset_t*dataset)
