@@ -172,6 +172,10 @@ static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*
 {
     remote_job_t**r = malloc(sizeof(reader_t*)*num_jobs);
 
+    /* ignore sigpipe events, causing write calls to closed network
+       sockets to return an error instead of halting the program */
+    sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
+
     int t;
     for(t=0;t<num_jobs;t++) {
 	printf("Starting %s\n", jobs[t].factory->name);fflush(stdout);
@@ -179,16 +183,22 @@ static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*
         jobs[t].model = 0;
     }
     int open_jobs = num_jobs;
+    printf("%d open jobs\n", open_jobs);
     while(open_jobs) {
         int t;
         for(t=0;t<num_jobs;t++) {
             if(r[t]) {
                 if(!jobs[t].model && remote_job_is_ready(r[t])) {
-                    printf("Finished: %s\n", jobs[t].factory->name);fflush(stdout);
                     jobs[t].model = remote_job_read_result(r[t]);
+		    if(jobs[t].model) {
+			printf("Finished: %s\n", jobs[t].factory->name);
+		    } else {
+			printf("Failed (bad data): %s\n", jobs[t].factory->name);
+		    }
                     r[t] = 0;
                     open_jobs--;
-                } else if(remote_job_age(r[t]) > config_remote_read_timeout) {
+                } else if(remote_job_age(r[t]) > config_model_timeout) {
+                    printf("Failed (timeout): %s\n", jobs[t].factory->name);
                     remote_job_cancel(r[t]);
                     r[t] = 0;
                     open_jobs--;
@@ -197,6 +207,7 @@ static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*
         }
     }
     free(r);
+    signal(SIGPIPE, old_sigpipe);
 }
 
 model_t* model_select(trainingdata_t*trainingdata)

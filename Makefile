@@ -156,7 +156,7 @@ test: mrscake.so
 	python test_python_module.py
 
 local-clean:
-	rm -f svm test ast ann multimodel *.o mrscake.$(SO) predict.$(SO) prediction.$(SO)
+	rm -f svm ast ann multimodel *.o mrscake.$(SO) predict.$(SO) prediction.$(SO)
 
 clean: local-clean
 	rm -f lib/*.o lib/*.a lib/*.gch

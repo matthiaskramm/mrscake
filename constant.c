@@ -268,7 +268,7 @@ int constant_check_type(constant_t v, uint8_t type)
         }
     }
     if(v.type!=type) {
-        fprintf(stderr, "expected %s, got %s\n", type_name[type], type_name[v.type]);
+        fprintf(stderr, "expected (%d) %s, got (%d) %s\n", type, type_name[type], v.type, type_name[v.type]);
     }
     assert(v.type == type);
     return 0;

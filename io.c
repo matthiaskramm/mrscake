@@ -437,6 +437,7 @@ static int writer_filewrite_write(writer_t*w, void* data, int len)
 {
     filewrite_t * fw= (filewrite_t*)w->internal;
     w->pos += len;
+
     return write(fw->handle, data, len);
 }
 static void writer_filewrite_finish(writer_t*w)
@@ -572,7 +573,7 @@ static int reader_zlibinflate(reader_t*reader, void* data, int len)
     reader->pos += len;
     return len;
 #else
-    fprintf(stderr, "Error: swftools was compiled without zlib support");
+    fprintf(stderr, "Error: compiled without zlib support");
     exit(1);
 #endif
 }
@@ -618,7 +619,7 @@ reader_t*zlibinflatereader_new(reader_t*input)
     if (ret != Z_OK) zlib_error(ret, "bitio:inflate_init", &z->zs);
     reader_resetbits(r);
 #else
-    fprintf(stderr, "Error: swftools was compiled without zlib support");
+    fprintf(stderr, "Error: compiled without zlib support");
     exit(1);
 #endif
     return r;

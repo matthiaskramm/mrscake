@@ -22,5 +22,5 @@
 #include "settings.h"
 
 int config_remote_read_timeout = 10;
-int config_model_timeout = 300;
-bool config_do_remote_processing = false;
+int config_model_timeout = 15;
+bool config_do_remote_processing = true;
