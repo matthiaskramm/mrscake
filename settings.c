@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "settings.h"
 
 int config_num_remote_servers = 0;
@@ -36,16 +37,32 @@ void config_parse_remote_servers(char*filename)
         perror(filename);
         exit(1);
     }
-    char*server = 0;
-    int port = 0;
-    int l;
-    while(!feof(fi)) {
-        if(fscanf(fi, "%as:%d\n", &server, &port) == 2) {
-            continue;
-        } else if(fscanf(fi, "%as\n", &server) == 1) {
-            continue;
-        } else if(fscanf(fi, "\n") == 0) {
-            continue;
-        } else break;
+    fseek(fi, 0, SEEK_END);
+    long size = ftell(fi);
+    fseek(fi, 0, SEEK_SET);
+    char*data = malloc(size+1);
+    fread(data, size, 1, fi);
+    data[size] = 0;
+
+    char*p = data;
+    char*line = data;
+    while(*p) {
+        if(*p == '\n') {
+            char*server;
+            int port;
+            //parse line
+            *p = 0;
+            char*colon = strchr(line, ':');
+            if(colon) {
+                *colon = 0;
+                server = line;
+                port = atoi(colon+1);
+            } else {
+                server = line;
+                port = 3075;
+            }
+            printf("%s %d\n", server, port);
+        }
+        p++;
     }
 }
