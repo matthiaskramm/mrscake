@@ -62,7 +62,7 @@ while 1:
     if current_revision != server_revision:
         print "upgrading from revision %s to revision %s" % (current_revision, server_revision)
         try:
-            print run("git merge origin/master")
+            print run("git merge FETCH_HEAD")
         except:
             print "Error merging revision %s" % server_revision
         try:
