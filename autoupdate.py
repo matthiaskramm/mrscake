@@ -67,7 +67,7 @@ while 1:
             print "Error merging revision %s" % server_revision
         try:
             server.stop()
-            run("make")
+            run("make mrscake-job-server")
             server.start()
         except:
             print exception_as_string()
