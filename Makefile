@@ -26,8 +26,8 @@ ifeq ($(IS_MACOS),)
     PYTHON_INSTALLDIR?=/usr/lib/python2.6/site-packages/
     RUBY_LDFLAGS?=-shared 
     RUBY_LIB?=-lruby18
-    RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/i686-linux/ 
-    RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/i686-linux/ 
+    RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/i*86-linux/ 
+    RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/i*86-linux/ 
     SO_PYTHON=so
     SO_RUBY=rb.so
 endif
