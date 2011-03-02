@@ -543,7 +543,7 @@ model_t* model_new(sanitized_dataset_t*dataset)
             }
         }
 	m->column_names[t] = dataset->columns[t]->name;
-        has_column_names |= !!dataset->columns[t]->name;
+        has_column_names |= (dataset->columns[t]->name && *dataset->columns[t]->name);
     }
 
     if(!has_column_names) {
