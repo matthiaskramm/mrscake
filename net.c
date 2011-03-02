@@ -60,6 +60,7 @@ void clean_old_workers(job_t*jobs, int*num)
         if(time(0) - jobs[t].start_time > TIME_LIMIT) {
             printf("killing worker %d\n", jobs[t].pid);
             kill(jobs[t].pid, 9);
+            waitpid(jobs[t].pid, &status, 0);
             jobs[t] = jobs[--(*num)];
         }
     }
