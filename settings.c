@@ -58,27 +58,33 @@ void config_parse_remote_servers(char*filename)
     fseek(fi, 0, SEEK_SET);
     char*data = malloc(size+1);
     fread(data, size, 1, fi);
-    data[size] = 0;
+    data[size] = '\n';
 
     char*p = data;
     char*line = data;
-    while(*p) {
+    while(p < &data[size+1]) {
         if(*p == '\n') {
-            char*server;
-            int port;
-            //parse line
-            *p = 0;
-            char*colon = strchr(line, ':');
-            if(colon) {
-                *colon = 0;
-                server = line;
-                port = atoi(colon+1);
-            } else {
-                server = line;
-                port = 3075;
+            char*end = p;
+            while(end > line && strchr(" \t\r", end[-1]))
+                end--;
+            if(end > line) {
+                *end = 0;
+                //parse line
+                char*colon = strchr(line, ':');
+                char*server;
+                int port;
+                if(colon) {
+                    *colon = 0;
+                    server = line;
+                    port = atoi(colon+1);
+                } else {
+                    server = line;
+                    port = 3075;
+                }
+                config_add_remote_server(server, port);
+                printf("%s %d\n", server, port);
             }
-            config_add_remote_server(server, port);
-            printf("%s %d\n", server, port);
+            line = p+1;
         }
         p++;
     }
