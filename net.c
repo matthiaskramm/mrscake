@@ -185,7 +185,7 @@ int start_server(int port)
     }
 }
 
-int connect_to_host(char *host, int port)
+int connect_to_host(const char *host, int port)
 {
     int i, ret;
     char buf_ip[100];
@@ -198,7 +198,7 @@ int connect_to_host(char *host, int port)
         return -1;
     }
 
-    char*ip = he->h_addr_list[0];
+    unsigned char*ip = he->h_addr_list[0];
     printf("Connecting to %d.%d.%d.%d:%d...\n",
             ip[0], ip[1], ip[2], ip[3], port);
 
@@ -225,7 +225,12 @@ remote_job_t* remote_job_start(const char*model_name, sanitized_dataset_t*datase
 {
     int sock;
     while(1) {
-        sock = connect_to_host("localhost", 3075);
+        if(!config_num_remote_servers) {
+            fprintf(stderr, "No remote servers configured.\n");
+            exit(1);
+        }
+        remote_server_t*s = &config_remote_servers[lrand48()%config_num_remote_servers];
+        sock = connect_to_host(s->host, s->port);
         if(sock>=0) {
             break;
         }

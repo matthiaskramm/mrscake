@@ -25,7 +25,7 @@
 #include <stdbool.h>
 
 typedef struct remote_server {
-    const char*server;
+    const char*host;
     int port;
 } remote_server_t;
 

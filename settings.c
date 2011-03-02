@@ -28,7 +28,23 @@ int config_num_remote_servers = 0;
 remote_server_t*config_remote_servers = 0;
 int config_remote_read_timeout = 10;
 int config_model_timeout = 15;
-bool config_do_remote_processing = true;
+bool config_do_remote_processing = false;
+
+static int remote_server_size = 0;
+
+void config_add_remote_server(char*host, int port)
+{
+    if(!remote_server_size) {
+        remote_server_size = 32;
+        config_remote_servers = malloc(sizeof(remote_server_t)*remote_server_size);
+    } else if(config_num_remote_servers <= remote_server_size) {
+        remote_server_size *= 2;
+        config_remote_servers = realloc(config_remote_servers, sizeof(remote_server_t)*remote_server_size);
+    }
+    remote_server_t*s = &config_remote_servers[config_num_remote_servers++];
+    s->host = host;
+    s->port = port;
+}
 
 void config_parse_remote_servers(char*filename)
 {
@@ -61,8 +77,10 @@ void config_parse_remote_servers(char*filename)
                 server = line;
                 port = 3075;
             }
+            config_add_remote_server(server, port);
             printf("%s %d\n", server, port);
         }
         p++;
     }
+    config_do_remote_processing = true;
 }
