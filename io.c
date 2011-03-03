@@ -77,12 +77,25 @@ typedef struct _filereader_internal {
     int timeout;
 } filereader_internal_t;
 
+static int read_with_retry(reader_t*r, int handle, void*_data, int len)
+{
+    unsigned char*data = (unsigned char*)_data;
+    int pos = 0;
+    while(pos<len) {
+        int ret = read(handle, data+pos, len-pos);
+        if(ret<=0) {
+            perror("read");
+            return ret;
+        }
+        pos += ret;
+    }
+    r->pos += len;
+    return len;
+}
 static int reader_fileread(reader_t*r, void* data, int len)
 {
     filereader_internal_t*i = (filereader_internal_t*)r->internal;
-    int ret = read(i->handle, data, len);
-    if(ret>=0)
-	r->pos += ret;
+    int ret = read_with_retry(r, i->handle, data, len);
     return ret;
 }
 static int reader_fileread_with_timeout(reader_t*r, void* data, int len)
@@ -113,12 +126,7 @@ static int reader_fileread_with_timeout(reader_t*r, void* data, int len)
         r->error = "timeout";
         return -1;
     }
-    ret = read(i->handle, data, len);
-    if(ret<0) {
-        perror("read");
-    }
-    if(ret>=0)
-	r->pos += ret;
+    ret = read_with_retry(r, i->handle, data, len);
     return ret;
 }
 static void reader_fileread_dealloc(reader_t*r)
