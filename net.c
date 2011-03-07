@@ -37,16 +37,17 @@
 #include "model_select.h"
 #include "serialize.h"
 #include "settings.h"
+#include "job.h"
 
 #define TIME_LIMIT 3600
 #define NUM_WORKERS 32
 
-typedef struct _job {
+typedef struct _worker {
     pid_t pid;
     int start_time;
-} job_t;
+} worker_t;
 
-void clean_old_workers(job_t*jobs, int*num)
+void clean_old_workers(worker_t*jobs, int*num)
 {
     int t;
     for(t=0;t<*num;t++) {
@@ -83,7 +84,12 @@ void process_request(int socket)
     sanitized_dataset_t* dataset = sanitized_dataset_read(r);
     printf("worker %d: %d rows of data\n", getpid(), dataset->num_rows);
 
-    model_t*m = train_model(factory, dataset);
+    job_t j;
+    j.factory = factory;
+    j.data = dataset;
+    j.model = 0;
+    job_process(&j);
+    model_t*m = j.model;
     if(m) {
         m->name = factory->name;
     }
@@ -131,7 +137,7 @@ int start_server(int port)
         exit(1);
     }
 
-    job_t jobs[NUM_WORKERS];
+    worker_t jobs[NUM_WORKERS];
     int num_workers = 0;
 
     printf("listing on port %d\n", port);

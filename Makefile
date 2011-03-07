@@ -33,8 +33,9 @@ ifeq ($(IS_MACOS),)
 endif
 
 MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o
+VAR_SELECTORS=varselect_cv_dtree.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
-OBJECTS=$(MODELS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o
+OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o
 
 all: multimodel ast model mrscake-job-server mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
@@ -54,6 +55,9 @@ ast.o: ast.c ast.h mrscake.h
 	$(CC) -c $< -o $@
 
 net.o: net.c net.h mrscake.h
+	$(CC) -c $< -o $@
+
+job.o: job.c job.h
 	$(CC) -c $< -o $@
 
 ast_transforms.o: ast_transforms.c ast_transforms.h ast.h
@@ -108,6 +112,9 @@ model_cv_ann.o: model_cv_ann.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
 model_cv_linear.o: model_cv_linear.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
+	$(CXX) -Ilib $< -c -o $@
+
+varselect_cv_dtree.o: varselect_cv_dtree.cpp mrscake.h cvtools.h dataset.h var_selection.h
 	$(CXX) -Ilib $< -c -o $@
 
 test_model.o: test_model.c mrscake.h

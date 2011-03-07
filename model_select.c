@@ -38,6 +38,8 @@
 #include "serialize.h"
 #include "net.h"
 #include "settings.h"
+#include "var_selection.h"
+#include "job.h"
 
 #define NUM(l) (sizeof(l)/sizeof((l)[0]))
 
@@ -65,11 +67,6 @@ model_collection_t collections[] = {
     {ann_models, &num_ann_models},
 };
 
-typedef struct _job {
-    model_factory_t*factory;
-    model_t*model;
-} job_t;
-
 model_factory_t* model_factory_get_by_name(const char*name)
 {
     int s,t;
@@ -85,157 +82,34 @@ model_factory_t* model_factory_get_by_name(const char*name)
     return 0;
 }
 
-static job_t* generate_jobs(int*num_jobs)
+static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
 {
+    jobqueue_t* queue = jobqueue_new();
     int t;
     int s;
-    int num = 0;
-    for(s=0;s<NUM(collections);s++) {
-        model_collection_t*collection = &collections[s];
-	num += *collection->num_models;
-    }
-    *num_jobs = num;
-    job_t*jobs = malloc(sizeof(job_t)*num);
-    int pos = 0;
     for(s=0;s<NUM(collections);s++) {
         model_collection_t*collection = &collections[s];
         for(t=0;t<*collection->num_models;t++) {
             model_factory_t*factory = collection->models[t];
-	    jobs[pos].factory = factory;
-	    jobs[pos].model = NULL;
-	    pos++;
+            job_t* job = job_new();
+	    job->factory = factory;
+	    job->model = NULL;
+            job->data = data;
+            jobqueue_append(queue,job);
         }
     }
-    assert(pos==num);
-    return jobs;
+    return queue;
 }
 
-#define FORK_FOR_TRAINING
-model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data)
+extern varorder_t*dtree_var_order(sanitized_dataset_t*d);
+
+model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs, sanitized_dataset_t*data)
 {
-#ifndef FORK_FOR_TRAINING
-    model_t* m = factory->train(factory, data);
-    if(m) {
-        m->name = factory->name;
-    }
-    return m;
-#else
-    int p[2];
-    int ret = pipe(p);
-    int read_fd = p[0];
-    int write_fd = p[1];
-    if(ret) {
-        perror("create pipe");
-        exit(-1);
-    }
-    pid_t pid = fork();
-    if(!pid) {
-        //child
-        close(read_fd); // close read
-        model_t*m = factory->train(factory, data);
-        if(m) {
-            m->name = factory->name;
-        }
-        writer_t*w = filewriter_new(write_fd);
-        model_write(m, w);
-        w->finish(w);
-        close(write_fd); // close write
-        _exit(0);
-    } else {
-        //parent
-        close(write_fd); // close write
-        reader_t*r = filereader_with_timeout_new(read_fd, config_remote_read_timeout);
-        model_t*m = model_read(r);
-        r->dealloc(r);
-        close(read_fd); // close read
-        ret = waitpid(pid, NULL, WNOHANG);
-        if(ret < 0) {
-            kill(pid, SIGKILL);
-        }
-        return m;
-    }
-#endif
-}
-
-static void process_jobs(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
-{
-    int t;
-    for(t=0;t<num_jobs;t++) {
-#ifdef DEBUG
-	printf("# Trying %s... ", factory->name);fflush(stdout);
-#endif
-	jobs[t].model = train_model(jobs[t].factory, data);
-    }
-}
-
-static void process_jobs_remotely(job_t*jobs, int num_jobs, sanitized_dataset_t*data)
-{
-    remote_job_t**r = malloc(sizeof(reader_t*)*num_jobs);
-
-    /* ignore sigpipe events, causing write calls to closed network
-       sockets to return an error instead of halting the program */
-    sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
-
-    int t;
-    for(t=0;t<num_jobs;t++) {
-	printf("Starting %s\n", jobs[t].factory->name);fflush(stdout);
-	r[t] = remote_job_start(jobs[t].factory->name, data);
-        jobs[t].model = 0;
-    }
-    int open_jobs = num_jobs;
-    printf("%d open jobs\n", open_jobs);
-    while(open_jobs) {
-        int t;
-        for(t=0;t<num_jobs;t++) {
-            if(r[t]) {
-                if(!jobs[t].model && remote_job_is_ready(r[t])) {
-                    jobs[t].model = remote_job_read_result(r[t]);
-		    if(jobs[t].model) {
-			printf("Finished: %s\n", jobs[t].factory->name);
-		    } else {
-			printf("Failed (bad data): %s\n", jobs[t].factory->name);
-		    }
-                    r[t] = 0;
-                    open_jobs--;
-                } else if(remote_job_age(r[t]) > config_model_timeout) {
-                    printf("Failed (timeout): %s\n", jobs[t].factory->name);
-                    remote_job_cancel(r[t]);
-                    r[t] = 0;
-                    open_jobs--;
-                }
-            }
-        }
-    }
-    free(r);
-    signal(SIGPIPE, old_sigpipe);
-}
-
-model_t* model_select(trainingdata_t*trainingdata)
-{
-    model_t*best_model = 0;
+    model_t*best_model = NULL;
     int best_score = INT_MAX;
-    int t;
-    sanitized_dataset_t*data = dataset_sanitize(trainingdata);
-    if(!data)
-        return 0;
-#define DEBUG
-#ifdef DEBUG
-    printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
-            data->num_columns, sanitized_dataset_count_expanded_columns(data));
-#endif
-
-    int num_jobs = 0;
-    job_t*jobs = generate_jobs(&num_jobs);
-
-    if(config_do_remote_processing) {
-        process_jobs_remotely(jobs, num_jobs, data);
-    } else {
-        process_jobs(jobs, num_jobs, data);
-    }
-
-    for(t=0;t<num_jobs;t++) {
-	model_t*m = jobs[t].model;
-	printf("# %s: ", jobs[t].factory->name);fflush(stdout);
+    job_t*job;
+    for(job=jobs->first;job;job=job->next) {
+	model_t*m = job->model;
 	if(m) {
 	    int size = model_size(m);
 #ifdef DEBUG
@@ -268,14 +142,32 @@ model_t* model_select(trainingdata_t*trainingdata)
 	    printf("failed\n");
 #endif
 	}
-	jobs[t].model = 0;
+	job->model = 0;
     }
-    free(jobs);
-            
-    sanitized_dataset_destroy(data);
+    jobqueue_destroy(jobs);
+    return best_model;
+}
+
+model_t* model_select(trainingdata_t*trainingdata)
+{
+    sanitized_dataset_t*data = dataset_sanitize(trainingdata);
+    if(!data)
+        return 0;
+#define DEBUG
+#ifdef DEBUG
+    printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
+            data->num_columns, sanitized_dataset_count_expanded_columns(data));
+#endif
+
+    varorder_t*order = dtree_var_order(data);
+
+    jobqueue_t*jobs = generate_jobs(order, data);
+    jobqueue_process(jobs);
+    model_t*best_model = jobqueue_extract_best_and_destroy(jobs, data);
 #ifdef DEBUG
     printf("# Using %s.\n", best_model->name);
 #endif
+    sanitized_dataset_destroy(data);
     return best_model;
 }
 
