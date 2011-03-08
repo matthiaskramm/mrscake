@@ -87,15 +87,19 @@ static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
     jobqueue_t* queue = jobqueue_new();
     int t;
     int s;
-    for(s=0;s<NUM(collections);s++) {
-        model_collection_t*collection = &collections[s];
-        for(t=0;t<*collection->num_models;t++) {
-            model_factory_t*factory = collection->models[t];
-            job_t* job = job_new();
-	    job->factory = factory;
-	    job->model = NULL;
-            job->data = data;
-            jobqueue_append(queue,job);
+    int i;
+    for(i=1;i<order->num;i++) {
+        sanitized_dataset_t*newdata = sanitized_dataset_pick_columns(data, order->order, i);
+        for(s=0;s<NUM(collections);s++) {
+            model_collection_t*collection = &collections[s];
+            for(t=0;t<*collection->num_models;t++) {
+                model_factory_t*factory = collection->models[t];
+                job_t* job = job_new();
+                job->factory = factory;
+                job->model = NULL;
+                job->data = newdata;
+                jobqueue_append(queue,job);
+            }
         }
     }
     return queue;

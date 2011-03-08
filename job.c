@@ -103,7 +103,6 @@ static void process_jobs_remotely(jobqueue_t*jobs)
     job_t*job;
     int pos = 0;
     for(job=jobs->first;job;job=job->next) {
-	printf("Starting %s\n", job->factory->name);fflush(stdout);
 	r[pos] = remote_job_start(job->factory->name, job->data);
         job->model = 0;
         pos++;

@@ -373,6 +373,12 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
             s->columns[column]->name = register_string(name);
         }
         dict_destroy(column_names);
+    } else {
+        for(x=0;x<s->num_columns;x++) {
+            char name[80];
+            sprintf(name, "data[%d]", x);
+            s->columns[x]->name = register_string(name);
+        }
     }
     return s;
 }
@@ -552,4 +558,18 @@ model_t* model_new(sanitized_dataset_t*dataset)
     }
     return m;
 }
+
+sanitized_dataset_t* sanitized_dataset_pick_columns(sanitized_dataset_t*data, int*index, int num)
+{
+    sanitized_dataset_t*newdata = malloc(sizeof(sanitized_dataset_t)+sizeof(column_t*)*num);
+    memcpy(newdata, data, sizeof(sanitized_dataset_t));
+    newdata->num_columns = num;
+    newdata->columns = (column_t**)(&newdata[1]);
+    int t;
+    for(t=0;t<num;t++) {
+        newdata->columns[t] = data->columns[index[t]];
+    }
+    return newdata;
+}
+
 

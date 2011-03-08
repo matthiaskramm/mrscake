@@ -206,8 +206,7 @@ int connect_to_host(const char *host, int port)
     }
 
     unsigned char*ip = he->h_addr_list[0];
-    printf("Connecting to %d.%d.%d.%d:%d...\n",
-            ip[0], ip[1], ip[2], ip[3], port);
+    //printf("Connecting to %d.%d.%d.%d:%d...\n", ip[0], ip[1], ip[2], ip[3], port);
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
@@ -238,6 +237,7 @@ remote_job_t* remote_job_start(const char*model_name, sanitized_dataset_t*datase
         }
         static int round_robin = 0;
         remote_server_t*s = &config_remote_servers[(round_robin++)%config_num_remote_servers];
+	printf("Starting %s on %s\n", model_name, s->host);fflush(stdout);
         sock = connect_to_host(s->host, s->port);
         if(sock>=0) {
             break;
