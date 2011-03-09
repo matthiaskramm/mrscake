@@ -88,6 +88,7 @@ static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
     int t;
     int s;
     int i;
+#ifdef SUBSET_VARIABLES
     for(i=1;i<order->num;i++) {
         sanitized_dataset_t*newdata = sanitized_dataset_pick_columns(data, order->order, i);
         for(s=0;s<NUM(collections);s++) {
@@ -102,6 +103,19 @@ static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
             }
         }
     }
+#else
+    for(s=0;s<NUM(collections);s++) {
+        model_collection_t*collection = &collections[s];
+        for(t=0;t<*collection->num_models;t++) {
+            model_factory_t*factory = collection->models[t];
+            job_t* job = job_new();
+            job->factory = factory;
+            job->model = NULL;
+            job->data = data;
+            jobqueue_append(queue,job);
+        }
+    }
+#endif
     return queue;
 }
 
