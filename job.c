@@ -32,7 +32,7 @@
 #include "net.h"
 #include "serialize.h"
 
-#define FORK_FOR_TRAINING
+//#define FORK_FOR_TRAINING
 void job_process(job_t*job)
 {
 #ifndef FORK_FOR_TRAINING

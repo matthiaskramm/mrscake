@@ -120,13 +120,13 @@ static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, sanitiz
         }
         if(ci<0) { // ordered
                 LTE
-                    PARAM(split->var_idx);
+                    PARAM(dataset->columns[split->var_idx]);
                     FLOAT_CONSTANT(split->ord.c);
                 END;
         } else { //categorical
             array_t*a = parse_bitfield(data, dataset, split->var_idx, ci, split->subset);
                 IN
-                    PARAM(split->var_idx);
+                    PARAM(dataset->columns[split->var_idx]);
                     ARRAY_CONSTANT(a);
                 END;
         }

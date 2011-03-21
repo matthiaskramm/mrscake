@@ -861,6 +861,16 @@ uint8_t read_uint8(reader_t*r)
     }
     return b;
 }
+int8_t read_int8(reader_t*r)
+{
+    int8_t b = 0;
+    int ret = r->read(r, &b, 1);
+    if(ret<1) {
+	fprintf(stderr, "io.c:read_uint8: Couldn't read uint8 (%d)\n", ret);
+        return 0;
+    }
+    return b;
+}
 uint16_t read_uint16(reader_t*r)
 {
     uint8_t b1=0,b2=0;
@@ -890,13 +900,33 @@ uint32_t read_uint32(reader_t*r)
 uint32_t read_compressed_uint(reader_t*r)
 {
     uint32_t u = 0;
-    int pos;
     uint32_t b;
     do {
         b = read_uint8(r);
         u = u<<7|b&0x7f;
     } while(b&0x80);
     return u;
+}
+int32_t read_compressed_int(reader_t*r)
+{
+    int32_t i = 0;
+    int32_t b;
+
+    b = read_int8(r);
+    i = b&0x7f;
+
+    if(b&0x40)
+        i|=0xffffff80; //sign extension
+
+    if(!(b&0x80))
+        return i;
+
+    do {
+        b = read_int8(r);
+        i = i<<7|b&0x7f;
+    } while(b&0x80);
+
+    return i;
 }
 
 float read_float(reader_t*r)
@@ -998,5 +1028,36 @@ void write_compressed_uint(writer_t*w, uint32_t u)
         write_uint8(w, u>>14|0x80);
         write_uint8(w, u>>7|0x80);
         write_uint8(w, u&0x7f);
+    }
+}
+void write_compressed_int(writer_t*w, int32_t i)
+{
+    if(i>=-0x40 && i<0x40) {
+        write_uint8(w, i&0x7f);
+    } else if(i>=-0x1000 && i<0x1000) {
+        write_uint8(w, (i>>6)&0x7f|0x80);
+        write_uint8(w, i&0x7f);
+    } else if(i>=-0x40000 && i<0x40000) {
+        write_uint8(w, (i>>12)&0x7f|0x80);
+        write_uint8(w, (i>>6)&0x7f|0x80);
+        write_uint8(w, (i)&0x7f);
+    } else if(i>=-0x1000000 && i<0x1000000) {
+        write_uint8(w, (i>>18)&0x7f|0x80);
+        write_uint8(w, (i>>12)&0x7f|0x80);
+        write_uint8(w, (i>>6)&0x7f|0x80);
+        write_uint8(w, (i)&0x7f);
+    } else if(i>=-0x40000000 && i<0x40000000) {
+        write_uint8(w, (i>>24)&0x7f|0x80);
+        write_uint8(w, (i>>18)&0x7f|0x80);
+        write_uint8(w, (i>>12)&0x7f|0x80);
+        write_uint8(w, (i>>6)&0x7f|0x80);
+        write_uint8(w, (i)&0x7f);
+    } else {
+        write_uint8(w, (i>>30)&0x7f|0x80);
+        write_uint8(w, (i>>24)&0x7f|0x80);
+        write_uint8(w, (i>>18)&0x7f|0x80);
+        write_uint8(w, (i>>12)&0x7f|0x80);
+        write_uint8(w, (i>>6)&0x7f|0x80);
+        write_uint8(w, (i)&0x7f);
     }
 }

@@ -10,10 +10,10 @@
     IF 
       GT
 	ADD
-	  PARAM(1)
-	  PARAM(2)
+	  PARAM(column1)
+	  PARAM(column2)
         END;
-        PARAM(3)
+        PARAM(column3)
       END;
     THEN
       INT_CONSTANT(1)
@@ -84,7 +84,8 @@
 #define ABS NODE_BEGIN(&node_abs)
 #define NOP NODE_BEGIN(&node_nop)
 
-#define PARAM(i) NODE_BEGIN(&node_param, i)
+#define PARAM(column) NODE_BEGIN(&node_param, (column)->index)
+#define RAW_PARAM(index) NODE_BEGIN(&node_param, index)
 
 #define GENERIC_CONSTANT(c) do {NODE_BEGIN(&node_constant, c)}while(0);
 #define BOOL_CONSTANT(b) NODE_BEGIN(&node_bool, ((int)(b)))

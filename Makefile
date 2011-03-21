@@ -37,7 +37,7 @@ VAR_SELECTORS=varselect_cv_dtree.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
 OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o
 
-all: multimodel ast model mrscake-job-server mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
+all: multimodel ast model subset mrscake-job-server mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
@@ -123,11 +123,17 @@ test_model.o: test_model.c mrscake.h
 test_ast.o: test_ast.c mrscake.h ast.h
 	$(CC) -c $< -o $@
 
+test_subset.o: test_subset.c mrscake.h ast.h
+	$(CC) -c $< -o $@
+
 ast: test_ast.o $(OBJECTS) lib/libml.a
 	$(CXX) test_ast.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 model: test_model.o $(OBJECTS) lib/libml.a
 	$(CXX) test_model.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+
+subset: test_subset.o $(OBJECTS) lib/libml.a
+	$(CXX) test_subset.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 test_server: test_server.o $(OBJECTS) lib/libml.a
 	$(CXX) test_server.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)

@@ -42,6 +42,8 @@ typedef struct _sanitized_dataset {
 } sanitized_dataset_t;
 
 struct _column {
+    int index;
+
     bool is_categorical;
 
     int num_classes;
@@ -80,7 +82,7 @@ node_t* expanded_columns_parameter_init(expanded_columns_t*e);
 node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num);
 void expanded_columns_destroy(expanded_columns_t*e);
 
-column_t*column_new(int num_rows, bool is_categorical);
+column_t*column_new(int num_rows, bool is_categorical, int x);
 
 model_t* model_new(sanitized_dataset_t*dataset);
 example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags);

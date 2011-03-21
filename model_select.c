@@ -88,6 +88,7 @@ static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
     int t;
     int s;
     int i;
+#define SUBSET_VARIABLES
 #ifdef SUBSET_VARIABLES
     for(i=1;i<order->num;i++) {
         sanitized_dataset_t*newdata = sanitized_dataset_pick_columns(data, order->order, i);
