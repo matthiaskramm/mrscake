@@ -86,11 +86,15 @@ void trainingdata_destroy(trainingdata_t*dataset);
 void trainingdata_save(trainingdata_t*d, const char*filename);
 trainingdata_t* trainingdata_load(const char*filename);
 
-typedef struct _model {
-    const char*name;
+typedef struct _signature {
     int num_inputs;
     columntype_t*column_types;
     const char**column_names;
+} signature_t;
+
+typedef struct _model {
+    const char*name;
+    signature_t*sig;
     void*code;
 } model_t;
 

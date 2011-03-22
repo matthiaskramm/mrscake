@@ -113,10 +113,10 @@ constant_type_t*node_local_types(node_t*node, model_t*m, int* num_locals)
 }
 constant_type_t model_param_type(model_t*m, int var)
 {
-    if(!m->column_types) {
+    if(!m->sig->column_types) {
         return CONSTANT_MISSING;
     }
-    switch(m->column_types[var]) {
+    switch(m->sig->column_types[var]) {
         case CONTINUOUS:
             return CONSTANT_FLOAT;
         break;

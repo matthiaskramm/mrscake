@@ -304,28 +304,37 @@ void node_write(node_t*node, writer_t*writer, unsigned flags)
         }
     }
 }
+
+signature_t* signature_read(reader_t*r)
+{
+    signature_t*sig = malloc(sizeof(signature_t));
+    sig->num_inputs = read_compressed_uint(r);
+    uint8_t flags = read_uint8(r);
+    int t;
+    if(flags&1) {
+        sig->column_names = calloc(sig->num_inputs, sizeof(sig->column_names[0]));
+        for(t=0;t<sig->num_inputs;t++) {
+            char*s = read_string(r);
+            sig->column_names[t] = register_and_free_string(s);
+        }
+    }
+    if(flags&2) {
+        sig->column_types = calloc(sig->num_inputs, sizeof(sig->column_types[0]));
+        for(t=0;t<sig->num_inputs;t++) {
+            sig->column_types[t] = read_compressed_uint(r);
+        }
+    }
+    return sig;
+}
+
 model_t* model_read(reader_t*r)
 {
     model_t*m = (model_t*)calloc(1, sizeof(model_t));
     m->name = register_and_free_string(read_string(r));
     if(!*m->name)
         return NULL;
-    m->num_inputs = read_compressed_uint(r);
-    uint8_t flags = read_uint8(r);
-    int t;
-    if(flags&1) {
-        m->column_names = calloc(m->num_inputs, sizeof(m->column_names[0]));
-        for(t=0;t<m->num_inputs;t++) {
-            char*s = read_string(r);
-            m->column_names[t] = register_and_free_string(s);
-        }
-    }
-    if(flags&2) {
-        m->column_types = calloc(m->num_inputs, sizeof(m->column_types[0]));
-        for(t=0;t<m->num_inputs;t++) {
-            m->column_types[t] = read_compressed_uint(r);
-        }
-    }
+
+    m->sig = signature_read(r);
     m->code = (void*)node_read(r);
     if(!m->code) {
         free(m);
@@ -340,6 +349,29 @@ model_t* model_load(const char*filename)
     r->dealloc(r);
     return m;
 }
+void signature_write(signature_t*sig, writer_t*w)
+{
+    write_compressed_uint(w, sig->num_inputs);
+    uint8_t flags = 0;
+    if(sig->column_names)
+        flags |= 1;
+    if(sig->column_types)
+        flags |= 2;
+    write_uint8(w, flags);
+
+    if(sig->column_names) {
+        int t;
+        for(t=0;t<sig->num_inputs;t++) {
+            write_string(w, sig->column_names[t]);
+        }
+    }
+    if(sig->column_types) {
+        int t;
+        for(t=0;t<sig->num_inputs;t++) {
+            write_compressed_uint(w, sig->column_types[t]);
+        }
+    }
+}
 void model_write(model_t*m, writer_t*w)
 {
     if(!m) {
@@ -349,26 +381,9 @@ void model_write(model_t*m, writer_t*w)
     }
     assert(m->name && m->name[0]);
     write_string(w, m->name);
-    write_compressed_uint(w, m->num_inputs);
-    uint8_t flags = 0;
-    if(m->column_names)
-        flags |= 1;
-    if(m->column_types)
-        flags |= 2;
-    write_uint8(w, flags);
 
-    if(m->column_names) {
-        int t;
-        for(t=0;t<m->num_inputs;t++) {
-            write_string(w, m->column_names[t]);
-        }
-    }
-    if(m->column_types) {
-        int t;
-        for(t=0;t<m->num_inputs;t++) {
-            write_compressed_uint(w, m->column_types[t]);
-        }
-    }
+    signature_write(m->sig, w);
+
     node_t*node = (node_t*)m->code;
     node_write(node, w, 0);
 }

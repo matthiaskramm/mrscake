@@ -9,6 +9,8 @@ typedef struct _varorder {
     int*order;
 } varorder_t;
 
+void varorder_print(varorder_t*order, int num);
+
 #ifdef __cplusplus
 }
 #endif

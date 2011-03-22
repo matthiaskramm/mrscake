@@ -91,17 +91,19 @@ int constant_check_type(constant_t v, uint8_t type);
 constant_t variable_to_constant(variable_t*v);
 variable_t constant_to_variable(constant_t* c);
 
-#define AS_FLOAT(v) (constant_check_type((v),CONSTANT_FLOAT),(v).f)
-#define AS_INT(v) (constant_check_type((v),CONSTANT_INT),(v).i)
-#define AS_CATEGORY(v) (constant_check_type((v),CONSTANT_CATEGORY),(v).c)
-#define AS_BOOL(v) (constant_check_type((v),CONSTANT_BOOL),(v).b)
-#define AS_INT_ARRAY(v) (constant_check_type((v),CONSTANT_INT_ARRAY),(v).a)
-#define AS_CATEGORY_ARRAY(v) (constant_check_type((v),CONSTANT_CATEGORY_ARRAY),(v).a)
-#define AS_STRING_ARRAY(v) (constant_check_type((v),CONSTANT_STRING_ARRAY),(v).a)
-#define AS_FLOAT_ARRAY(v) (constant_check_type((v),CONSTANT_FLOAT_ARRAY),(v).a)
-#define AS_MIXED_ARRAY(v) (constant_check_type((v),CONSTANT_MIXED_ARRAY),(v).a)
-#define AS_ARRAY(v) (constant_check_type((v),CONSTANT_MIXED_ARRAY),(v).a)
-#define AS_STRING(v) (constant_check_type((v),CONSTANT_STRING),(v).s)
+#define CONSTANT_CHECK_TYPE(c,t) (assert(constant_check_type((c),(t))))
+
+#define AS_FLOAT(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_FLOAT),(v).f)
+#define AS_INT(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_INT),(v).i)
+#define AS_CATEGORY(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_CATEGORY),(v).c)
+#define AS_BOOL(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_BOOL),(v).b)
+#define AS_INT_ARRAY(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_INT_ARRAY),(v).a)
+#define AS_CATEGORY_ARRAY(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_CATEGORY_ARRAY),(v).a)
+#define AS_STRING_ARRAY(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_STRING_ARRAY),(v).a)
+#define AS_FLOAT_ARRAY(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_FLOAT_ARRAY),(v).a)
+#define AS_MIXED_ARRAY(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_MIXED_ARRAY),(v).a)
+#define AS_ARRAY(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_MIXED_ARRAY),(v).a)
+#define AS_STRING(v) (CONSTANT_CHECK_TYPE((v),CONSTANT_STRING),(v).s)
 
 #ifdef __cplusplus
 }

@@ -18,7 +18,9 @@ data = mrscake.load_data("/tmp/data.txt")
 
 print data
 model = data.get_model()
+
 print model
+
 model.save("/tmp/model.dat")
 model = mrscake.load_model("/tmp/model.dat")
 print model

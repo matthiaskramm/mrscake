@@ -34,6 +34,9 @@ struct _column;
 typedef struct _column column_t;
 
 typedef struct _sanitized_dataset {
+
+    signature_t*sig;
+
     int num_columns;
     int num_rows;
     column_t**columns;

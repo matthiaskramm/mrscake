@@ -35,7 +35,7 @@ endif
 MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o
 VAR_SELECTORS=varselect_cv_dtree.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
-OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o
+OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o var_selection.o
 
 all: multimodel ast model subset mrscake-job-server mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
@@ -85,6 +85,9 @@ stringpool.o: stringpool.c stringpool.h
 	$(CC) -c $< -o $@
 
 settings.o: settings.c settings.h
+	$(CC) -c $< -o $@
+
+var_selection.o: var_selection.c var_selection.h
 	$(CC) -c $< -o $@
 
 codegen.o: codegen.c codegen.h

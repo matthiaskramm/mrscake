@@ -209,8 +209,8 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
     example_t*e = pylist_to_example(data);
     if(!e)
         return NULL;
-    if(e->num_inputs != self->model->num_inputs) {
-        PY_ERROR("You supplied %d inputs for a model with %d inputs", e->num_inputs, self->model->num_inputs);
+    if(e->num_inputs != self->model->sig->num_inputs) {
+        PY_ERROR("You supplied %d inputs for a model with %d inputs", e->num_inputs, self->model->sig->num_inputs);
         example_destroy(e);
         return NULL;
     }

@@ -143,8 +143,8 @@ void ruby_write_node_abs(node_t*n, state_t*s)
 }
 void ruby_write_node_param(node_t*n, state_t*s)
 {
-    if(s->model->column_names) {
-        strf(s, "%s", s->model->column_names[n->value.i]);
+    if(s->model->sig->column_names) {
+        strf(s, "%s", s->model->sig->column_names[n->value.i]);
     } else {
         strf(s, "data[%d]", n->value.i);
     }
@@ -316,12 +316,12 @@ void ruby_write_node_brackets(node_t*n, state_t*s)
 void ruby_write_header(model_t*model, state_t*s)
 {
     strf(s, "def predict(");
-    if(s->model->column_names) {
+    if(s->model->sig) {
         int t;
         node_t*root = (node_t*)model->code;
-        for(t=0;t<model->num_inputs;t++) {
+        for(t=0;t<model->sig->num_inputs;t++) {
             if(t) strf(s, ", ");
-            strf(s, "%s", s->model->column_names[t]);
+            strf(s, "%s", s->model->sig->column_names[t]);
         }
     } else {
         strf(s, "data");

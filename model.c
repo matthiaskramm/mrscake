@@ -153,9 +153,55 @@ void row_destroy(row_t*row)
     free(row);
 }
 
+void columntype_print(columntype_t c)
+{
+    switch(c) {
+        case CATEGORICAL:
+            printf("category_t");
+        break;
+        case CONTINUOUS:
+            printf("float");
+        break;
+        case TEXT:
+            printf("char*");
+        break;
+        case MISSING:
+            printf("<missing>");
+        break;
+        default:
+            printf("<undefined>");
+        break;
+    }
+}
+
+void signature_print(signature_t*sig)
+{
+    int t;
+    for(t=0;t<sig->num_inputs;t++) {
+        if(t)
+            printf(", ");
+        columntype_print(sig->column_types[t]);
+        if(sig->column_names) {
+            printf(" %s", sig->column_names[t]);
+        }
+    }
+    printf("\n");
+}
+
 void model_print(model_t*m)
 {
+    printf("------------ params -----------\n");
+    signature_print(m->sig);
     node_print((node_t*)m->code);
+}
+
+void signature_destroy(signature_t*s)
+{
+    if(s->column_types)
+        free(s->column_types);
+    if(s->column_names)
+        free(s->column_names);
+    free(s);
 }
 
 variable_t model_predict(model_t*m, row_t*row)
@@ -170,9 +216,8 @@ void model_destroy(model_t*m)
 {
     if(m->code)
         node_destroy(m->code);
-    if(m->column_types)
-        free(m->column_types);
-    if(m->column_names)
-        free(m->column_names);
     free(m);
+    /* FIXME: since the signature is originally part of the dataset,
+       we can't destroy it here. */
+    //signature_destroy(m->sig);
 }

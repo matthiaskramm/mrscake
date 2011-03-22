@@ -262,16 +262,17 @@ int constant_check_type(constant_t v, uint8_t type)
             case CONSTANT_CATEGORY_ARRAY:
             case CONSTANT_MIXED_ARRAY:
             case CONSTANT_STRING_ARRAY:
-                return 0;
+                return 1;
             default:
                 fprintf(stderr, "expected array, got %s\n", type_name[v.type]);
         }
     }
     if(v.type!=type) {
         fprintf(stderr, "expected (%d) %s, got (%d) %s\n", type, type_name[type], v.type, type_name[v.type]);
+        *(int*)0=0;
+        return 0;
     }
-    assert(v.type == type);
-    return 0;
+    return 1;
 }
 
 constant_t variable_to_constant(variable_t*v)

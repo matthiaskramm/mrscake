@@ -309,6 +309,34 @@ example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags)
     return examples;
 }
 
+signature_t* signature_from_columns(column_t**columns, int num_columns)
+{
+    signature_t*sig = malloc(sizeof(signature_t));
+    sig->num_inputs = num_columns;
+    sig->column_types = calloc(num_columns, sizeof(sig->column_types[0]));
+    sig->column_names = calloc(num_columns, sizeof(sig->column_names[0]));
+    bool has_column_names = false;
+    int t;
+    for(t=0;t<num_columns;t++) {
+	sig->column_types[t] = CONTINUOUS;
+        if(columns[t]->is_categorical) {
+            if(columns[t]->classes[0].type==CONSTANT_STRING) {
+	        sig->column_types[t] = TEXT;
+            } else {
+	        sig->column_types[t] = CATEGORICAL;
+            }
+        }
+	sig->column_names[t] = columns[t]->name;
+        has_column_names |= (columns[t]->name && *columns[t]->name);
+    }
+
+    if(!has_column_names) {
+        free(sig->column_names);
+        sig->column_names = 0;
+    }
+    return sig;
+}
+
 sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
 {
     sanitized_dataset_t*s = malloc(sizeof(sanitized_dataset_t));
@@ -381,6 +409,7 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
             s->columns[x]->name = register_string(name);
         }
     }
+    s->sig = signature_from_columns(s->columns, s->num_columns);
     return s;
 }
 void sanitized_dataset_print(sanitized_dataset_t*s)
@@ -500,7 +529,10 @@ node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num)
         END_CODE;
         return program;
     } else {
-        return node_new_with_args(&node_param, x);
+        START_CODE(program);
+            PARAM(e->dataset->columns[x]);
+        END_CODE;
+        return program;
     }
 }
 void expanded_columns_destroy(expanded_columns_t*e)
@@ -522,12 +554,15 @@ array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*dataset)
 void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y)
 {
     int x;
+    for(x=0;x<row->num_inputs;x++) {
+        row->inputs[x].type = MISSING;
+    }
     for(x=0;x<s->num_columns;x++) {
         column_t*c = s->columns[x];
         if(c->is_categorical) {
-            row->inputs[x] = constant_to_variable(&c->classes[c->entries[y].c]);
+            row->inputs[c->index] = constant_to_variable(&c->classes[c->entries[y].c]);
         } else {
-            row->inputs[x] = variable_make_continuous(c->entries[y].f);
+            row->inputs[c->index] = variable_make_continuous(c->entries[y].f);
         }
     }
 }
@@ -535,28 +570,8 @@ void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y)
 model_t* model_new(sanitized_dataset_t*dataset)
 {
     model_t*m = (model_t*)calloc(1,sizeof(model_t));
-    m->num_inputs = dataset->num_columns;
-    m->column_types = calloc(dataset->num_columns, sizeof(m->column_types[0]));
-    m->column_names = calloc(dataset->num_columns, sizeof(m->column_names[0]));
-    bool has_column_names = false;
-    int t;
-    for(t=0;t<dataset->num_columns;t++) {
-	m->column_types[t] = CONTINUOUS;
-        if(dataset->columns[t]->is_categorical) {
-            if(dataset->columns[t]->classes[0].type==CONSTANT_STRING) {
-	        m->column_types[t] = TEXT;
-            } else {
-	        m->column_types[t] = CATEGORICAL;
-            }
-        }
-	m->column_names[t] = dataset->columns[t]->name;
-        has_column_names |= (dataset->columns[t]->name && *dataset->columns[t]->name);
-    }
+    m->sig = dataset->sig;
 
-    if(!has_column_names) {
-        free(m->column_names);
-        m->column_names = 0;
-    }
     return m;
 }
 

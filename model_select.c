@@ -172,7 +172,6 @@ model_t* model_select(trainingdata_t*trainingdata)
     sanitized_dataset_t*data = dataset_sanitize(trainingdata);
     if(!data)
         return 0;
-#define DEBUG
 #ifdef DEBUG
     printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
             data->num_columns, sanitized_dataset_count_expanded_columns(data));
@@ -196,10 +195,17 @@ int model_errors(model_t*m, sanitized_dataset_t*s)
     int t;
     int error = 0;
     node_t*code = (node_t*)m->code;
-    row_t* row = row_new(s->num_columns);
+    row_t* row = row_new(s->sig->num_inputs);
     environment_t*env = environment_new(code, row);
     int y;
     for(y=0;y<s->num_rows;y++) {
+        /*
+        if(strstr(m->name, "simplified")) {
+            printf("%s\n", m->name);fflush(stdout);
+            model_print(m);fflush(stdout);
+            row_print(row);fflush(stdout);
+        }
+        */
         sanitized_dataset_fill_row(s, row, y);
         constant_t prediction = node_eval(code, env);
         constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];

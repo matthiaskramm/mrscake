@@ -228,10 +228,10 @@ static VALUE rb_model_predict(VALUE cls, VALUE input)
 
     example_t*e = value_to_example(input);
 
-    if(e->num_inputs != model->model->num_inputs)
-        rb_raise(rb_eArgError, "You supplied %d inputs for a model with %d inputs", e->num_inputs, model->model->num_inputs);
+    if(e->num_inputs != model->model->sig->num_inputs)
+        rb_raise(rb_eArgError, "You supplied %d inputs for a model with %d inputs", e->num_inputs, model->model->sig->num_inputs);
 
-    row_t*row = example_to_row(e, model->model->column_names);
+    row_t*row = example_to_row(e, model->model->sig->column_names);
 
     variable_t prediction = model_predict(model->model, row);
     row_destroy(row);
