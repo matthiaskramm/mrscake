@@ -199,13 +199,6 @@ int model_errors(model_t*m, sanitized_dataset_t*s)
     environment_t*env = environment_new(code, row);
     int y;
     for(y=0;y<s->num_rows;y++) {
-        /*
-        if(strstr(m->name, "simplified")) {
-            printf("%s\n", m->name);fflush(stdout);
-            model_print(m);fflush(stdout);
-            row_print(row);fflush(stdout);
-        }
-        */
         sanitized_dataset_fill_row(s, row, y);
         constant_t prediction = node_eval(code, env);
         constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];
