@@ -66,7 +66,7 @@ void job_process(job_t*job)
     } else {
         //parent
         close(write_fd); // close write
-        reader_t*r = filereader_with_timeout_new(read_fd, config_remote_read_timeout);
+        reader_t*r = filereader_with_timeout_new(read_fd, config_job_wait_timeout);
         job->model = model_read(r);
         if(job->model) {
             job->model->name = job->factory->name;
@@ -83,12 +83,13 @@ void job_process(job_t*job)
 
 static void process_jobs(jobqueue_t*jobs)
 {
+    printf("\n");
     job_t*job;
+    int count = 0;
     for(job=jobs->first;job;job=job->next) {
-#ifdef DEBUG
-	printf("# Trying %s... ", factory->name);fflush(stdout);
-#endif
+	printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
 	job_process(job);
+        count++;
     }
 }
 

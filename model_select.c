@@ -88,7 +88,7 @@ static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
     int t;
     int s;
     int i;
-#define SUBSET_VARIABLES
+//#define SUBSET_VARIABLES
 #ifdef SUBSET_VARIABLES
     for(i=1;i<order->num;i++) {
         sanitized_dataset_t*newdata = sanitized_dataset_pick_columns(data, order->order, i);
@@ -127,12 +127,19 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs, sanitized_dataset_t*
     model_t*best_model = NULL;
     int best_score = INT_MAX;
     job_t*job;
-    for(job=jobs->first;job;job=job->next) {
+    int count=0;
+    printf("\n");
+    for(job=jobs->first;job;job=job->next,count++) {
+        printf("\revaluating %d/%d", count, jobs->num);fflush(stdout);
 	model_t*m = job->model;
 	if(m) {
+//#define DEBUG
+#ifdef DEBUG
+            printf("# %s\n", m->name);
+#endif
 	    int size = model_size(m);
 #ifdef DEBUG
-	    printf("model size %d", size);fflush(stdout);
+	    printf("# model size %d", size);fflush(stdout);
 #endif
 	    int errors = model_errors(m, data);
 	    int score = size + errors * sizeof(uint32_t);
@@ -164,6 +171,7 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs, sanitized_dataset_t*
 	job->model = 0;
     }
     jobqueue_destroy(jobs);
+    printf("\n");
     return best_model;
 }
 
@@ -182,26 +190,99 @@ model_t* model_select(trainingdata_t*trainingdata)
     jobqueue_t*jobs = generate_jobs(order, data);
     jobqueue_process(jobs);
     model_t*best_model = jobqueue_extract_best_and_destroy(jobs, data);
+
+#define DEBUG
 #ifdef DEBUG
+    //model_errors_old(best_model, data);
     printf("# Using %s.\n", best_model->name);
+    printf("# Confusion matrix:\n");
+    confusion_matrix_t* cm = model_get_confusion_matrix(best_model, data);
+    confusion_matrix_print(cm);
+    confusion_matrix_destroy(cm);
 #endif
     sanitized_dataset_destroy(data);
     return best_model;
 }
 
-int model_errors(model_t*m, sanitized_dataset_t*s)
+confusion_matrix_t* confusion_matrix_new(int n)
 {
-    node_t*node = m->code;
+    confusion_matrix_t*m = (confusion_matrix_t*)malloc(sizeof(confusion_matrix_t));
+    m->n = n;
+    m->entries = malloc(sizeof(m->entries[0])*n);
     int t;
-    int error = 0;
+    for(t=0;t<m->n;t++) {
+        m->entries[t] = calloc(1, sizeof(m->entries[0][0])*n);
+    }
+    return m;
+}
+void confusion_matrix_destroy(confusion_matrix_t*m)
+{
+    int t;
+    for(t=0;t<m->n;t++) {
+        free(m->entries[t]);
+    }
+    free(m->entries);
+    free(m);
+}
+void confusion_matrix_print(confusion_matrix_t*m)
+{
+    int row,column;
+    for(row=0;row<m->n;row++) {
+        for(column=0;column<m->n;column++) {
+            if(column)
+                printf("\t");
+            printf("%d", m->entries[row][column]);
+        }
+        printf("\n");
+    }
+}
+confusion_matrix_t* model_get_confusion_matrix(model_t*m, sanitized_dataset_t*s)
+{
+    dict_t*d = dict_new(&constant_hash_type);
+    int t;
+    for(t=0;t<s->desired_response->num_classes;t++) {
+        dict_put(d, &s->desired_response->classes[t], INT_TO_PTR(t));
+    }
+
+    node_t*node = m->code;
     node_t*code = (node_t*)m->code;
     row_t* row = row_new(s->sig->num_inputs);
     environment_t*env = environment_new(code, row);
+
+    confusion_matrix_t*matrix = confusion_matrix_new(s->desired_response->num_classes);
+
     int y;
     for(y=0;y<s->num_rows;y++) {
         sanitized_dataset_fill_row(s, row, y);
         constant_t prediction = node_eval(code, env);
         constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];
+        int column = PTR_TO_INT(dict_lookup(d, desired));
+        int row = PTR_TO_INT(dict_lookup(d, &prediction));
+        matrix->entries[row][column]++;
+    }
+    dict_destroy(d);
+    row_destroy(row);
+    environment_destroy(env);
+    return matrix;
+}
+
+int model_errors_old(model_t*m, sanitized_dataset_t*s)
+{
+    node_t*node = m->code;
+    node_t*code = (node_t*)m->code;
+    row_t* row = row_new(s->sig->num_inputs);
+    environment_t*env = environment_new(code, row);
+
+    int y;
+    int error = 0;
+    sanitized_dataset_print(s);
+    for(y=0;y<s->num_rows;y++) {
+        sanitized_dataset_fill_row(s, row, y);
+        constant_t prediction = node_eval(code, env);
+        constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];
+        if(constant_equals(&prediction,desired)) {
+            row_print(row);
+        }
         if(!constant_equals(&prediction, desired)) {
             error++;
         }
@@ -209,6 +290,38 @@ int model_errors(model_t*m, sanitized_dataset_t*s)
     row_destroy(row);
     environment_destroy(env);
     return error;
+}
+
+int model_errors(model_t*m, sanitized_dataset_t*s)
+{
+    confusion_matrix_t* c = model_get_confusion_matrix(m, s);
+    int x,y,t;
+    double error = 0;
+    int total = 0;
+    for(t=0;t<c->n;t++) {
+        int row_error = 0;
+        int column_error = 0;
+        for(x=0;x<c->n;x++) {
+            if(x!=t) {
+                row_error += c->entries[t][x];
+            }
+        }
+        for(y=0;y<c->n;y++) {
+            if(y!=t) {
+                column_error += c->entries[y][t];
+            }
+        }
+        int correct = c->entries[t][t];
+        if(column_error + correct) {
+            error += column_error / (double)(column_error+correct);
+        }
+        if(row_error + correct) {
+            error += row_error / (double)(row_error+correct);
+        }
+        total += correct + row_error;
+    }
+    confusion_matrix_destroy(c);
+    return (int)(error * total / c->n / 2);
 }
 
 int model_size(model_t*m)
@@ -226,6 +339,6 @@ int training_set_size(int total_size)
     if(total_size < 25) {
         return total_size;
     } else {
-        return (total_size+1)>>1;
+        return (total_size+1)>>3;
     }
 }

@@ -33,6 +33,7 @@ extern int config_num_remote_servers;
 extern remote_server_t*config_remote_servers;
 
 extern int config_remote_read_timeout;
+extern int config_job_wait_timeout;
 extern int config_model_timeout;
 extern bool config_do_remote_processing;
 

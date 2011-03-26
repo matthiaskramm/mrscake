@@ -23,8 +23,9 @@
 #define __dict_h__
 
 #include <stdio.h>
+#include <stdbool.h>
 
-typedef char (*equals_func)(const void*o1, const void*o2);
+typedef bool (*equals_func)(const void*o1, const void*o2);
 typedef unsigned int (*hash_func)(const void*o);
 typedef void* (*dup_func)(const void*o);
 typedef void (*free_func)(void*o);

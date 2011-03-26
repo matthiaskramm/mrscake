@@ -168,6 +168,8 @@ def show_model_performance(model, examples):
     for inputs,output in examples:
         if output not in confusion:
             confusion[output]={}
+        if headers:
+            inputs = dict(zip(headers,inputs))
         prediction = model.predict(inputs)
         if prediction not in confusion[output]:
             confusion[output][prediction] = 0
@@ -179,8 +181,7 @@ def show_model_performance(model, examples):
     total = len(examples)
     print
     print "Confusion matrix:"
-    rows = sorted(confusion.keys())
-    columns = sorted(confusion.keys())
+    rows = columns = sorted(confusion.keys())
     print "p/r\t",
     for x,col_name in enumerate(columns):
         print "%s\t" % col_name,

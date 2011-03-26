@@ -62,6 +62,63 @@ void array_destroy(array_t*a)
     free(a);
 }
 
+bool constant_equals(const constant_t*c1, const constant_t*c2)
+{
+    if(c1->type != c2->type)
+        return false;
+    switch(c1->type) {
+        case CONSTANT_FLOAT:
+            return c1->f == c2->f;
+        case CONSTANT_INT:
+            return c1->i == c2->i;
+        case CONSTANT_CATEGORY:
+            return c1->c == c2->c;
+        case CONSTANT_BOOL:
+            return c1->b == c2->b;
+        case CONSTANT_STRING:
+            return !strcmp(c1->s, c2->s);
+        case CONSTANT_MISSING:
+            return true;
+        default:
+            /* FIXME */
+            //fprintf(stderr, "Can't compare types %s\n", type_name[c1->type]);
+            return false;
+    }
+}
+unsigned int constant_hash(const constant_t*o)
+{
+    switch(o->type) {
+        case CONSTANT_FLOAT:
+            return hash_block(&o->f, sizeof(o->f));
+        case CONSTANT_INT:
+            return hash_block(&o->i, sizeof(o->i));
+        case CONSTANT_CATEGORY:
+            return hash_block(&o->c, sizeof(o->c));
+        case CONSTANT_BOOL:
+            return hash_block(&o->b, sizeof(o->b));
+        case CONSTANT_STRING:
+            return hash_block(&o->s, strlen(o->s));
+        case CONSTANT_MISSING:
+            return 0;
+        default:
+            return 0;
+    }
+}
+void* constant_dup(const void*o)
+{
+    return (void*)o;
+}
+void constant_free(void*o)
+{
+    return;
+}
+type_t constant_hash_type = {
+    equals: (equals_func)constant_equals,
+    hash: (hash_func)constant_hash,
+    dup: (dup_func)constant_dup,
+    free: (free_func)constant_free,
+};
+
 constant_type_t constant_array_subtype(constant_t*c)
 {
     switch(c->type) {
@@ -169,29 +226,6 @@ constant_t string_constant(const char*s)
     v.type = CONSTANT_STRING;
     v.s = register_string(s);
     return v;
-}
-bool constant_equals(constant_t*c1, constant_t*c2)
-{
-    if(c1->type != c2->type)
-        return false;
-    switch(c1->type) {
-        case CONSTANT_FLOAT:
-            return c1->f == c2->f;
-        case CONSTANT_INT:
-            return c1->i == c2->i;
-        case CONSTANT_CATEGORY:
-            return c1->c == c2->c;
-        case CONSTANT_BOOL:
-            return c1->b == c2->b;
-        case CONSTANT_STRING:
-            return !strcmp(c1->s, c2->s);
-        case CONSTANT_MISSING:
-            return true;
-        default:
-            /* FIXME */
-            //fprintf(stderr, "Can't compare types %s\n", type_name[c1->type]);
-            return false;
-    }
 }
 void constant_print(constant_t*v)
 {

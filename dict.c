@@ -84,7 +84,7 @@ unsigned int hash_block(const unsigned char*data, int len)
 
 // ------------------------------- type_t -------------------------------
 
-char ptr_equals(const void*o1, const void*o2) 
+bool ptr_equals(const void*o1, const void*o2) 
 {
     return o1==o2;
 }
@@ -101,7 +101,7 @@ void ptr_free(void*o)
     return;
 }
 
-char int_equals(const void*o1, const void*o2) 
+bool int_equals(const void*o1, const void*o2) 
 {
     return o1==o2;
 }
@@ -118,7 +118,7 @@ void int_free(void*o)
     return;
 }
 
-char charptr_equals(const void*o1, const void*o2) 
+bool charptr_equals(const void*o1, const void*o2) 
 {
     if(!o1 || !o2)
         return o1==o2;

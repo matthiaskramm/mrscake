@@ -143,10 +143,10 @@ void row_print(row_t*row)
 {
     int t;
     for(t=0;t<row->num_inputs;t++) {
-        printf("%d) ", t);
         variable_print(&row->inputs[t], stdout);
-        puts("\n");
+        printf("\t");
     }
+    printf("\n");
 }
 void row_destroy(row_t*row)
 {

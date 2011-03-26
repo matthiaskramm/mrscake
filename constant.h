@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "mrscake.h"
+#include "dict.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,6 +62,8 @@ struct _constant {
     uint8_t type;
 };
 
+extern type_t constant_hash_type;
+
 constant_t missing_constant();
 constant_t bool_constant(bool b);
 constant_t float_constant(float f);
@@ -73,7 +76,7 @@ constant_t mixed_array_constant(array_t*a);
 constant_t category_array_constant(array_t*a);
 constant_t string_constant(const char*s);
 
-bool constant_equals(constant_t*c1, constant_t*c2);
+bool constant_equals(const constant_t*c1, const constant_t*c2);
 void constant_print(constant_t*v);
 void constant_clear(constant_t*v);
 

@@ -45,6 +45,16 @@ model_t* train_model(model_factory_t*factory, sanitized_dataset_t*data);
 
 model_factory_t* model_factory_get_by_name(const char*name);
 
+typedef struct _confusion_matrix {
+    int n;
+    int**entries;
+} confusion_matrix_t;
+
+confusion_matrix_t* confusion_matrix_new(int n);
+void confusion_matrix_destroy(confusion_matrix_t*m);
+void confusion_matrix_print(confusion_matrix_t*m);
+confusion_matrix_t* model_get_confusion_matrix(model_t*m, sanitized_dataset_t*s);
+
 #ifdef __cplusplus
 }
 #endif
