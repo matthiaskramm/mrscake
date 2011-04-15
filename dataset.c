@@ -309,13 +309,12 @@ example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags)
     return examples;
 }
 
-signature_t* signature_from_columns(column_t**columns, int num_columns)
+signature_t* signature_from_columns(column_t**columns, int num_columns, bool has_column_names)
 {
     signature_t*sig = malloc(sizeof(signature_t));
     sig->num_inputs = num_columns;
     sig->column_types = calloc(num_columns, sizeof(sig->column_types[0]));
     sig->column_names = calloc(num_columns, sizeof(sig->column_names[0]));
-    bool has_column_names = false;
     int t;
     for(t=0;t<num_columns;t++) {
 	sig->column_types[t] = CONTINUOUS;
@@ -327,13 +326,9 @@ signature_t* signature_from_columns(column_t**columns, int num_columns)
             }
         }
 	sig->column_names[t] = columns[t]->name;
-        has_column_names |= (columns[t]->name && *columns[t]->name);
     }
+    sig->has_column_names = has_column_names;
 
-    if(!has_column_names) {
-        free(sig->column_names);
-        sig->column_names = 0;
-    }
     return sig;
 }
 
@@ -396,12 +391,14 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
     columnbuilder_destroy(builder);
     free(examples);
 
+    bool has_column_names = false;
     if(column_names) {
         DICT_ITERATE_ITEMS(column_names, char*, name, void*, _column) {
             int column = PTR_TO_INT(_column)-1;
             s->columns[column]->name = register_string(name);
         }
         dict_destroy(column_names);
+        has_column_names = 1;
     } else {
         for(x=0;x<s->num_columns;x++) {
             char name[80];
@@ -409,7 +406,7 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
             s->columns[x]->name = register_string(name);
         }
     }
-    s->sig = signature_from_columns(s->columns, s->num_columns);
+    s->sig = signature_from_columns(s->columns, s->num_columns, has_column_names);
     return s;
 }
 void sanitized_dataset_print(sanitized_dataset_t*s)

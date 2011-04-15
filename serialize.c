@@ -324,6 +324,7 @@ signature_t* signature_read(reader_t*r)
             sig->column_types[t] = read_compressed_uint(r);
         }
     }
+    sig->has_column_names = (flags&4) != 0;
     return sig;
 }
 
@@ -357,6 +358,8 @@ void signature_write(signature_t*sig, writer_t*w)
         flags |= 1;
     if(sig->column_types)
         flags |= 2;
+    if(sig->has_column_names)
+        flags |= 4;
     write_uint8(w, flags);
 
     if(sig->column_names) {

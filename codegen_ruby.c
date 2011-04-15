@@ -143,7 +143,7 @@ void ruby_write_node_abs(node_t*n, state_t*s)
 }
 void ruby_write_node_param(node_t*n, state_t*s)
 {
-    if(s->model->sig->column_names) {
+    if(s->model->sig->has_column_names) {
         strf(s, "%s", s->model->sig->column_names[n->value.i]);
     } else {
         strf(s, "data[%d]", n->value.i);

@@ -90,6 +90,7 @@ typedef struct _signature {
     int num_inputs;
     columntype_t*column_types;
     const char**column_names;
+    char has_column_names;
 } signature_t;
 
 typedef struct _model {
