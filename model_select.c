@@ -341,8 +341,9 @@ int model_errors(model_t*m, sanitized_dataset_t*s)
         }
         total += correct + row_error;
     }
+    int cn = c->n;
     confusion_matrix_destroy(c);
-    return (int)(error * total / c->n / 2);
+    return (int)(error * total / cn / 2);
 }
 
 int model_size(model_t*m)
