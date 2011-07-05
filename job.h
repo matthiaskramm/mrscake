@@ -32,6 +32,7 @@ typedef struct _job {
     sanitized_dataset_t*data;
     model_factory_t*factory;
     model_t*model;
+    struct _job*prev;
     struct _job*next;
 } job_t;
 
@@ -43,7 +44,9 @@ typedef struct _jobqueue {
 
 jobqueue_t*jobqueue_new();
 void jobqueue_append(jobqueue_t*queue, job_t*job);
+void jobqueue_delete_job(jobqueue_t*queue, job_t*job);
 void jobqueue_process(jobqueue_t*);
+void jobqueue_print(jobqueue_t*);
 jobqueue_t*jobqueue_destroy();
 void job_destroy(job_t*j);
 job_t* job_new();

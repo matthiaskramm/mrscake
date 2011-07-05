@@ -55,6 +55,9 @@ extern int num_dtree_models;
 extern model_factory_t* svm_models[];
 extern int num_svm_models;
 
+extern model_factory_t* perceptron_models[];
+extern int num_perceptron_models;
+
 typedef struct _model_collection {
     model_factory_t**models;
     int* num_models;
@@ -65,6 +68,7 @@ model_collection_t collections[] = {
     {dtree_models, &num_dtree_models},
     {svm_models, &num_svm_models},
     {ann_models, &num_ann_models},
+    {perceptron_models, &num_perceptron_models},
 };
 
 model_factory_t* model_factory_get_by_name(const char*name)
@@ -202,6 +206,23 @@ model_t* model_select(trainingdata_t*trainingdata)
 #endif
     sanitized_dataset_destroy(data);
     return best_model;
+}
+
+model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name)
+{
+    sanitized_dataset_t*data = dataset_sanitize(trainingdata);
+    varorder_t*order = dtree_var_order(data);
+    jobqueue_t*jobs = generate_jobs(order, data);
+    job_t*j = jobs->first;
+    while(j) {
+        job_t*next = j->next;
+        if(strcmp(j->factory->name, name)) {
+            jobqueue_delete_job(jobs, j);
+        }
+        j = next;
+    }
+    jobqueue_process(jobs);
+    return jobqueue_extract_best_and_destroy(jobs, data);
 }
 
 confusion_matrix_t* confusion_matrix_new(int n)

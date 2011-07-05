@@ -443,6 +443,17 @@ void sanitized_dataset_print(sanitized_dataset_t*s)
     }
 }
 
+bool sanitized_dataset_has_categorical_columns(sanitized_dataset_t*s)
+{
+    int x;
+    for(x=0;x<s->num_columns;x++) {
+        column_t*column = s->columns[x];
+        if(column->is_categorical)
+            return true;
+    }
+    return false;
+}
+
 constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int i)
 {
     if(i>=0 && i<dataset->desired_response->num_classes) {

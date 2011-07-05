@@ -67,6 +67,7 @@ constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int
 void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
 int sanitized_dataset_count_expanded_columns(sanitized_dataset_t*s);
 sanitized_dataset_t* sanitized_dataset_pick_columns(sanitized_dataset_t*data, int*index, int num);
+bool sanitized_dataset_has_categorical_columns(sanitized_dataset_t*data);
 
 /* structure for storing "exploded" version of columns where every class
    has its own column */

@@ -953,7 +953,12 @@ char*read_string(reader_t*r)
 {
     writer_t*g = growingmemwriter_new(16);
     while(1) {
-	uint8_t b = read_uint8(r);
+	uint8_t b = 0;
+        int ret = r->read(r, &b, 1);
+        if(ret<=0) {
+            g->finish(g);
+            return NULL;
+        }
 	write_uint8(g, b);
 	if(!b)
 	    break;

@@ -32,7 +32,7 @@
 #include "net.h"
 #include "serialize.h"
 
-#define FORK_FOR_TRAINING
+//#define FORK_FOR_TRAINING
 void job_process(job_t*job)
 {
 #ifndef FORK_FOR_TRAINING
@@ -168,8 +168,25 @@ jobqueue_t*jobqueue_destroy(jobqueue_t*q)
     free(q);
 }
 
+void jobqueue_delete_job(jobqueue_t*queue, job_t*job)
+{
+    if(job->prev) {
+        job->prev->next = job->next;
+    } else {
+        queue->first = job->next;
+    }
+    if(job->next) {
+        job->next->prev = job->prev;
+    } else {
+        queue->last = job->prev;
+    }
+    job_destroy(job);
+    queue->num--;
+}
+
 void jobqueue_append(jobqueue_t*queue, job_t*job)
 {
+    job->prev = queue->last;
     job->next = 0;
     if(!queue->first) {
         queue->first = job;
@@ -179,6 +196,15 @@ void jobqueue_append(jobqueue_t*queue, job_t*job)
         queue->last = job;
     }
     queue->num++;
+}
+
+void jobqueue_print(jobqueue_t*queue)
+{
+    job_t*job = queue->first;
+    while(job) {
+        printf("[%c] %s\n", job->model?'x':' ', job->factory->name);
+        job = job->next;
+    }
 }
 
 job_t* job_new()

@@ -335,8 +335,9 @@ PyDoc_STRVAR(dataset_get_model_doc, \
 static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* kwargs)
 {
     DataSetObject*self = (DataSetObject*)_self;
-    static char *kwlist[] = {NULL};
-    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "", kwlist))
+    static char *kwlist[] = {"name", NULL};
+    const char*name = 0;
+    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwlist, &name))
 	return NULL;
 
     int num_examples = self->data->num_examples;
@@ -347,8 +348,18 @@ static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* 
         return PY_ERROR("bad training data");
     }
 
-    model_t* model = model_select(self->data);
 
+    model_t*model = NULL;
+    if(name == NULL) {
+        model = model_select(self->data);
+    } else {
+        model = model_train_specific_model(self->data, name);
+        if(!model)
+            return PY_ERROR("unknown model %s", name);
+    }
+
+    if(!model)
+        return PY_NONE;
     ModelObject*ret = PyObject_New(ModelObject, &ModelClass);
     ret->model = model;
     return (PyObject*)ret;

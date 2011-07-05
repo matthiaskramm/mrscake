@@ -331,9 +331,10 @@ signature_t* signature_read(reader_t*r)
 model_t* model_read(reader_t*r)
 {
     model_t*m = (model_t*)calloc(1, sizeof(model_t));
-    m->name = register_and_free_string(read_string(r));
-    if(!*m->name)
+    char*name = read_string(r);
+    if(!name || !*name)
         return NULL;
+    m->name = register_and_free_string(name);
 
     m->sig = signature_read(r);
     m->code = (void*)node_read(r);

@@ -1,6 +1,7 @@
 #ifndef __easy_ast__
 #define __easy_ast__
 
+#include <assert.h>
 #include "ast.h"
 
 /* The macros in this file allow you to write code
