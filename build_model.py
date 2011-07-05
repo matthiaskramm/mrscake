@@ -1,5 +1,6 @@
 import sys
 import re
+from optparse import OptionParser
 
 VERBOSE = 0
 
@@ -24,13 +25,25 @@ def convert_value(s):
         except:
             return s
 
+usage = """Usage: python %prog [-m modelname] filename
+
+Trains a mrscake model for a data file."""
+parser = OptionParser(usage=usage)
+
+parser.add_option("-m", "--model",
+                  dest="model",
+                  action="store",
+                  type="string",
+                  help="Model to use")
+
 CSV_FILE = re.compile(r"^[^,]+,[^,]+.*")
 TSV_FILE = re.compile(r"^[^\t]+\t[^\t]+.*")
 
 filename = "data/segment.dat"
 
-if len(sys.argv) > 1:
-    filename = sys.argv[1]
+opts, args = parser.parse_args()
+if len(args) > 0:
+    filename = args[0]
 
 csv_score = 0
 tsv_score = 0
@@ -158,7 +171,10 @@ else:
         dataset.add(inputs, output=output)
 
 output_filename = "test.model"
-model = dataset.get_model()
+if opts.model:
+    model = dataset.get_model(opts.model)
+else:
+    model = dataset.get_model()
 model.save(output_filename)
 
 def show_model_performance(model, examples):
