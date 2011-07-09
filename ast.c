@@ -27,13 +27,6 @@
 #include <math.h>
 #include "ast.h"
 
-#define EVAL_HEADER_2_LR(v1,v2) \
-    constant_t v1 = n->child[0]->type->eval(n->child[0],env);\
-    constant_t v2 = n->child[1]->type->eval(n->child[1],env);\
-    constant_t r;
-
-#define EVAL_HEADER_2(v1,v2) EVAL_HEADER_2_LR(v1,v2)
-
 #define EVAL_CHILD(i) ((n)->child[(i)]->type->eval((n)->child[(i)],env))
 
 // -------------------------- block node -------------------------------
@@ -79,7 +72,8 @@ max_args:INT_MAX,
 
 constant_t node_sub_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     return float_constant(AS_FLOAT(left) - AS_FLOAT(right));
 }
 nodetype_t node_sub =
@@ -95,7 +89,8 @@ max_args:2,
 
 constant_t node_mul_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     return float_constant(AS_FLOAT(left) * AS_FLOAT(right));
 }
 nodetype_t node_mul =
@@ -111,7 +106,8 @@ max_args:2,
 
 constant_t node_div_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     return float_constant(AS_FLOAT(left) / AS_FLOAT(right));
 }
 nodetype_t node_div =
@@ -268,7 +264,8 @@ max_args:1,
 
 constant_t node_lt_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     return bool_constant(AS_FLOAT(left) < AS_FLOAT(right));
 }
 nodetype_t node_lt =
@@ -284,7 +281,8 @@ max_args:2,
 
 constant_t node_lte_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     return bool_constant(AS_FLOAT(left) <= AS_FLOAT(right));
 }
 nodetype_t node_lte =
@@ -300,7 +298,8 @@ max_args:2,
 
 constant_t node_gt_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     return bool_constant(AS_FLOAT(left) > AS_FLOAT(right));
 }
 nodetype_t node_gt =
@@ -316,7 +315,8 @@ max_args:2,
 
 constant_t node_gte_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     return bool_constant(AS_FLOAT(left) >= AS_FLOAT(right));
 }
 nodetype_t node_gte =
@@ -332,7 +332,8 @@ max_args:2,
 
 constant_t node_equals_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     return bool_constant(constant_equals(&left,&right));
 }
 nodetype_t node_equals =
@@ -398,7 +399,8 @@ max_args:INT_MAX,
 
 constant_t node_array_at_pos_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(array,index);
+    constant_t array = EVAL_CHILD(0);
+    constant_t index = EVAL_CHILD(1);
     return AS_ARRAY(array)->entries[AS_INT(index)];
 }
 nodetype_t node_array_at_pos =
@@ -414,7 +416,8 @@ max_args:2,
 
 constant_t node_array_at_pos_inc_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(array,index);
+    constant_t array = EVAL_CHILD(0);
+    constant_t index = EVAL_CHILD(1);
     int i = AS_INT(index);
     array_t*a = AS_ARRAY(array);
     a->entries[i] = int_constant(AS_INT(a->entries[i]) + 1);
@@ -581,7 +584,8 @@ max_args:0,
 
 constant_t node_in_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_2(left,right);
+    constant_t left = EVAL_CHILD(0);
+    constant_t right = EVAL_CHILD(1);
     int i;
     array_t* a = AS_ARRAY(right);
     for(i=0;i<a->size;i++) {
