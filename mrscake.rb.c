@@ -48,13 +48,13 @@ static VALUE rb_dataset_allocate(VALUE cls);
 variable_t value_to_variable(VALUE v)
 {
     if(TYPE(v) == T_SYMBOL) {
-        return variable_make_text(rb_id2name(SYM2ID(v)));
+        return variable_new_text(rb_id2name(SYM2ID(v)));
     } else if(TYPE(v) == T_FLOAT) {
-        return variable_make_continuous(NUM2DBL(v));
+        return variable_new_continuous(NUM2DBL(v));
     } else if(TYPE(v) == T_FIXNUM) {
-        return variable_make_continuous(FIX2INT(v));
+        return variable_new_continuous(FIX2INT(v));
     } else {
-        return variable_make_missing();
+        return variable_new_missing();
     }
 }
 static int hash_count(VALUE key, VALUE value, VALUE arg)
@@ -104,7 +104,7 @@ static example_t*value_to_example(VALUE input)
     } else {
 	rb_raise(rb_eArgError, "expected array or a hash");
     }
-    e->desired_response = variable_make_missing();
+    e->desired_response = variable_new_missing();
     return e;
 }
 static VALUE rb_dataset_add(VALUE cls, VALUE input, VALUE response)

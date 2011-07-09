@@ -328,16 +328,16 @@ variable_t constant_to_variable(constant_t* c)
 {
     switch(c->type) {
         case CONSTANT_STRING:
-            return variable_make_text(c->s);
+            return variable_new_text(c->s);
         break;
         case CONSTANT_CATEGORY:
-            return variable_make_categorical(c->c);
+            return variable_new_categorical(c->c);
         break;
         case CONSTANT_FLOAT:
-            return variable_make_continuous(c->f);
+            return variable_new_continuous(c->f);
         break;
         case CONSTANT_MISSING:
-            return variable_make_missing();
+            return variable_new_missing();
         break;
         default:
             fprintf(stderr, "Can't convert constant type %d to variable\n", c->type);

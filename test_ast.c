@@ -27,10 +27,10 @@
 environment_t test_environment()
 {
     row_t*row = row_new(4);
-    row->inputs[0] = variable_make_continuous(1.0);
-    row->inputs[1] = variable_make_continuous(2.0);
-    row->inputs[2] = variable_make_continuous(4.0);
-    row->inputs[3] = variable_make_categorical(5);
+    row->inputs[0] = variable_new_continuous(1.0);
+    row->inputs[1] = variable_new_continuous(2.0);
+    row->inputs[2] = variable_new_continuous(4.0);
+    row->inputs[3] = variable_new_categorical(5);
 
     environment_t e;
     e.row = row;

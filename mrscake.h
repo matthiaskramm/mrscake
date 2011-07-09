@@ -42,10 +42,10 @@ typedef struct _variable {
     };
 } variable_t;
 
-variable_t variable_make_categorical(category_t c);
-variable_t variable_make_continuous(float v);
-variable_t variable_make_text(const char*s);
-variable_t variable_make_missing();
+variable_t variable_new_categorical(category_t c);
+variable_t variable_new_continuous(float v);
+variable_t variable_new_text(const char*s);
+variable_t variable_new_missing();
 double variable_value(variable_t*v);
 const char*variable_type(variable_t*v);
 bool variable_equals(variable_t*v1, variable_t*v2);

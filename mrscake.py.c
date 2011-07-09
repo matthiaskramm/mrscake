@@ -115,11 +115,11 @@ PyObject*forward_getattr(PyObject*self, char *a)
 int add_item(example_t*e, int pos, PyObject*item)
 {
     if(PyInt_Check(item)) {
-        e->inputs[pos] = variable_make_continuous(PyInt_AS_LONG(item));
+        e->inputs[pos] = variable_new_continuous(PyInt_AS_LONG(item));
     } else if(PyFloat_Check(item)) {
-        e->inputs[pos] = variable_make_continuous(PyFloat_AS_DOUBLE(item));
+        e->inputs[pos] = variable_new_continuous(PyFloat_AS_DOUBLE(item));
     } else if(PyString_Check(item)) {
-        e->inputs[pos] = variable_make_text(PyString_AsString(item));
+        e->inputs[pos] = variable_new_text(PyString_AsString(item));
     } else {
 	PY_ERROR("bad object %s in list", item->ob_type->tp_name);
         return 0;
@@ -318,9 +318,9 @@ static PyObject* py_dataset_add(PyObject * _self, PyObject* args, PyObject* kwar
     if(!e)
         return NULL;
     if(PyInt_Check(output)) {
-        e->desired_response = variable_make_categorical(PyInt_AS_LONG(output));
+        e->desired_response = variable_new_categorical(PyInt_AS_LONG(output));
     } else if(PyString_Check(output)) {
-        e->desired_response = variable_make_text(PyString_AsString(output));
+        e->desired_response = variable_new_text(PyString_AsString(output));
     } else {
         return PY_ERROR("output parameter must be an integer or a string");
     }

@@ -38,10 +38,10 @@ int main()
             example_t*e = example_new(16);
             int i;
             for(i=0;i<16;i++) {
-                e->inputs[i] = variable_make_continuous((lrand48()%256)/256.0);
+                e->inputs[i] = variable_new_continuous((lrand48()%256)/256.0);
             }
-            e->inputs[s] = variable_make_continuous(t%4);
-            e->desired_response = variable_make_categorical(t%4);
+            e->inputs[s] = variable_new_continuous(t%4);
+            e->desired_response = variable_new_categorical(t%4);
             trainingdata_add_example(data, e);
 
         }
@@ -57,9 +57,9 @@ int main()
             row_t*r = row_new(16);
             int i;
             for(i=0;i<16;i++) {
-                r->inputs[i] = variable_make_continuous(0);
+                r->inputs[i] = variable_new_continuous(0);
             }
-            r->inputs[s] = variable_make_continuous(t);
+            r->inputs[s] = variable_new_continuous(t);
             variable_t result = model_predict(m, r);
             row_destroy(r);
             printf("%d %d\n", t, result.category);

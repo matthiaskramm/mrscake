@@ -570,7 +570,7 @@ void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y)
         if(c->is_categorical) {
             row->inputs[c->index] = constant_to_variable(&c->classes[c->entries[y].c]);
         } else {
-            row->inputs[c->index] = variable_make_continuous(c->entries[y].f);
+            row->inputs[c->index] = variable_new_continuous(c->entries[y].f);
         }
     }
 }
