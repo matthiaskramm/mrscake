@@ -27,10 +27,6 @@
 #include <math.h>
 #include "ast.h"
 
-#define EVAL_HEADER_1(v) \
-    constant_t v = n->child[0]->type->eval(n->child[0],env); \
-    constant_t r;
-
 #define EVAL_HEADER_2_LR(v1,v2) \
     constant_t v1 = n->child[0]->type->eval(n->child[0],env);\
     constant_t v2 = n->child[1]->type->eval(n->child[1],env);\
@@ -131,7 +127,7 @@ max_args:2,
 
 constant_t node_exp_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_1(v);
+    constant_t v = EVAL_CHILD(0);
     return float_constant(exp(AS_FLOAT(v)));
 }
 nodetype_t node_exp =
@@ -163,7 +159,7 @@ max_args:1,
 
 constant_t node_not_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_1(condition);
+    constant_t condition = EVAL_CHILD(0);
     return bool_constant(!AS_BOOL(condition));
 }
 nodetype_t node_not =
@@ -179,7 +175,7 @@ max_args:1,
 
 constant_t node_neg_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_1(value);
+    constant_t value = EVAL_CHILD(0);
     return float_constant(-AS_FLOAT(value));
 }
 nodetype_t node_neg =
@@ -195,7 +191,7 @@ max_args:1,
 
 constant_t node_abs_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_1(value);
+    constant_t value = EVAL_CHILD(0);
     return float_constant(fabs(AS_FLOAT(value)));
 }
 nodetype_t node_abs =
@@ -256,7 +252,7 @@ max_args:1,
 
 constant_t node_bool_to_float_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_1(b);
+    constant_t b = EVAL_CHILD(0);
     return float_constant(AS_BOOL(b));
 }
 nodetype_t node_bool_to_float =
@@ -437,7 +433,7 @@ max_args:2,
 
 constant_t node_array_arg_max_i_eval(node_t*n, environment_t* env)
 {
-    EVAL_HEADER_1(_array);
+    constant_t _array = EVAL_CHILD(0);
     array_t*array = AS_ARRAY(_array);
     int max = AS_INT(array->entries[0]);
     int index = 0;
