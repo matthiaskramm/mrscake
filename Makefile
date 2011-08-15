@@ -32,7 +32,7 @@ ifeq ($(IS_MACOS),)
     SO_RUBY=rb.so
 endif
 
-MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o #model_perceptron.o
+MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o model_perceptron.o
 VAR_SELECTORS=varselect_cv_dtree.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
 OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o var_selection.o
