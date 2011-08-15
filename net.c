@@ -81,7 +81,7 @@ void process_request(int socket)
     }
     free(name);
 
-    sanitized_dataset_t* dataset = sanitized_dataset_read(r);
+    dataset_t* dataset = dataset_read(r);
     printf("worker %d: %d rows of data\n", getpid(), dataset->num_rows);
 
     job_t j;
@@ -227,7 +227,7 @@ int connect_to_host(const char *host, int port)
     return sock;
 }
 
-remote_job_t* remote_job_start(const char*model_name, sanitized_dataset_t*dataset)
+remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset)
 {
     int sock;
     while(1) {
@@ -247,7 +247,7 @@ remote_job_t* remote_job_start(const char*model_name, sanitized_dataset_t*datase
 
     writer_t*w = filewriter_new(sock);
     write_string(w, model_name);
-    sanitized_dataset_write(dataset, w);
+    dataset_write(dataset, w);
     w->finish(w);
 
     remote_job_t*j = malloc(sizeof(remote_job_t));
@@ -292,7 +292,7 @@ time_t remote_job_age(remote_job_t*j)
     return time(0) - j->start_time;
 }
 
-model_t* process_job_remotely(const char*model_name, sanitized_dataset_t*dataset)
+model_t* process_job_remotely(const char*model_name, dataset_t*dataset)
 {
     remote_job_t*j = remote_job_start(model_name, dataset);
     return remote_job_read_result(j);

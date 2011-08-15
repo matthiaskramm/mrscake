@@ -38,16 +38,16 @@ CvMat* cv_preprocess_categories( const CvMat* responses,
 class CvMLDataFromExamples: public CvMLData
 {
     public:
-    CvMLDataFromExamples(sanitized_dataset_t*dataset);
+    CvMLDataFromExamples(dataset_t*dataset);
     ~CvMLDataFromExamples();
 };
 
-CvMat*cvmat_from_row(sanitized_dataset_t*dataset, row_t*row, bool expand_categories, bool add_one);
+CvMat*cvmat_from_row(dataset_t*dataset, row_t*row, bool expand_categories, bool add_one);
 int cvmat_get_max_index(CvMat*mat);
 void cvmat_print(CvMat*mat);
 int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows);
-int count_multiclass_columns(sanitized_dataset_t*d);
-void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out, int num_rows, bool multicolumn_response);
+int count_multiclass_columns(dataset_t*d);
+void make_ml_multicolumn(dataset_t*d, CvMat**in, CvMat**out, int num_rows, bool multicolumn_response);
 
 void cvmSetI(CvMat*m, int y, int x, int v);
 void cvmSetF(CvMat*m, int y, int x, float f);

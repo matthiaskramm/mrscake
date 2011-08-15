@@ -29,7 +29,7 @@ typedef struct _perceptron_model_factory {
     model_factory_t head;
 } perceptron_model_factory_t;
 
-category_t predict(sanitized_dataset_t*d, double*weights, int row)
+category_t predict(dataset_t*d, double*weights, int row)
 {
     double result = 0;
     int t;
@@ -42,7 +42,7 @@ category_t predict(sanitized_dataset_t*d, double*weights, int row)
     return result > 0 ? 1 : 0;
 }
 
-void update_weights(double*weights, sanitized_dataset_t*d, int row, double eta)
+void update_weights(double*weights, dataset_t*d, int row, double eta)
 {
     double y = d->desired_response->entries[row].c ? 1 : -1;
     int t;
@@ -53,7 +53,7 @@ void update_weights(double*weights, sanitized_dataset_t*d, int row, double eta)
     }
 }
 
-static model_t*perceptron_train(perceptron_model_factory_t*factory, sanitized_dataset_t*d)
+static model_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
 {
     int num_iterations = d->num_rows*100;
     double base_eta = 0.1;
@@ -63,7 +63,7 @@ static model_t*perceptron_train(perceptron_model_factory_t*factory, sanitized_da
 
     double*weights = calloc(sizeof(double), d->num_columns);
 
-    if(sanitized_dataset_has_categorical_columns(d))
+    if(dataset_has_categorical_columns(d))
         return NULL;
     if(d->desired_response->num_classes > 2)
         return NULL;

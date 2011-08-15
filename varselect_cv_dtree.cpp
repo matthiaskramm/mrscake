@@ -28,49 +28,49 @@
 class VarSelectingDTree: public CvDTree
 {
     public:
-    VarSelectingDTree(sanitized_dataset_t*dataset)
+    VarSelectingDTree(dataset_t*dataset)
         :CvDTree()
     {
         this->dataset = dataset;
     }
 
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
 class VarSelectingRTrees: public CvRTrees
 {
     public:
-    VarSelectingRTrees(sanitized_dataset_t*dataset)
+    VarSelectingRTrees(dataset_t*dataset)
         :CvRTrees()
     {
         this->dataset = dataset;
     }
 
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
 class VarSelectingERTrees: public CvERTrees
 {
     public:
-    VarSelectingERTrees(sanitized_dataset_t*dataset)
+    VarSelectingERTrees(dataset_t*dataset)
         :CvERTrees()
     {
         this->dataset = dataset;
     }
 
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
 class VarSelectingGBTrees: public CvGBTrees
 {
     public:
-    VarSelectingGBTrees(sanitized_dataset_t*dataset)
+    VarSelectingGBTrees(dataset_t*dataset)
         :CvGBTrees()
     {
         this->dataset = dataset;
     }
 
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
 int compare_double_ptr(const void*d1, const void*d2)
@@ -84,7 +84,7 @@ int compare_double_ptr(const void*d1, const void*d2)
         return 0;
 }
 
-varorder_t*varorder_from_matrix(const CvMat*var_imp, sanitized_dataset_t*d)
+varorder_t*varorder_from_matrix(const CvMat*var_imp, dataset_t*d)
 {
     int num = var_imp->cols;
     double*values = (double*)malloc(sizeof(double)*num);
@@ -121,9 +121,9 @@ varorder_t*varorder_from_matrix(const CvMat*var_imp, sanitized_dataset_t*d)
    orderings (also on individual columns).
 */
 
-extern "C" varorder_t*dtree_var_order(sanitized_dataset_t*d);
+extern "C" varorder_t*dtree_var_order(dataset_t*d);
 
-varorder_t*dtree_var_order(sanitized_dataset_t*d)
+varorder_t*dtree_var_order(dataset_t*d)
 {
     CvMLDataFromExamples data(d);
 

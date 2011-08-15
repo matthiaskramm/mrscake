@@ -36,7 +36,7 @@ typedef struct _ann_model_factory {
 class CodeGeneratingANN: public CvANN_MLP
 {
     public:
-    CodeGeneratingANN(sanitized_dataset_t*dataset, 
+    CodeGeneratingANN(dataset_t*dataset, 
 	              int input_size, 
 		      int output_size, const CvMat* layer_sizes,
                       int activ_func, double f_param1, double f_param2)
@@ -229,7 +229,7 @@ class CodeGeneratingANN: public CvANN_MLP
 	}
 
         ARRAY_AT_POS
-            ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+            ARRAY_CONSTANT(dataset_classes_as_array(dataset));
             ARG_MAX_F
                 for(j=0;j<output_size;j++) {
                     GETLOCAL(final+j);
@@ -253,10 +253,10 @@ class CodeGeneratingANN: public CvANN_MLP
         int index = cvmat_get_max_index(output);
         cvReleaseMat(&matrix_row);
         cvReleaseMat(&output);
-        return sanitized_dataset_map_response_class(dataset, index);
+        return dataset_map_response_class(dataset, index);
     }
 
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
     int*var_offset;
     int input_size;
     int output_size;
@@ -288,7 +288,7 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
 }
 #endif
 
-static model_t*ann_train(ann_model_factory_t*factory, sanitized_dataset_t*d)
+static model_t*ann_train(ann_model_factory_t*factory, dataset_t*d)
 {
     int num_layers = factory->num_layers;
 

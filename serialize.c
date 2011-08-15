@@ -547,7 +547,7 @@ column_t* column_read(int num_rows, reader_t*r)
     }
     return c;
 }
-void sanitized_dataset_write(sanitized_dataset_t*d, writer_t*w)
+void dataset_write(dataset_t*d, writer_t*w)
 {
     write_compressed_uint(w, d->num_columns);
     write_compressed_uint(w, d->num_rows);
@@ -557,9 +557,9 @@ void sanitized_dataset_write(sanitized_dataset_t*d, writer_t*w)
     }
     column_write(d->desired_response, d->num_rows, w);
 }
-sanitized_dataset_t*sanitized_dataset_read(reader_t*r)
+dataset_t*dataset_read(reader_t*r)
 {
-    sanitized_dataset_t*d = calloc(1, sizeof(sanitized_dataset_t));
+    dataset_t*d = calloc(1, sizeof(dataset_t));
     d->num_columns = read_compressed_uint(r);
     d->num_rows = read_compressed_uint(r);
     d->columns = malloc(sizeof(d->columns[0])*d->num_columns);
@@ -570,16 +570,16 @@ sanitized_dataset_t*sanitized_dataset_read(reader_t*r)
     d->desired_response = column_read(d->num_rows, r);
     return d;
 }
-void sanitized_dataset_save(sanitized_dataset_t*d, const char*filename)
+void dataset_save(dataset_t*d, const char*filename)
 {
     writer_t *w = filewriter_new2(filename);
-    sanitized_dataset_write(d, w);
+    dataset_write(d, w);
     w->finish(w);
 }
-sanitized_dataset_t* sanitized_dataset_load(const char*filename)
+dataset_t* dataset_load(const char*filename)
 {
     reader_t *r = filereader_new2(filename);
-    sanitized_dataset_t*d = sanitized_dataset_read(r);
+    dataset_t*d = dataset_read(r);
     r->dealloc(r);
     return d;
 }

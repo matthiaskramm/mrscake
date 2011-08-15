@@ -332,9 +332,9 @@ signature_t* signature_from_columns(column_t**columns, int num_columns, bool has
     return sig;
 }
 
-sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
+dataset_t* dataset_sanitize(trainingdata_t*dataset)
 {
-    sanitized_dataset_t*s = malloc(sizeof(sanitized_dataset_t));
+    dataset_t*s = malloc(sizeof(dataset_t));
 
     if(!trainingdata_check_format(dataset))
         return 0;
@@ -409,7 +409,7 @@ sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset)
     s->sig = signature_from_columns(s->columns, s->num_columns, has_column_names);
     return s;
 }
-void sanitized_dataset_print(sanitized_dataset_t*s)
+void dataset_print(dataset_t*s)
 {
     int x,y;
     if(s->columns[0]->name) {
@@ -443,7 +443,7 @@ void sanitized_dataset_print(sanitized_dataset_t*s)
     }
 }
 
-bool sanitized_dataset_has_categorical_columns(sanitized_dataset_t*s)
+bool dataset_has_categorical_columns(dataset_t*s)
 {
     int x;
     for(x=0;x<s->num_columns;x++) {
@@ -454,7 +454,7 @@ bool sanitized_dataset_has_categorical_columns(sanitized_dataset_t*s)
     return false;
 }
 
-constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int i)
+constant_t dataset_map_response_class(dataset_t*dataset, int i)
 {
     if(i>=0 && i<dataset->desired_response->num_classes) {
         return dataset->desired_response->classes[i];
@@ -463,7 +463,7 @@ constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int
     }
 }
 
-void sanitized_dataset_destroy(sanitized_dataset_t*s)
+void dataset_destroy(dataset_t*s)
 {
     int t;
     for(t=0;t<s->num_columns;t++) {
@@ -474,7 +474,7 @@ void sanitized_dataset_destroy(sanitized_dataset_t*s)
     free(s);
 }
 
-int sanitized_dataset_count_expanded_columns(sanitized_dataset_t*s)
+int dataset_count_expanded_columns(dataset_t*s)
 {
     int x;
     int num = 0;
@@ -484,7 +484,7 @@ int sanitized_dataset_count_expanded_columns(sanitized_dataset_t*s)
     return num;
 }
 
-expanded_columns_t* expanded_columns_new(sanitized_dataset_t*s)
+expanded_columns_t* expanded_columns_new(dataset_t*s)
 {
     /* build expanded column info (version of the data where every class of every
        input variable has it's own 0/1 column)
@@ -550,7 +550,7 @@ void expanded_columns_destroy(expanded_columns_t*e)
 }
 
 
-array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*dataset)
+array_t* dataset_classes_as_array(dataset_t*dataset)
 {
     array_t*classes = array_new(dataset->desired_response->num_classes);
     int t;
@@ -559,7 +559,7 @@ array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*dataset)
     }
     return classes;
 }
-void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y)
+void dataset_fill_row(dataset_t*s, row_t*row, int y)
 {
     int x;
     for(x=0;x<row->num_inputs;x++) {
@@ -575,7 +575,7 @@ void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y)
     }
 }
 
-model_t* model_new(sanitized_dataset_t*dataset)
+model_t* model_new(dataset_t*dataset)
 {
     model_t*m = (model_t*)calloc(1,sizeof(model_t));
     m->sig = dataset->sig;
@@ -583,10 +583,10 @@ model_t* model_new(sanitized_dataset_t*dataset)
     return m;
 }
 
-sanitized_dataset_t* sanitized_dataset_pick_columns(sanitized_dataset_t*data, int*index, int num)
+dataset_t* dataset_pick_columns(dataset_t*data, int*index, int num)
 {
-    sanitized_dataset_t*newdata = malloc(sizeof(sanitized_dataset_t)+sizeof(column_t*)*num);
-    memcpy(newdata, data, sizeof(sanitized_dataset_t));
+    dataset_t*newdata = malloc(sizeof(dataset_t)+sizeof(column_t*)*num);
+    memcpy(newdata, data, sizeof(dataset_t));
     newdata->num_columns = num;
     newdata->columns = (column_t**)(&newdata[1]);
     int t;

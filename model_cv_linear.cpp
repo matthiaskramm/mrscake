@@ -35,7 +35,7 @@ typedef struct _svm_model_factory {
 class CodeGeneratingLinearSVM: public CvSVM
 {
     public:
-    CodeGeneratingLinearSVM(sanitized_dataset_t*dataset)
+    CodeGeneratingLinearSVM(dataset_t*dataset)
         :CvSVM()
     {
         this->dataset = dataset;
@@ -141,7 +141,7 @@ class CodeGeneratingLinearSVM: public CvSVM
             }
 
             ARRAY_AT_POS
-                ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+                ARRAY_CONSTANT(dataset_classes_as_array(dataset));
                 ARG_MAX_I
                     int j;
                     for(j=0; j<class_count; j++) {
@@ -158,10 +158,10 @@ class CodeGeneratingLinearSVM: public CvSVM
 
         return program;
     }
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
-static model_t*svm_train(svm_model_factory_t*factory, sanitized_dataset_t*d)
+static model_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
 {
     int num_rows = training_set_size(d->num_rows);
 

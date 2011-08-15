@@ -52,7 +52,7 @@ int count_categories(const CvDTreeTrainData* data, int ci)
     return to-from;
 }
 
-array_t*parse_bitfield(CvDTreeTrainData* data, sanitized_dataset_t*dataset, int column, int ci, int subset[2])
+array_t*parse_bitfield(CvDTreeTrainData* data, dataset_t*dataset, int column, int ci, int subset[2])
 {
     /* FIXME: We have a maximum of 64 categories, seperated into "left" and "right"
               ones. There's the case of an input category not occuring in that
@@ -80,7 +80,7 @@ array_t*parse_bitfield(CvDTreeTrainData* data, sanitized_dataset_t*dataset, int 
     return a;
 }
 
-static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, sanitized_dataset_t*dataset, CvDTreeNode*node, node_t*current_node, bool resolve_classes, bool as_float)
+static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, dataset_t*dataset, CvDTreeNode*node, node_t*current_node, bool resolve_classes, bool as_float)
 {
     const int*vtype = data->var_type->data.i;
     node_t**current_program = 0;
@@ -143,7 +143,7 @@ static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, sanitiz
 class CodeGeneratingDTree: public CvDTree
 {
     public:
-    CodeGeneratingDTree(sanitized_dataset_t*dataset)
+    CodeGeneratingDTree(dataset_t*dataset)
         :CvDTree()
     {
         this->dataset = dataset;
@@ -154,7 +154,7 @@ class CodeGeneratingDTree: public CvDTree
         CvMat* matrix_row = cvmat_from_row(dataset, row, false, true);
         int i = (int)floor(CvDTree::predict(matrix_row, NULL, false)->value + FLT_EPSILON);
         cvReleaseMat(&matrix_row);
-        return sanitized_dataset_map_response_class(dataset, i);
+        return dataset_map_response_class(dataset, i);
     }
 
     node_t* get_program() const
@@ -170,13 +170,13 @@ class CodeGeneratingDTree: public CvDTree
         END_CODE;
         return code;
     }
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
 class CodeGeneratingRTrees: public CvRTrees
 {
     public:
-    CodeGeneratingRTrees(sanitized_dataset_t*dataset)
+    CodeGeneratingRTrees(dataset_t*dataset)
         :CvRTrees()
     {
         this->dataset = dataset;
@@ -208,7 +208,7 @@ class CodeGeneratingRTrees: public CvRTrees
             }
 
             ARRAY_AT_POS
-                ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+                ARRAY_CONSTANT(dataset_classes_as_array(dataset));
                 ARRAY_ARG_MAX_I;
                     GETLOCAL(0);
                 END;
@@ -221,13 +221,13 @@ class CodeGeneratingRTrees: public CvRTrees
     }
 
 
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
 class CodeGeneratingERTrees: public CvERTrees
 {
     public:
-    CodeGeneratingERTrees(sanitized_dataset_t*dataset)
+    CodeGeneratingERTrees(dataset_t*dataset)
         :CvERTrees()
     {
         this->dataset = dataset;
@@ -258,7 +258,7 @@ class CodeGeneratingERTrees: public CvERTrees
             }
 
             ARRAY_AT_POS
-                ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+                ARRAY_CONSTANT(dataset_classes_as_array(dataset));
                 ARRAY_ARG_MAX_I;
                     GETLOCAL(0);
                 END;
@@ -270,13 +270,13 @@ class CodeGeneratingERTrees: public CvERTrees
     }
 
 
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
 class CodeGeneratingGBTrees: public CvGBTrees
 {
     public:
-    CodeGeneratingGBTrees(sanitized_dataset_t*dataset)
+    CodeGeneratingGBTrees(dataset_t*dataset)
         :CvGBTrees()
     {
         this->dataset = dataset;
@@ -312,7 +312,7 @@ class CodeGeneratingGBTrees: public CvGBTrees
             END;
         }
         ARRAY_AT_POS
-            ARRAY_CONSTANT(sanitized_dataset_classes_as_array(dataset));
+            ARRAY_CONSTANT(dataset_classes_as_array(dataset));
             ARG_MAX_F;
                 for(int i=0; i<dataset->desired_response->num_classes; ++i) {
                     GETLOCAL(i);
@@ -326,7 +326,7 @@ class CodeGeneratingGBTrees: public CvGBTrees
         return code;
     }
 
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
 };
 
 #ifdef VERIFY
@@ -346,13 +346,13 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
 }
 #endif
 
-static int get_max_trees(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+static int get_max_trees(dtree_model_factory_t*factory, dataset_t*d)
 {
     /* TODO: more max_trees parameter tweaking (k-fold cross-validation?) */
     return (int)sqrt(d->num_rows) / factory->max_trees_divide;
 }
 
-static model_t*dtree_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+static model_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     CvMLDataFromExamples data(d);
 
@@ -369,7 +369,7 @@ static model_t*dtree_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
     return m;
 }
 
-static model_t*rtrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+static model_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     CvMLDataFromExamples data(d);
     CodeGeneratingRTrees rtrees(d);
@@ -383,7 +383,7 @@ static model_t*rtrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d
     return m;
 }
 
-static model_t*ertrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+static model_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     if(d->num_columns == 1 && !d->columns[0]->is_categorical) {
         /* OpenCV has a bug in their special case code for a 
@@ -402,7 +402,7 @@ static model_t*ertrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*
     return m;
 }
 
-static model_t*gbtrees_train(dtree_model_factory_t*factory, sanitized_dataset_t*d)
+static model_t*gbtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     CvMLDataFromExamples data(d);
     CodeGeneratingGBTrees gbtrees(d);

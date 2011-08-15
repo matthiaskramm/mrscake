@@ -29,7 +29,7 @@ extern "C" {
 #include "dataset.h"
 
 typedef struct _job {
-    sanitized_dataset_t*data;
+    dataset_t*data;
     model_factory_t*factory;
     model_t*model;
     struct _job*prev;

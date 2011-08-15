@@ -42,7 +42,7 @@ float cvmGetF(const CvMat*m, int y, int x)
     return CV_MAT_ELEM((*m), float, y, x);
 }
 
-CvMLDataFromExamples::CvMLDataFromExamples(sanitized_dataset_t*dataset)
+CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
     :CvMLData()
 {
     int input_columns = dataset->num_columns;
@@ -118,7 +118,7 @@ void cvmat_print(CvMat*mat)
     }
 }
 
-CvMat*cvmat_from_row(sanitized_dataset_t*dataset, row_t*row, bool expand_categories, bool add_one)
+CvMat*cvmat_from_row(dataset_t*dataset, row_t*row, bool expand_categories, bool add_one)
 {
     int width = dataset->num_columns;
 
@@ -197,7 +197,7 @@ int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows)
     return x;
 }
 
-int count_multiclass_columns(sanitized_dataset_t*d)
+int count_multiclass_columns(dataset_t*d)
 {
     int x;
     int width = 0;
@@ -211,7 +211,7 @@ int count_multiclass_columns(sanitized_dataset_t*d)
     return width;
 }
 
-void make_ml_multicolumn(sanitized_dataset_t*d, CvMat**in, CvMat**out, int num_rows, bool multicolumn_response)
+void make_ml_multicolumn(dataset_t*d, CvMat**in, CvMat**out, int num_rows, bool multicolumn_response)
 {
     int x,y;
     int width = count_multiclass_columns(d);

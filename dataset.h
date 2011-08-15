@@ -33,7 +33,7 @@ extern "C" {
 struct _column;
 typedef struct _column column_t;
 
-typedef struct _sanitized_dataset {
+typedef struct _dataset {
 
     signature_t*sig;
 
@@ -42,7 +42,7 @@ typedef struct _sanitized_dataset {
     column_t**columns;
 
     column_t*desired_response;
-} sanitized_dataset_t;
+} dataset_t;
 
 struct _column {
     int index;
@@ -61,18 +61,18 @@ struct _column {
     } entries[0];
 };
 
-sanitized_dataset_t* dataset_sanitize(trainingdata_t*dataset);
-void sanitized_dataset_print(sanitized_dataset_t*s);
-constant_t sanitized_dataset_map_response_class(sanitized_dataset_t*dataset, int i);
-void sanitized_dataset_destroy(sanitized_dataset_t*dataset);
-int sanitized_dataset_count_expanded_columns(sanitized_dataset_t*s);
-sanitized_dataset_t* sanitized_dataset_pick_columns(sanitized_dataset_t*data, int*index, int num);
-bool sanitized_dataset_has_categorical_columns(sanitized_dataset_t*data);
+dataset_t* dataset_sanitize(trainingdata_t*dataset);
+void dataset_print(dataset_t*s);
+constant_t dataset_map_response_class(dataset_t*dataset, int i);
+void dataset_destroy(dataset_t*dataset);
+int dataset_count_expanded_columns(dataset_t*s);
+dataset_t* dataset_pick_columns(dataset_t*data, int*index, int num);
+bool dataset_has_categorical_columns(dataset_t*data);
 
 /* structure for storing "exploded" version of columns where every class
    has its own column */
 typedef struct _expanded_columns {
-    sanitized_dataset_t*dataset;
+    dataset_t*dataset;
     int num;
     bool use_header_code;
     struct {
@@ -81,18 +81,18 @@ typedef struct _expanded_columns {
     }* columns;
 } expanded_columns_t;
 
-expanded_columns_t* expanded_columns_new(sanitized_dataset_t*s);
+expanded_columns_t* expanded_columns_new(dataset_t*s);
 node_t* expanded_columns_parameter_init(expanded_columns_t*e);
 node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num);
 void expanded_columns_destroy(expanded_columns_t*e);
 
 column_t*column_new(int num_rows, bool is_categorical, int x);
 
-model_t* model_new(sanitized_dataset_t*dataset);
+model_t* model_new(dataset_t*dataset);
 example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags);
-node_t* parameter_code(sanitized_dataset_t*d, int num);
-array_t* sanitized_dataset_classes_as_array(sanitized_dataset_t*d);
-void sanitized_dataset_fill_row(sanitized_dataset_t*s, row_t*row, int y);
+node_t* parameter_code(dataset_t*d, int num);
+array_t* dataset_classes_as_array(dataset_t*d);
+void dataset_fill_row(dataset_t*s, row_t*row, int y);
 
 #ifdef __cplusplus
 }

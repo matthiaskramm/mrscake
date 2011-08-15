@@ -86,7 +86,7 @@ model_factory_t* model_factory_get_by_name(const char*name)
     return 0;
 }
 
-static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
+static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
 {
     jobqueue_t* queue = jobqueue_new();
     int t;
@@ -95,7 +95,7 @@ static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
 //#define SUBSET_VARIABLES
 #ifdef SUBSET_VARIABLES
     for(i=1;i<order->num;i++) {
-        sanitized_dataset_t*newdata = sanitized_dataset_pick_columns(data, order->order, i);
+        dataset_t*newdata = dataset_pick_columns(data, order->order, i);
         for(s=0;s<NUM(collections);s++) {
             model_collection_t*collection = &collections[s];
             for(t=0;t<*collection->num_models;t++) {
@@ -124,9 +124,9 @@ static jobqueue_t* generate_jobs(varorder_t*order, sanitized_dataset_t*data)
     return queue;
 }
 
-extern varorder_t*dtree_var_order(sanitized_dataset_t*d);
+extern varorder_t*dtree_var_order(dataset_t*d);
 
-model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs, sanitized_dataset_t*data)
+model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs, dataset_t*data)
 {
     model_t*best_model = NULL;
     int best_score = INT_MAX;
@@ -181,12 +181,12 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs, sanitized_dataset_t*
 
 model_t* model_select(trainingdata_t*trainingdata)
 {
-    sanitized_dataset_t*data = dataset_sanitize(trainingdata);
+    dataset_t*data = dataset_sanitize(trainingdata);
     if(!data)
         return 0;
 #ifdef DEBUG
     printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
-            data->num_columns, sanitized_dataset_count_expanded_columns(data));
+            data->num_columns, dataset_count_expanded_columns(data));
 #endif
 
     varorder_t*order = dtree_var_order(data);
@@ -204,13 +204,13 @@ model_t* model_select(trainingdata_t*trainingdata)
     confusion_matrix_print(cm);
     confusion_matrix_destroy(cm);
 #endif
-    sanitized_dataset_destroy(data);
+    dataset_destroy(data);
     return best_model;
 }
 
 model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name)
 {
-    sanitized_dataset_t*data = dataset_sanitize(trainingdata);
+    dataset_t*data = dataset_sanitize(trainingdata);
     varorder_t*order = dtree_var_order(data);
     jobqueue_t*jobs = generate_jobs(order, data);
     job_t*j = jobs->first;
@@ -257,7 +257,7 @@ void confusion_matrix_print(confusion_matrix_t*m)
         printf("\n");
     }
 }
-confusion_matrix_t* model_get_confusion_matrix(model_t*m, sanitized_dataset_t*s)
+confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s)
 {
     dict_t*d = dict_new(&constant_hash_type);
     int t;
@@ -274,7 +274,7 @@ confusion_matrix_t* model_get_confusion_matrix(model_t*m, sanitized_dataset_t*s)
 
     int y;
     for(y=0;y<s->num_rows;y++) {
-        sanitized_dataset_fill_row(s, row, y);
+        dataset_fill_row(s, row, y);
         constant_t prediction = node_eval(code, env);
         constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];
         int column = PTR_TO_INT(dict_lookup(d, desired));
@@ -287,7 +287,7 @@ confusion_matrix_t* model_get_confusion_matrix(model_t*m, sanitized_dataset_t*s)
     return matrix;
 }
 
-int model_errors_old(model_t*m, sanitized_dataset_t*s)
+int model_errors_old(model_t*m, dataset_t*s)
 {
     node_t*node = m->code;
     node_t*code = (node_t*)m->code;
@@ -296,9 +296,9 @@ int model_errors_old(model_t*m, sanitized_dataset_t*s)
 
     int y;
     int error = 0;
-    sanitized_dataset_print(s);
+    dataset_print(s);
     for(y=0;y<s->num_rows;y++) {
-        sanitized_dataset_fill_row(s, row, y);
+        dataset_fill_row(s, row, y);
         constant_t prediction = node_eval(code, env);
         constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];
         if(constant_equals(&prediction,desired)) {
@@ -313,7 +313,7 @@ int model_errors_old(model_t*m, sanitized_dataset_t*s)
     return error;
 }
 
-int model_errors(model_t*m, sanitized_dataset_t*s)
+int model_errors(model_t*m, dataset_t*s)
 {
     confusion_matrix_t* c = model_get_confusion_matrix(m, s);
     int x,y,t;
