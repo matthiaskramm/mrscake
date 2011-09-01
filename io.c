@@ -1039,30 +1039,23 @@ void write_compressed_int(writer_t*w, int32_t i)
 {
     if(i>=-0x40 && i<0x40) {
         write_uint8(w, i&0x7f);
-    } else if(i>=-0x1000 && i<0x1000) {
-        write_uint8(w, (i>>6)&0x7f|0x80);
+    } else if(i>=-0x2000 && i<0x2000) {
+        write_uint8(w, (i>>7)&0x7f|0x80);
         write_uint8(w, i&0x7f);
-    } else if(i>=-0x40000 && i<0x40000) {
-        write_uint8(w, (i>>12)&0x7f|0x80);
-        write_uint8(w, (i>>6)&0x7f|0x80);
+    } else if(i>=-0x100000 && i<0x100000) {
+        write_uint8(w, (i>>14)&0x7f|0x80);
+        write_uint8(w, (i>>7)&0x7f|0x80);
         write_uint8(w, (i)&0x7f);
-    } else if(i>=-0x1000000 && i<0x1000000) {
-        write_uint8(w, (i>>18)&0x7f|0x80);
-        write_uint8(w, (i>>12)&0x7f|0x80);
-        write_uint8(w, (i>>6)&0x7f|0x80);
-        write_uint8(w, (i)&0x7f);
-    } else if(i>=-0x40000000 && i<0x40000000) {
-        write_uint8(w, (i>>24)&0x7f|0x80);
-        write_uint8(w, (i>>18)&0x7f|0x80);
-        write_uint8(w, (i>>12)&0x7f|0x80);
-        write_uint8(w, (i>>6)&0x7f|0x80);
+    } else if(i>=-0x8000000 && i<0x8000000) {
+        write_uint8(w, (i>>21)&0x7f|0x80);
+        write_uint8(w, (i>>14)&0x7f|0x80);
+        write_uint8(w, (i>>7)&0x7f|0x80);
         write_uint8(w, (i)&0x7f);
     } else {
-        write_uint8(w, (i>>30)&0x7f|0x80);
-        write_uint8(w, (i>>24)&0x7f|0x80);
-        write_uint8(w, (i>>18)&0x7f|0x80);
-        write_uint8(w, (i>>12)&0x7f|0x80);
-        write_uint8(w, (i>>6)&0x7f|0x80);
+        write_uint8(w, (i>>28)&0x7f|0x80);
+        write_uint8(w, (i>>21)&0x7f|0x80);
+        write_uint8(w, (i>>14)&0x7f|0x80);
+        write_uint8(w, (i>>7)&0x7f|0x80);
         write_uint8(w, (i)&0x7f);
     }
 }
