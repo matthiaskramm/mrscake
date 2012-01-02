@@ -557,7 +557,7 @@ node_t* node_optimize2(node_t*n, bool*again)
             if(node_equals_node(n->child[1], n->child[2])) {
                 node_t*new_node = n->child[1];
                 node_destroy_self(n);
-                return n->child[1];
+                return new_node;
             }
             break;
 	case opcode_node_setlocal:
