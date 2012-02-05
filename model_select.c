@@ -68,7 +68,7 @@ model_collection_t collections[] = {
     {dtree_models, &num_dtree_models},
     {svm_models, &num_svm_models},
     {ann_models, &num_ann_models},
-    //{perceptron_models, &num_perceptron_models},
+    {perceptron_models, &num_perceptron_models},
 };
 
 model_factory_t* model_factory_get_by_name(const char*name)
@@ -339,7 +339,7 @@ int model_errors(model_t*m, dataset_t*s)
         if(row_error + correct) {
             error += row_error / (double)(row_error+correct);
         }
-        total += correct + row_error;
+        total += correct + row_error; // add row sum
     }
     int cn = c->n;
     confusion_matrix_destroy(c);
