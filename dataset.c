@@ -579,7 +579,6 @@ model_t* model_new(dataset_t*dataset)
 {
     model_t*m = (model_t*)calloc(1,sizeof(model_t));
     m->sig = dataset->sig;
-
     return m;
 }
 

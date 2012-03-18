@@ -43,7 +43,7 @@ model_t* model_train_specific_model(trainingdata_t*, const char*name);
 
 int model_size(model_t*m);
 int model_errors(model_t*m, dataset_t*s);
-int model_score(model_t*m, dataset_t*d);
+int model_score(model_t*m, dataset_t*data);
 model_t* train_model(model_factory_t*factory, dataset_t*data);
 
 model_factory_t* model_factory_get_by_name(const char*name);

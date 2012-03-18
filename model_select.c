@@ -128,56 +128,27 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
 
 extern varorder_t*dtree_var_order(dataset_t*d);
 
-model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs, dataset_t*data)
+model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
 {
     model_t*best_model = NULL;
     int best_score = INT_MAX;
     job_t*job;
-    int count=0;
-    printf("\n");
-    for(job=jobs->first;job;job=job->next,count++) {
-        printf("\revaluating %d/%d", count, jobs->num);fflush(stdout);
+    for(job=jobs->first;job;job=job->next) {
 	model_t*m = job->model;
 	if(m) {
-//#define DEBUG
-#ifdef DEBUG
-            printf("# %s\n", m->name);
-#endif
-	    int size = model_size(m);
-#ifdef DEBUG
-	    printf("# model size %d", size);fflush(stdout);
-#endif
-	    int errors = model_errors(m, data);
-	    int score = size + errors * sizeof(uint32_t);
-#ifdef DEBUG
-	    printf(", %d errors (score: %d)\n", errors, score);fflush(stdout);
-	    node_sanitycheck((node_t*)m->code);
-#endif
-//#define SHOW_CODE
-#ifdef SHOW_CODE
-	    //node_print((node_t*)m->code);
-	    printf("# -------------------------------\n");
-	    printf("%s\n", generate_code(&codegen_js, m));
-	    printf("# -------------------------------\n");
-#endif
-	    if(score < best_score) {
+	    if(job->score < best_score) {
 		if(best_model) {
 		    model_destroy(best_model);
 		}
-		best_score = score;
+		best_score = job->score;
 		best_model = m;
 	    } else {
 		model_destroy(m);
 	    }
-	} else {
-#ifdef DEBUG
-	    printf("failed\n");
-#endif
 	}
 	job->model = 0;
     }
     jobqueue_destroy(jobs);
-    printf("\n");
     return best_model;
 }
 
@@ -195,7 +166,10 @@ model_t* model_select(trainingdata_t*trainingdata)
 
     jobqueue_t*jobs = generate_jobs(order, data);
     jobqueue_process(jobs);
-    model_t*best_model = jobqueue_extract_best_and_destroy(jobs, data);
+    model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
+    if(!best_model) {
+        return 0;
+    }
 
 #define DEBUG
 #ifdef DEBUG
@@ -215,6 +189,8 @@ model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name
     dataset_t*data = trainingdata_sanitize(trainingdata);
     varorder_t*order = dtree_var_order(data);
     jobqueue_t*jobs = generate_jobs(order, data);
+
+    /* filter out all the jobs except the one(s) we're looking for */
     job_t*j = jobs->first;
     while(j) {
         job_t*next = j->next;
@@ -224,7 +200,7 @@ model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name
         j = next;
     }
     jobqueue_process(jobs);
-    return jobqueue_extract_best_and_destroy(jobs, data);
+    return jobqueue_extract_best_and_destroy(jobs);
 }
 
 confusion_matrix_t* confusion_matrix_new(int n)
@@ -266,7 +242,7 @@ confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s)
     for(t=0;t<s->desired_response->num_classes;t++) {
         dict_put(d, &s->desired_response->classes[t], INT_TO_PTR(t));
     }
-
+    
     node_t*node = m->code;
     node_t*code = (node_t*)m->code;
     row_t* row = row_new(s->sig->num_inputs);
@@ -358,6 +334,18 @@ int model_size(model_t*m)
     return size;
 }
 
+int model_score(model_t*m, dataset_t*data)
+{
+    if(!m)
+        return INT_MAX;
+    int size = model_size(m);
+    int errors = model_errors(m, data);
+    return size + errors * sizeof(uint32_t);
+}
+
+
+/* default for the number of training samples we should use for training, depending
+   on the amount of training data available */
 int training_set_size(int total_size)
 {
     if(total_size < 25) {

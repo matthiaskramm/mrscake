@@ -40,6 +40,7 @@ void job_process(job_t*job)
     if(job->model) {
         job->model->name = job->factory->name;
     }
+    job->score = model_score(job->model, job->data);
     return;
 #else
     int p[2];
@@ -54,11 +55,14 @@ void job_process(job_t*job)
     if(!pid) {
         //child
         close(read_fd); // close read
-        model_t*m = job->factory->train(job->factory, job->data);
-        if(m) {
-            m->name = job->factory->name;
+        job->model = job->factory->train(job->factory, job->data);
+        if(job->model) {
+            job->model->name = job->factory->name;
         }
+        job->score = model_score(job->model, job->data);
+
         writer_t*w = filewriter_new(write_fd);
+        write_compressed_int(writer_t*w, job->score);
         model_write(m, w);
         w->finish(w);
         close(write_fd); // close write
@@ -67,6 +71,7 @@ void job_process(job_t*job)
         //parent
         close(write_fd); // close write
         reader_t*r = filereader_with_timeout_new(read_fd, config_job_wait_timeout);
+        job->score = read_compressed_int(r);
         job->model = model_read(r);
         if(job->model) {
             job->model->name = job->factory->name;
@@ -97,8 +102,8 @@ static void process_jobs_remotely(jobqueue_t*jobs)
 {
     remote_job_t**r = malloc(sizeof(reader_t*)*jobs->num);
 
-    /* ignore sigpipe events, causing write calls to closed network
-       sockets to return an error instead of halting the program */
+    /* Ignore sigpipe events. Write calls to closed network sockets 
+       will now only return an error, not halt the program */
     sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
 
     job_t*job;

@@ -54,7 +54,10 @@ void clean_old_workers(worker_t*jobs, int*num)
         int status;
         pid_t p = waitpid(jobs[t].pid, &status, WNOHANG);
         if(p == jobs[t].pid) {
-            printf("worker %d: finished\n", jobs[t].pid);
+            printf("worker %d: finished: %s %d\n", jobs[t].pid,
+                    WIFEXITED(status)?"exit": (WIFSIGNALED(status)?"signal": "abnormal"),
+                    WIFEXITED(status)? WEXITSTATUS(status):WTERMSIG(status)
+                    );
             jobs[t] = jobs[--(*num)];
         }
 

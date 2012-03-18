@@ -556,6 +556,7 @@ void dataset_write(dataset_t*d, writer_t*w)
         column_write(d->columns[t], d->num_rows, w);
     }
     column_write(d->desired_response, d->num_rows, w);
+    signature_write(d->sig, w);
 }
 dataset_t*dataset_read(reader_t*r)
 {
@@ -568,6 +569,7 @@ dataset_t*dataset_read(reader_t*r)
         d->columns[t] = column_read(d->num_rows, r);
     }
     d->desired_response = column_read(d->num_rows, r);
+    d->sig = signature_read(r);
     return d;
 }
 void dataset_save(dataset_t*d, const char*filename)

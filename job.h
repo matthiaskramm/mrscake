@@ -32,6 +32,9 @@ typedef struct _job {
     dataset_t*data;
     model_factory_t*factory;
     model_t*model;
+
+    int score;
+
     struct _job*prev;
     struct _job*next;
 } job_t;
