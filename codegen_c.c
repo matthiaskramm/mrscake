@@ -468,7 +468,6 @@ void c_enumerate_arrays(node_t*node, state_t*s)
 void c_write_header(model_t*model, state_t*s)
 {
     node_t*root = (node_t*)model->code;
-    constant_type_t type = node_type(root, model);
 
     if(node_has_child(root, &node_arg_max)) {
         c_write_function_arg_max(s, "", "double");
@@ -483,6 +482,7 @@ void c_write_header(model_t*model, state_t*s)
         c_write_function_sqr(s);
     }
 
+    constant_type_t type = node_type(root, model);
     strf(s, "%s predict(", c_type_name(type));
     int t;
     for(t=0;t<model->sig->num_inputs;t++) {

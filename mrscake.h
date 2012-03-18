@@ -1,4 +1,4 @@
-/* model.h
+/* mrscake.h
    Data prediction top level API.
 
    Part of the data prediction package.
@@ -72,6 +72,7 @@ typedef struct _example {
 
 example_t*example_new(int num_inputs);
 row_t*example_to_row(example_t*e, const char**column_names);
+void example_destroy(example_t*example);
 
 typedef struct _trainingdata {
     example_t*first_example;
@@ -81,6 +82,7 @@ typedef struct _trainingdata {
 
 trainingdata_t* trainingdata_new();
 void trainingdata_add_example(trainingdata_t*d, example_t*e);
+bool trainingdata_check_format(trainingdata_t*trainingdata);
 void trainingdata_print(trainingdata_t*dataset);
 void trainingdata_destroy(trainingdata_t*dataset);
 void trainingdata_save(trainingdata_t*d, const char*filename);
@@ -106,8 +108,8 @@ void model_print(model_t*m);
 void model_destroy(model_t*m);
 char*model_generate_code(model_t*m, const char*language);
 
-model_t* model_select(trainingdata_t*dataset);
-model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name);
+model_t* trainingdata_train(trainingdata_t*dataset);
+model_t* trainingdata_train_specific_model(trainingdata_t*trainingdata, const char*name);
 
 #ifdef __cplusplus
 }

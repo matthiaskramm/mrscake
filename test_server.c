@@ -19,7 +19,7 @@ void test()
         trainingdata_add_example(data, e);
     }
 
-    dataset_t*dataset = dataset_sanitize(data);
+    dataset_t*dataset = trainingdata_sanitize(data);
     model_t*m = process_job_remotely("dtree", dataset);
     if(m) {
         printf("%s\n", m->name);

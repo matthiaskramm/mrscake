@@ -41,6 +41,7 @@ typedef model_t*(*training_function_t)(model_factory_t*factory, dataset_t*datase
 model_t* model_select(trainingdata_t*);
 model_t* model_train_specific_model(trainingdata_t*, const char*name);
 
+int model_size(model_t*m);
 int model_errors(model_t*m, dataset_t*s);
 int model_score(model_t*m, dataset_t*d);
 model_t* train_model(model_factory_t*factory, dataset_t*data);

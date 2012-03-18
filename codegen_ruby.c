@@ -20,6 +20,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include "codegen.h"
+#include "ast_transforms.h"
 
 void ruby_write_node_block(node_t*n, state_t*s)
 {

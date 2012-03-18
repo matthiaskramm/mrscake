@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include "mrscake.h"
 #include "ast.h"
+#include "settings.h"
 
 int main()
 {
@@ -46,7 +47,7 @@ int main()
 
     data = trainingdata_load("/tmp/data.data");
 
-    model_t*m = model_select(data);
+    model_t*m = trainingdata_train(data);
 
     char*code = model_generate_code(m, "python");
     printf("%s\n", code);

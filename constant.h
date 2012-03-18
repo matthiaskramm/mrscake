@@ -64,6 +64,8 @@ struct _constant {
 
 extern type_t constant_hash_type;
 
+bool array_is_homogeneous(array_t*a);
+
 constant_t missing_constant();
 constant_t bool_constant(bool b);
 constant_t float_constant(float f);

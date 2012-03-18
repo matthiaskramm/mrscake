@@ -46,7 +46,7 @@ int main()
 
         }
 
-        model_t*m = model_select(data);
+        model_t*m = trainingdata_train(data);
 
         char*code = model_generate_code(m, "python");
         printf("%s\n", code);

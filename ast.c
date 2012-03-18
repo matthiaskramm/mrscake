@@ -799,7 +799,7 @@ void nodelist_init()
         return;
 #   define NODE(op, name) name._opcode = op;
     LIST_NODES
-    #undef NODE
+#   undef NODE
     is_initialized = true;
 }
 

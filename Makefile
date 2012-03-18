@@ -1,5 +1,5 @@
-CC=gcc -pg -g -fPIC
-CXX=g++ -pg -g -fPIC
+CC=gcc -pg -g -fPIC -Wimplicit
+CXX=g++ -pg -g -fPIC -Wimplicit
 INSTALL=/usr/bin/install -c
 
 IS_MACOS:=$(shell test -d /Library && echo macos)
@@ -35,7 +35,7 @@ endif
 MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o model_perceptron.o
 VAR_SELECTORS=varselect_cv_dtree.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
-OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o var_selection.o
+OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o var_selection.o mrscake.o
 
 all: multimodel ast model subset mrscake-job-server mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
@@ -52,6 +52,9 @@ model_select.o: model_select.c constant.h ast.h
 	$(CC) -c $< -o $@
 
 ast.o: ast.c ast.h mrscake.h
+	$(CC) -c $< -o $@
+
+mrscake.o: mrscake.c mrscake.h mrscake.h
 	$(CC) -c $< -o $@
 
 net.o: net.c net.h mrscake.h

@@ -351,9 +351,9 @@ static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* 
 
     model_t*model = NULL;
     if(name == NULL) {
-        model = model_select(self->data);
+        model = trainingdata_train(self->data);
     } else {
-        model = model_train_specific_model(self->data, name);
+        model = trainingdata_train_specific_model(self->data, name);
         if(!model)
             return PY_ERROR("unknown model %s", name);
     }

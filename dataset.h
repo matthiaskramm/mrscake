@@ -61,7 +61,8 @@ struct _column {
     } entries[0];
 };
 
-dataset_t* dataset_sanitize(trainingdata_t*dataset);
+bool trainingdata_check_format(trainingdata_t*trainingdata);
+dataset_t* trainingdata_sanitize(trainingdata_t*dataset);
 void dataset_print(dataset_t*s);
 constant_t dataset_map_response_class(dataset_t*dataset, int i);
 void dataset_destroy(dataset_t*dataset);

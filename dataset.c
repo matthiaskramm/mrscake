@@ -332,7 +332,7 @@ signature_t* signature_from_columns(column_t**columns, int num_columns, bool has
     return sig;
 }
 
-dataset_t* dataset_sanitize(trainingdata_t*dataset)
+dataset_t* trainingdata_sanitize(trainingdata_t*dataset)
 {
     dataset_t*s = malloc(sizeof(dataset_t));
 

@@ -36,4 +36,7 @@ remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset);
 bool remote_job_is_ready(remote_job_t*j);
 time_t remote_job_age(remote_job_t*j);
 model_t* remote_job_read_result(remote_job_t*j);
+void remote_job_cancel(remote_job_t*j);
+
+int start_server(int port);
 #endif

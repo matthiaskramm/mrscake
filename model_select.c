@@ -27,9 +27,11 @@
 #include <errno.h>
 #include <signal.h>
 #include <assert.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "mrscake.h"
+#include "model.h"
 #include "model_select.h"
 #include "ast.h"
 #include "io.h"
@@ -181,7 +183,7 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs, dataset_t*data)
 
 model_t* model_select(trainingdata_t*trainingdata)
 {
-    dataset_t*data = dataset_sanitize(trainingdata);
+    dataset_t*data = trainingdata_sanitize(trainingdata);
     if(!data)
         return 0;
 #ifdef DEBUG
@@ -210,7 +212,7 @@ model_t* model_select(trainingdata_t*trainingdata)
 
 model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name)
 {
-    dataset_t*data = dataset_sanitize(trainingdata);
+    dataset_t*data = trainingdata_sanitize(trainingdata);
     varorder_t*order = dtree_var_order(data);
     jobqueue_t*jobs = generate_jobs(order, data);
     job_t*j = jobs->first;

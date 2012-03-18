@@ -123,7 +123,7 @@ static VALUE rb_dataset_get_model(VALUE cls)
     Get_DataSet(dataset,cls);
     VALUE model_value = rb_model_allocate(Model);
     Get_Model(model, model_value);
-    model->model = model_select(dataset->trainingdata);
+    model->model = trainingdata_train(dataset->trainingdata);
     if(!model->model)
 	rb_raise(rb_eArgError, "bad (empty?) data");
     return model_value;

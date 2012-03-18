@@ -71,8 +71,9 @@ unsigned int crc32_add_bytes(unsigned int checksum, const void*_s, int len)
     } while(--len);
     return checksum;
 }
-unsigned int hash_block(const unsigned char*data, int len)
+unsigned int hash_block(const void*_data, int len)
 {
+    const unsigned char*data = _data;
     int t;
     unsigned int checksum = 0;
     crc32_init();

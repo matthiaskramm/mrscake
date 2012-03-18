@@ -23,6 +23,7 @@
 #include <memory.h>
 #include "environment.h"
 #include "ast.h"
+#include "ast_transforms.h"
 
 environment_t* environment_new(void*node, row_t*row)
 {

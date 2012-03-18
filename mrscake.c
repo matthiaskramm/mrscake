@@ -1,5 +1,5 @@
-/* job.h
-   Job processing
+/* mrscake.c
+   Data prediction top level API.
 
    Part of the data prediction package.
    
@@ -19,41 +19,15 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-#ifndef __job_h__
-#define __job_h__
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "model_select.h"
-#include "dataset.h"
 
-typedef struct _job {
-    dataset_t*data;
-    model_factory_t*factory;
-    model_t*model;
-    struct _job*prev;
-    struct _job*next;
-} job_t;
-
-typedef struct _jobqueue {
-    job_t*first;
-    job_t*last;
-    int num;
-} jobqueue_t;
-
-jobqueue_t*jobqueue_new();
-void jobqueue_append(jobqueue_t*queue, job_t*job);
-void jobqueue_delete_job(jobqueue_t*queue, job_t*job);
-void jobqueue_process(jobqueue_t*);
-void jobqueue_print(jobqueue_t*);
-jobqueue_t*jobqueue_destroy();
-void job_destroy(job_t*j);
-job_t* job_new();
-void job_process(job_t*job);
-
-#ifdef __cplusplus
+model_t* trainingdata_train(trainingdata_t*dataset)
+{
+    return model_select(dataset);
 }
-#endif
-#endif //__job_h__
+
+model_t* trainingdata_train_specific_model(trainingdata_t*trainingdata, const char*name)
+{
+    return model_train_specific_model(trainingdata, name);
+}
 

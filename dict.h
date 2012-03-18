@@ -59,6 +59,8 @@ typedef struct _dict {
     int num;
 } dict_t;
 
+unsigned int hash_block(const void*data, int len);
+
 dict_t*dict_new(type_t*type);
 void dict_init(dict_t*dict, int size);
 void dict_init2(dict_t*dict, type_t*type, int size);
