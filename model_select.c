@@ -134,19 +134,19 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
     int best_score = INT_MAX;
     job_t*job;
     for(job=jobs->first;job;job=job->next) {
-	model_t*m = job->model;
-	if(m) {
-	    if(job->score < best_score) {
-		if(best_model) {
-		    model_destroy(best_model);
-		}
-		best_score = job->score;
-		best_model = m;
-	    } else {
-		model_destroy(m);
-	    }
-	}
-	job->model = 0;
+        model_t*m = job->model;
+        if(m) {
+            if(job->score < best_score) {
+                if(best_model) {
+                    model_destroy(best_model);
+                }
+                best_score = job->score;
+                best_model = m;
+            } else {
+                model_destroy(m);
+            }
+        }
+        job->model = 0;
     }
     jobqueue_destroy(jobs);
     return best_model;

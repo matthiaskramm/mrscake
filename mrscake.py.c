@@ -121,7 +121,7 @@ int add_item(example_t*e, int pos, PyObject*item)
     } else if(PyString_Check(item)) {
         e->inputs[pos] = variable_new_text(PyString_AsString(item));
     } else {
-	PY_ERROR("bad object %s in list", item->ob_type->tp_name);
+        PY_ERROR("bad object %s in list", item->ob_type->tp_name);
         return 0;
     }
     return 1;
@@ -190,7 +190,7 @@ static PyObject* py_model_save(PyObject* _self, PyObject* args, PyObject* kwargs
     static char *kwlist[] = {"filename", NULL};
     int ret;
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
-	return NULL;
+        return NULL;
 
     model_save(self->model, filename);
     return PY_NONE;
@@ -205,7 +205,7 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
     PyObject*data = 0;
     static char *kwlist[] = {"data", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", kwlist, &data))
-	return NULL;
+        return NULL;
     example_t*e = pylist_to_example(data);
     if(!e)
         return NULL;
@@ -242,7 +242,7 @@ static PyObject* py_model_generate_code(PyObject* _self, PyObject* args, PyObjec
     char*language = 0;
     static char *kwlist[] = {"language", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwlist, &language))
-	return NULL;
+        return NULL;
     char*code = model_generate_code(self->model, language);
     return PyString_FromString(code);
 }
@@ -255,7 +255,7 @@ static PyObject* py_model_load(PyObject* module, PyObject* args, PyObject* kwarg
     char*filename = 0;
     static char *kwlist[] = {"filename", NULL};
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
-	return NULL;
+        return NULL;
     ModelObject*self = PyObject_New(ModelObject, &ModelClass);
     self->model = model_load(filename);
     if(!self->model)
@@ -309,7 +309,7 @@ static PyObject* py_dataset_add(PyObject * _self, PyObject* args, PyObject* kwar
     static char *kwlist[] = {"input","output",NULL};
     PyObject*input=0,*output=0;
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "OO", kwlist, &input, &output))
-	return NULL;
+        return NULL;
 
     if(!PyList_Check(input) && !PyDict_Check(input)) // && !PyTuple_Check(input))
         return PY_ERROR("first argument to train() must be a list or a dict");
@@ -338,7 +338,7 @@ static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* 
     static char *kwlist[] = {"name", NULL};
     const char*name = 0;
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwlist, &name))
-	return NULL;
+        return NULL;
 
     int num_examples = self->data->num_examples;
     if(!num_examples) {
@@ -374,7 +374,7 @@ static PyObject* py_dataset_save(PyObject*_self, PyObject* args, PyObject* kwarg
     static char *kwlist[] = {"filename", NULL};
     const char*filename = 0;
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
-	return NULL;
+        return NULL;
     trainingdata_save(self->data, filename);
     return PY_NONE;
 }
@@ -387,7 +387,7 @@ static PyObject* py_dataset_load(PyObject* module, PyObject* args, PyObject* kwa
     char*filename = 0;
     static char *kwlist[] = {"filename", NULL};
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
-	return NULL;
+        return NULL;
     DataSetObject*self = PyObject_New(DataSetObject, &DataSetClass);
     self->data = trainingdata_load(filename);
     if(!self->data)
@@ -402,7 +402,7 @@ static PyObject* py_dataset_new(PyObject* module, PyObject* args, PyObject* kwar
 {
     static char *kwlist[] = {NULL};
     if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "", kwlist))
-	return NULL;
+        return NULL;
     DataSetObject*self = PyObject_New(DataSetObject, &DataSetClass);
     self->data = trainingdata_new();
     return (PyObject*)self;
@@ -476,7 +476,7 @@ static PyObject* mrscake_setparameter(PyObject* module, PyObject* args, PyObject
     static char *kwlist[] = {"key", "value", NULL};
     char*key=0,*value=0;
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss", kwlist, &key, &value))
-	return NULL;
+        return NULL;
     state_t*state = STATE(module);
     return PY_NONE;
 }

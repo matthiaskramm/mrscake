@@ -32,13 +32,13 @@ bool node_has_consumer_parent(node_t*n)
         node_t*child = n;
         n = n->parent;
         if(!n)
-	    break;
+            break;
         if(n->type == &node_return) 
-	    break;
-	if(n->type == &node_setlocal) 
-	    return true;
-	if(n->type == &node_array_at_pos_inc) 
-	    return true;
+            break;
+        if(n->type == &node_setlocal) 
+            return true;
+        if(n->type == &node_array_at_pos_inc) 
+            return true;
         if(n->type == &node_block) {
             if(n->child[n->num_children-1] != child)
                 return false;
@@ -57,13 +57,13 @@ int node_highest_local(node_t*node)
 {
     int max = 0;
     if(node->type == &node_setlocal) {
-	max = node->value.i+1;
+        max = node->value.i+1;
     }
     int t;
     for(t=0;t<node->num_children;t++) {
-	int l = node_highest_local(node->child[t]);
-	if(l>max)
-	    max = l;
+        int l = node_highest_local(node->child[t]);
+        if(l>max)
+            max = l;
     }
     return max;
 }
@@ -177,31 +177,31 @@ constant_type_t node_type(node_t*n, model_t*m)
                (since it causes evaluation to terminate), but in order to
                make node_type(root) do the right thing, we treat it as if
                it would cascade its value up the tree */
-	    return node_type(n->child[0],m);
+            return node_type(n->child[0],m);
         case opcode_node_brackets:
         case opcode_node_sqr:
         case opcode_node_abs:
         case opcode_node_neg:
         case opcode_node_exp:
-	case opcode_node_add:
-	case opcode_node_sub:
-	case opcode_node_mul:
-	case opcode_node_div:
+        case opcode_node_add:
+        case opcode_node_sub:
+        case opcode_node_mul:
+        case opcode_node_div:
         case opcode_node_setlocal:
-	    return node_type(n->child[0],m);
-	case opcode_node_block:
-	    return node_type(n->child[n->num_children-1],m);
-	case opcode_node_if:
-	    return node_type(n->child[1],m);
+            return node_type(n->child[0],m);
+        case opcode_node_block:
+            return node_type(n->child[n->num_children-1],m);
+        case opcode_node_if:
+            return node_type(n->child[1],m);
         case opcode_node_array_at_pos:
             return node_array_element_type(n->child[0]);
         case opcode_node_param:
             return model_param_type(m, n->value.i);
         case opcode_node_getlocal:
             return local_type(node_find_root(n), n->value.i, m);
-	default:
+        default:
             fprintf(stderr, "Couldn't do type deduction for ast node %s\n", n->type->name);
-	    return CONSTANT_MISSING;
+            return CONSTANT_MISSING;
     }
 }
 constant_type_t node_array_element_type(node_t*n)
@@ -221,9 +221,9 @@ constant_type_t node_array_element_type(node_t*n)
         case opcode_node_getlocal:
             n = node_find_setlocal(node_find_root(n), n->value.i);
             return node_array_element_type(n->child[0]);
-	default:
+        default:
             fprintf(stderr, "Couldn't do array type deduction for ast node %s\n", n->type->name);
-	    return CONSTANT_MISSING;
+            return CONSTANT_MISSING;
     }
 }
 int node_array_size(node_t*n)
@@ -241,23 +241,23 @@ int node_array_size(node_t*n)
             return node_array_size(n->child[0]);
         case opcode_node_brackets:
             return node_array_size(n->child[0]);
-	default:
+        default:
             fprintf(stderr, "Couldn't do array size deduction for ast node %s\n", n->type->name);
-	    return -1;
+            return -1;
     }
 }
 bool node_terminates(node_t*n)
 {
     switch(node_get_opcode(n)) {
-	case opcode_node_block:
-	    return node_terminates(n->child[n->num_children-1]);
-	case opcode_node_return:
-	    return true;
-	case opcode_node_if:
-	    return node_terminates(n->child[1]) &&
-	           node_terminates(n->child[2]);
-	default:
-	    return false;
+        case opcode_node_block:
+            return node_terminates(n->child[n->num_children-1]);
+        case opcode_node_return:
+            return true;
+        case opcode_node_if:
+            return node_terminates(n->child[1]) &&
+                   node_terminates(n->child[2]);
+        default:
+            return false;
     }
 }
 bool is_infix(nodetype_t*type)
@@ -267,17 +267,17 @@ bool is_infix(nodetype_t*type)
 bool node_has_minus_prefix(node_t*n)
 {
     switch(node_get_opcode(n)) {
-	case opcode_node_int:
-	case opcode_node_float:
-	case opcode_node_constant:
-	    return (n->value.type == CONSTANT_INT && n->value.i<0) ||
-	           (n->value.type == CONSTANT_FLOAT && n->value.f<0) ||
-	           (n->value.type == CONSTANT_CATEGORY && n->value.c<0);
-	default:
-	    if(is_infix(n->type))
-		return node_has_minus_prefix(n->child[0]);
-	    else
-		return false;
+        case opcode_node_int:
+        case opcode_node_float:
+        case opcode_node_constant:
+            return (n->value.type == CONSTANT_INT && n->value.i<0) ||
+                   (n->value.type == CONSTANT_FLOAT && n->value.f<0) ||
+                   (n->value.type == CONSTANT_CATEGORY && n->value.c<0);
+        default:
+            if(is_infix(n->type))
+                return node_has_minus_prefix(n->child[0]);
+            else
+                return false;
     }
 }
 bool node_is_missing(node_t*n)
@@ -288,69 +288,69 @@ bool node_is_missing(node_t*n)
 node_t* node_add_return(node_t*n)
 {
     if(n->type != &node_return) {
-	node_t*p = node_new(&node_return, n->parent);
-	node_append_child(p, n);
-	return p;
+        node_t*p = node_new(&node_return, n->parent);
+        node_append_child(p, n);
+        return p;
     }
     return n;
 }
 node_t* node_do_cascade_returns(node_t*n) 
 {
     switch(node_get_opcode(n)) {
-	case opcode_node_block:
-	    node_set_child(n, n->num_children-1, node_do_cascade_returns(n->child[n->num_children-1]));
-	    return n;
-	case opcode_node_if:
-	    node_set_child(n, 1, node_do_cascade_returns(n->child[1]));
-	    node_set_child(n, 2, node_do_cascade_returns(n->child[2]));
-	    return n;
-	case opcode_node_nop:
-	case opcode_node_setlocal:
-	case opcode_node_inclocal:
-	    return n;
-	case opcode_node_return:
-	    return n;
-	default: {
-	    node_t*p = node_new(&node_return, n->parent);
-	    node_append_child(p, n);
-	    return p;
-	}
+        case opcode_node_block:
+            node_set_child(n, n->num_children-1, node_do_cascade_returns(n->child[n->num_children-1]));
+            return n;
+        case opcode_node_if:
+            node_set_child(n, 1, node_do_cascade_returns(n->child[1]));
+            node_set_child(n, 2, node_do_cascade_returns(n->child[2]));
+            return n;
+        case opcode_node_nop:
+        case opcode_node_setlocal:
+        case opcode_node_inclocal:
+            return n;
+        case opcode_node_return:
+            return n;
+        default: {
+            node_t*p = node_new(&node_return, n->parent);
+            node_append_child(p, n);
+            return p;
+        }
     }
 }
 int node_precedence(node_t*n)
 {
     switch(node_get_opcode(n)) {
-	case opcode_node_block:
+        case opcode_node_block:
             return 0;
-	case opcode_node_if:
+        case opcode_node_if:
             return 1;
-	case opcode_node_setlocal:
-	case opcode_node_inclocal:
-	case opcode_node_array_at_pos_inc: // x[y]+=1
+        case opcode_node_setlocal:
+        case opcode_node_inclocal:
+        case opcode_node_array_at_pos_inc: // x[y]+=1
             return 2;
-	case opcode_node_equals:
-	case opcode_node_lt:
-	case opcode_node_gt:
-	case opcode_node_lte:
-	case opcode_node_gte:
+        case opcode_node_equals:
+        case opcode_node_lt:
+        case opcode_node_gt:
+        case opcode_node_lte:
+        case opcode_node_gte:
             return 4;
-	case opcode_node_add:
-	case opcode_node_sub:
+        case opcode_node_add:
+        case opcode_node_sub:
             return 5;
-	case opcode_node_mul:
-	case opcode_node_div:
+        case opcode_node_mul:
+        case opcode_node_div:
             return 6;
-	case opcode_node_neg: // -x
-	case opcode_node_sqr: // x ** 2
-	case opcode_node_exp:
-	case opcode_node_abs:
-	case opcode_node_arg_max_i:
-	case opcode_node_arg_max:
-	case opcode_node_array_at_pos:
-	case opcode_node_array_arg_max_i:
+        case opcode_node_neg: // -x
+        case opcode_node_sqr: // x ** 2
+        case opcode_node_exp:
+        case opcode_node_abs:
+        case opcode_node_arg_max_i:
+        case opcode_node_arg_max:
+        case opcode_node_array_at_pos:
+        case opcode_node_array_arg_max_i:
             return 9;
-	case opcode_node_getlocal:
-	case opcode_node_param:
+        case opcode_node_getlocal:
+        case opcode_node_param:
             return 10;
         default:
             return INT_MAX;
@@ -364,14 +364,14 @@ node_t* node_insert_brackets(node_t*n)
 {
     int t;
     for(t=0;t<n->num_children;t++) {
-	node_set_child(n, t, node_insert_brackets(n->child[t]));
+        node_set_child(n, t, node_insert_brackets(n->child[t]));
     }
     if(n->parent) {
-	if(lower_precedence(n, n->parent)) {
-	    node_t*p = node_new(&node_brackets, n->parent);
-	    node_append_child(p, n);
-	    return p;
-	}
+        if(lower_precedence(n, n->parent)) {
+            node_t*p = node_new(&node_brackets, n->parent);
+            node_append_child(p, n);
+            return p;
+        }
     }
     return n;
 }
@@ -427,14 +427,14 @@ node_t* node_optimize2(node_t*n, bool*again)
 {
     int t,num;
     switch(node_get_opcode(n)) {
-	case opcode_node_block:
+        case opcode_node_block:
             for(t=0;t<n->num_children;t++) {
                 if(n->child[t]->type == &node_nop) {
                     node_remove_child(n, t--);
                 }
             }
             break;
-	case opcode_node_in:
+        case opcode_node_in:
             /* convert 
                     a in [x]
                to
@@ -450,7 +450,7 @@ node_t* node_optimize2(node_t*n, bool*again)
                 return new_node;
             }
             break;
-	case opcode_node_mul:
+        case opcode_node_mul:
             /* convert 
                     a * 1.0
                or
@@ -494,7 +494,7 @@ node_t* node_optimize2(node_t*n, bool*again)
                 return new_node;
             }
             break;
-	case opcode_node_sub:
+        case opcode_node_sub:
             /* convert 
                     a - 0.0
                to
@@ -507,7 +507,7 @@ node_t* node_optimize2(node_t*n, bool*again)
                 return new_node;
             }
             break;
-	case opcode_node_div:
+        case opcode_node_div:
             /* convert 
                     a / 1.0
                to
@@ -520,7 +520,7 @@ node_t* node_optimize2(node_t*n, bool*again)
                 return new_node;
             }
             break;
-	case opcode_node_add:
+        case opcode_node_add:
             /* convert 
                     a + 0.0
                to
@@ -538,13 +538,13 @@ node_t* node_optimize2(node_t*n, bool*again)
                 node_set_child(n, num++, node_new_with_args(&node_float, 0.0));
             }
             n->num_children = num;
-	    if(num==1) {
-		node_t*new_node = n->child[0];
-		node_destroy_self(n);
-		return new_node;
-	    }
+            if(num==1) {
+                node_t*new_node = n->child[0];
+                node_destroy_self(n);
+                return new_node;
+            }
             break;
-	case opcode_node_if:
+        case opcode_node_if:
             /* convert 
                     if 
                         c
@@ -561,7 +561,7 @@ node_t* node_optimize2(node_t*n, bool*again)
                 return new_node;
             }
             break;
-	case opcode_node_setlocal:
+        case opcode_node_setlocal:
             /* convert 
                     setlocal i
                         getlocal i
@@ -569,12 +569,12 @@ node_t* node_optimize2(node_t*n, bool*again)
                     nop
              */
             if(n->child[0]->type == &node_getlocal) {
-		if(n->child[0]->value.i == n->value.i) {
-		    node_t*new_node = node_new(&node_nop, n->parent);
-		    node_destroy(n);
-		    *again = true;
-		    return new_node;
-		}
+                if(n->child[0]->value.i == n->value.i) {
+                    node_t*new_node = node_new(&node_nop, n->parent);
+                    node_destroy(n);
+                    *again = true;
+                    return new_node;
+                }
             }
             break;
     }
@@ -588,8 +588,8 @@ node_t* node_optimize(node_t*n)
     bool again;
     n = node_optimize2(n, &again);
     do {
-	again = 0;
-	n = node_optimize2(n, &again);
+        again = 0;
+        n = node_optimize2(n, &again);
     } while(again);
     return n;
 }

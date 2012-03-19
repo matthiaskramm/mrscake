@@ -52,19 +52,19 @@ node_t*test_serialization(node_t*node)
 void test_if()
 {
     START_CODE(node)
-	IF
-	    GT
-		ADD
-		    RAW_PARAM(0)
-		    RAW_PARAM(1)
-		END;
-		RAW_PARAM(2)
-	    END;
-	THEN
-	    CATEGORY_CONSTANT(1)
-	ELSE
-	    CATEGORY_CONSTANT(2)
-	END;
+        IF
+            GT
+                ADD
+                    RAW_PARAM(0)
+                    RAW_PARAM(1)
+                END;
+                RAW_PARAM(2)
+            END;
+        THEN
+            CATEGORY_CONSTANT(1)
+        ELSE
+            CATEGORY_CONSTANT(2)
+        END;
     END_CODE;
 
     node_print(node);
@@ -90,16 +90,16 @@ void test_if()
 void test_array()
 {
     START_CODE(node)
-	IF
-	    IN
+        IF
+            IN
                 RAW_PARAM(3)
-		ARRAY_CONSTANT(array_create(3, 1,2,3));
-	    END;
-	THEN
-	    CATEGORY_CONSTANT(1)
-	ELSE
-	    CATEGORY_CONSTANT(2)
-	END;
+                ARRAY_CONSTANT(array_create(3, 1,2,3));
+            END;
+        THEN
+            CATEGORY_CONSTANT(1)
+        ELSE
+            CATEGORY_CONSTANT(2)
+        END;
     END_CODE;
 
     node_print(node);

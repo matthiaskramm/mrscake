@@ -196,7 +196,7 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
             dict_put(builder->string2pos, e.s, INT_TO_PTR(pos + 1));
         } else if(e.type == CONSTANT_INT) {
             dict_put(builder->int2pos, INT_TO_PTR(e.i), INT_TO_PTR(pos + 1));
-	} else if(e.type == CONSTANT_CATEGORY) {
+        } else if(e.type == CONSTANT_CATEGORY) {
             dict_put(builder->int2pos, INT_TO_PTR(e.c), INT_TO_PTR(pos + 1));
         }
         column->classes[pos] = e;
@@ -317,15 +317,15 @@ signature_t* signature_from_columns(column_t**columns, int num_columns, bool has
     sig->column_names = calloc(num_columns, sizeof(sig->column_names[0]));
     int t;
     for(t=0;t<num_columns;t++) {
-	sig->column_types[t] = CONTINUOUS;
+        sig->column_types[t] = CONTINUOUS;
         if(columns[t]->is_categorical) {
             if(columns[t]->classes[0].type==CONSTANT_STRING) {
-	        sig->column_types[t] = TEXT;
+                sig->column_types[t] = TEXT;
             } else {
-	        sig->column_types[t] = CATEGORICAL;
+                sig->column_types[t] = CATEGORICAL;
             }
         }
-	sig->column_names[t] = columns[t]->name;
+        sig->column_names[t] = columns[t]->name;
     }
     sig->has_column_names = has_column_names;
 

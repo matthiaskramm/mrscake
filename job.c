@@ -92,8 +92,8 @@ static void process_jobs(jobqueue_t*jobs)
     job_t*job;
     int count = 0;
     for(job=jobs->first;job;job=job->next) {
-	printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
-	job_process(job);
+        printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
+        job_process(job);
         count++;
     }
 }
@@ -109,7 +109,7 @@ static void process_jobs_remotely(jobqueue_t*jobs)
     job_t*job;
     int pos = 0;
     for(job=jobs->first;job;job=job->next) {
-	r[pos] = remote_job_start(job->factory->name, job->data);
+        r[pos] = remote_job_start(job->factory->name, job->data);
         job->model = 0;
         pos++;
     }
@@ -121,11 +121,11 @@ static void process_jobs_remotely(jobqueue_t*jobs)
             if(r[pos]) {
                 if(!job->model && remote_job_is_ready(r[pos])) {
                     job->model = remote_job_read_result(r[pos]);
-		    if(job->model) {
-			printf("Finished: %s\n", job->factory->name);
-		    } else {
-			printf("Failed (bad data): %s\n", job->factory->name);
-		    }
+                    if(job->model) {
+                        printf("Finished: %s\n", job->factory->name);
+                    } else {
+                        printf("Failed (bad data): %s\n", job->factory->name);
+                    }
                     r[pos] = 0;
                     open_jobs--;
                 } else if(remote_job_age(r[pos]) > config_model_timeout) {

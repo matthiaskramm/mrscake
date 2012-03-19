@@ -53,9 +53,9 @@ extern char*type_name[];
 struct _constant {
     union {
         float f;
-	category_t c;
-	int i;
-	bool b;
+        category_t c;
+        int i;
+        bool b;
         array_t* a;
         const char* s;
     };

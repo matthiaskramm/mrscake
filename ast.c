@@ -35,7 +35,7 @@ constant_t node_block_eval(node_t*n, environment_t* env)
 {
     int t;
     for(t=0;t<n->num_children-1;t++) {
-	EVAL_CHILD(t);
+        EVAL_CHILD(t);
     }
     return EVAL_CHILD(n->num_children-1);
 }
@@ -55,7 +55,7 @@ constant_t node_add_eval(node_t*n, environment_t* env)
     double sum = 0;
     int t;
     for(t=0;t<n->num_children;t++) {
-	sum += AS_FLOAT(EVAL_CHILD(t));
+        sum += AS_FLOAT(EVAL_CHILD(t));
     }
     return float_constant(sum);
 }
@@ -609,9 +609,9 @@ constant_t node_if_eval(node_t*n, environment_t* env)
 {
     bool condition = AS_BOOL(EVAL_CHILD(0));
     if(condition == true) {
-	return EVAL_CHILD(1);
+        return EVAL_CHILD(1);
     } else {
-	return EVAL_CHILD(2);
+        return EVAL_CHILD(2);
     }
 }
 nodetype_t node_if =
@@ -630,15 +630,15 @@ constant_t node_param_eval(node_t*n, environment_t* env)
     assert(n->value.i >= 0 && n->value.i < env->row->num_inputs);
     variable_t v = env->row->inputs[n->value.i];
     if(v.type == CATEGORICAL) {
-	return category_constant(v.category);
+        return category_constant(v.category);
     } else if(v.type == CONTINUOUS) {
-	return float_constant(v.value);
+        return float_constant(v.value);
     } else if(v.type == MISSING) {
-	return missing_constant();
+        return missing_constant();
     } else if(v.type == TEXT) {
-	return string_constant(v.text);
+        return string_constant(v.text);
     } else {
-	assert(!"bad type for input value");
+        assert(!"bad type for input value");
     }
 }
 nodetype_t node_param =
@@ -829,55 +829,55 @@ node_t* node_new_with_args(nodetype_t*t,...)
     va_start(arglist, t);
     switch(node_get_opcode(n)) {
         case opcode_node_param:
-	    n->value = int_constant(va_arg(arglist,int));
+            n->value = int_constant(va_arg(arglist,int));
             break;
         case opcode_node_category:
-	    n->value = category_constant(va_arg(arglist,category_t));
+            n->value = category_constant(va_arg(arglist,category_t));
             break;
         case opcode_node_float:
-	    n->value = float_constant(va_arg(arglist,double));
+            n->value = float_constant(va_arg(arglist,double));
             break;
         case opcode_node_int:
-	    n->value = int_constant(va_arg(arglist,int));
+            n->value = int_constant(va_arg(arglist,int));
             break;
         case opcode_node_mixed_array:
-	    n->value = mixed_array_constant(va_arg(arglist,array_t*));
+            n->value = mixed_array_constant(va_arg(arglist,array_t*));
             break;
         case opcode_node_string_array:
-	    n->value = string_array_constant(va_arg(arglist,array_t*));
+            n->value = string_array_constant(va_arg(arglist,array_t*));
             break;
         case opcode_node_float_array:
-	    n->value = float_array_constant(va_arg(arglist,array_t*));
+            n->value = float_array_constant(va_arg(arglist,array_t*));
             break;
         case opcode_node_int_array:
-	    n->value = int_array_constant(va_arg(arglist,array_t*));
+            n->value = int_array_constant(va_arg(arglist,array_t*));
             break;
         case opcode_node_category_array:
-	    n->value = category_array_constant(va_arg(arglist,array_t*));
+            n->value = category_array_constant(va_arg(arglist,array_t*));
             break;
         case opcode_node_string:
-	    n->value = string_constant(va_arg(arglist,char*));
+            n->value = string_constant(va_arg(arglist,char*));
             break;
         case opcode_node_bool:
-	    n->value = bool_constant(va_arg(arglist,int));
+            n->value = bool_constant(va_arg(arglist,int));
             break;
         case opcode_node_missing:
-	    n->value = missing_constant();
+            n->value = missing_constant();
             break;
         case opcode_node_zero_int_array: {
-	    int size = va_arg(arglist,int);
+            int size = va_arg(arglist,int);
             array_t*a = array_new(size);
             array_fill(a, int_constant(0));
             n->value = int_array_constant(a);
             break;
         }
         case opcode_node_constant:
-	    n->value = va_arg(arglist,constant_t);
+            n->value = va_arg(arglist,constant_t);
             break;
         case opcode_node_setlocal:
         case opcode_node_getlocal:
         case opcode_node_inclocal:
-	    n->value = int_constant(va_arg(arglist,int));
+            n->value = int_constant(va_arg(arglist,int));
             break;
     }
     va_end(arglist);
@@ -929,22 +929,22 @@ void node_append_child(node_t*n, node_t*child)
     child->parent = n;
 
     if(!n->num_children) {
-	// first child
-	n->child = malloc(1*sizeof(node_t*));
-	((node_t**)n->child)[0] = child;
-	n->num_children++;
-	return;
+        // first child
+        n->child = malloc(1*sizeof(node_t*));
+        ((node_t**)n->child)[0] = child;
+        n->num_children++;
+        return;
     }
 
     int size = n->num_children;
     int highest_bit;
     do {
-	highest_bit = size;
-	size = size&(size-1);
+        highest_bit = size;
+        size = size&(size-1);
     } while(size);
 
     if(n->num_children == highest_bit) {
-	n->child = realloc((void*)n->child, (highest_bit<<1)*sizeof(node_t*));
+        n->child = realloc((void*)n->child, (highest_bit<<1)*sizeof(node_t*));
     }
     ((node_t**)n->child)[n->num_children++] = child;
 }
@@ -963,10 +963,10 @@ void node_destroy(node_t*n)
         constant_clear(&n->value);
     }
     if((n->type->flags&NODE_FLAG_HAS_CHILDREN) && n->child) {
-	for(t=0;t<n->num_children;t++) {
-	    node_destroy(n->child[t]);((node_t**)n->child)[t] = 0;
-	}
-	free((void*)n->child);
+        for(t=0;t<n->num_children;t++) {
+            node_destroy(n->child[t]);((node_t**)n->child)[t] = 0;
+        }
+        free((void*)n->child);
     }
     free(n);
 }
@@ -1030,19 +1030,19 @@ bool node_sanitycheck(node_t*n)
 {
     int t;
     for(t=0;t<n->num_children;t++) {
-	if(!n->child[t])
+        if(!n->child[t])
             return false;
-	if(n->child[t] == n)
+        if(n->child[t] == n)
             return false;
-	if(n->child[t]->parent != n) {
-	    printf("%s -> %s (references back to: %s)", 
-		    n->type->name, n->child[t]->type->name, 
-		    n->child[t]->parent?n->child[t]->parent->type->name:"(null)"
-		    );
-	}
-	if(n->child[t]->parent != n)
+        if(n->child[t]->parent != n) {
+            printf("%s -> %s (references back to: %s)", 
+                    n->type->name, n->child[t]->type->name, 
+                    n->child[t]->parent?n->child[t]->parent->type->name:"(null)"
+                    );
+        }
+        if(n->child[t]->parent != n)
             return false;
-	node_sanitycheck(n->child[t]);
+        node_sanitycheck(n->child[t]);
     }
     return true;
 }

@@ -134,7 +134,7 @@ static void reader_fileread_dealloc(reader_t*r)
 {
     filereader_internal_t*i = (filereader_internal_t*)r->internal;
     if(r->type == READER_TYPE_FILE2) {
-	close(i->handle);
+        close(i->handle);
     }
     free(r->internal);
     free(r);
@@ -177,9 +177,9 @@ reader_t* filereader_new2(const char*filename)
 #endif
     (filename,
 #ifdef O_BINARY
-	    O_BINARY|
+            O_BINARY|
 #endif
-	    O_RDONLY);
+            O_RDONLY);
     reader_t*r = filereader_new(fi);
     r->type = READER_TYPE_FILE2;
     return r;
@@ -198,7 +198,7 @@ static int reader_memread(reader_t*reader, void* data, int len)
     memread_t*mr = (memread_t*)reader->internal;
 
     if(mr->length - reader->pos < len) {
-	len = mr->length - reader->pos;
+        len = mr->length - reader->pos;
     }
     if(!len) return 0;
     memcpy(data, &mr->data[reader->pos], len);
@@ -209,16 +209,16 @@ static int reader_memseek(reader_t*reader, int pos)
 {
     memread_t*mr = (memread_t*)reader->internal;
     if(pos>=0 && pos<=mr->length) {
-	reader->pos = pos;
-	return pos;
+        reader->pos = pos;
+        return pos;
     } else {
-	return -1;
+        return -1;
     }
 }
 static void reader_memread_dealloc(reader_t*reader)
 {
     if(reader->internal)
-	free(reader->internal);
+        free(reader->internal);
     free(reader);
 }
 static void reader_memread_dealloc_withdata(reader_t*reader)
@@ -227,7 +227,7 @@ static void reader_memread_dealloc_withdata(reader_t*reader)
     if(mr->data)
         free(mr->data);
     if(reader->internal)
-	free(reader->internal);
+        free(reader->internal);
     free(reader);
 }
 reader_t* memreader_new(void*newdata, int newlength)
@@ -290,19 +290,19 @@ static int writer_memwrite_write(writer_t*w, void* data, int len)
 {
     memwrite_t*mw = (memwrite_t*)w->internal;
     if(mw->length - w->pos > len) {
-	memcpy(&mw->data[w->pos], data, len);
-	w->pos += len;
-	return len;
+        memcpy(&mw->data[w->pos], data, len);
+        w->pos += len;
+        return len;
     } else {
-	memcpy(&mw->data[w->pos], data, mw->length - w->pos);
-	w->pos = mw->length;
-	return mw->length - w->pos;
+        memcpy(&mw->data[w->pos], data, mw->length - w->pos);
+        w->pos = mw->length;
+        return mw->length - w->pos;
     }
 }
 static void writer_memwrite_finish(writer_t*w)
 {
     if(w->internal) 
-	free(w->internal);
+        free(w->internal);
     w->internal = 0;
     free(w);
 }
@@ -340,23 +340,23 @@ static int writer_growmemwrite_write(writer_t*w, void* data, int len)
 {
     growmemwrite_t*mw = (growmemwrite_t*)w->internal;
     if(!mw->data) {
-	fprintf(stderr, "Illegal write operation: data already given away");
-	exit(1);
+        fprintf(stderr, "Illegal write operation: data already given away");
+        exit(1);
     }
     if(mw->length - w->pos < len) {
-	int newlength = mw->length;
-	while(newlength - w->pos < len) {
-	    newlength += mw->grow;
-	}
+        int newlength = mw->length;
+        while(newlength - w->pos < len) {
+            newlength += mw->grow;
+        }
 #ifdef NO_REALLOC
-	unsigned char*newmem = (unsigned char*)malloc(newlength);
-	memcpy(newmem, mw->data, mw->length);
-	free(mw->data);
-	mw->data = newmem;
+        unsigned char*newmem = (unsigned char*)malloc(newlength);
+        memcpy(newmem, mw->data, mw->length);
+        free(mw->data);
+        mw->data = newmem;
 #else
-	mw->data = (unsigned char*)realloc(mw->data, newlength);
+        mw->data = (unsigned char*)realloc(mw->data, newlength);
 #endif
-	mw->length = newlength;
+        mw->length = newlength;
     }
     memcpy(&mw->data[w->pos], data, len);
     w->pos += len;
@@ -366,7 +366,7 @@ static void writer_growmemwrite_finish(writer_t*w)
 {
     growmemwrite_t*mw = (growmemwrite_t*)w->internal;
     if(mw->data) {
-	free(mw->data);mw->data = 0;
+        free(mw->data);mw->data = 0;
     }
     mw->length = 0;
     free(w->internal);mw=0;
@@ -376,7 +376,7 @@ void* writer_growmemwrite_memptr(writer_t*w, int*len)
 {
     growmemwrite_t*mw = (growmemwrite_t*)w->internal;
     if(len) {
-	*len = w->pos;
+        *len = w->pos;
     }
     return mw->data;
 }
@@ -385,7 +385,7 @@ void* writer_growmemwrite_getmem(writer_t*w, int*len)
     growmemwrite_t*mw = (growmemwrite_t*)w->internal;
     void*ret = mw->data;
     if(len) {
-	*len = w->pos;
+        *len = w->pos;
     }
     /* remove our own reference so that neither write() nor finish() can free it.
        It's property of the caller now.
@@ -453,7 +453,7 @@ static void writer_filewrite_finish(writer_t*w)
 {
     filewrite_t *mr = (filewrite_t*)w->internal;
     if(mr->free_handle) {
-	close(mr->handle);
+        close(mr->handle);
     }
     free(w->internal);
     free(w);
@@ -483,9 +483,9 @@ writer_t* filewriter_new2(const char*filename)
 #endif
     (filename,
 #ifdef O_BINARY
-	    O_BINARY|
+            O_BINARY|
 #endif
-	    O_WRONLY|O_CREAT|O_TRUNC, 0644);
+            O_WRONLY|O_CREAT|O_TRUNC, 0644);
     writer_t*w = filewriter_new(fi);
     ((filewrite_t*)w->internal)->free_handle = 1;
     return w;
@@ -531,9 +531,9 @@ typedef struct _zlibinflate
 static void zlib_error(int ret, char* msg, z_stream*zs)
 {
     fprintf(stderr, "%s: zlib error (%d): last zlib error: %s\n",
-	  msg,
-	  ret,
-	  zs->msg?zs->msg:"unknown");
+          msg,
+          ret,
+          zs->msg?zs->msg:"unknown");
     if(errno) perror("errno:");
     exit(1);
 }
@@ -545,39 +545,39 @@ static int reader_zlibinflate(reader_t*reader, void* data, int len)
     zlibinflate_t*z = (zlibinflate_t*)reader->internal;
     int ret;
     if(!z) {
-	return 0;
+        return 0;
     }
     if(!len)
-	return 0;
+        return 0;
     
     z->zs.next_out = (Bytef *)data;
     z->zs.avail_out = len;
 
     while(1) {
-	if(!z->zs.avail_in) {
-	    z->zs.avail_in = z->input->read(z->input, z->readbuffer, ZLIB_BUFFER_SIZE);
-	    z->zs.next_in = z->readbuffer;
-	}
-	if(z->zs.avail_in)
-	    ret = inflate(&z->zs, Z_NO_FLUSH);
-	else
-	    ret = inflate(&z->zs, Z_FINISH);
+        if(!z->zs.avail_in) {
+            z->zs.avail_in = z->input->read(z->input, z->readbuffer, ZLIB_BUFFER_SIZE);
+            z->zs.next_in = z->readbuffer;
+        }
+        if(z->zs.avail_in)
+            ret = inflate(&z->zs, Z_NO_FLUSH);
+        else
+            ret = inflate(&z->zs, Z_FINISH);
     
-	if (ret != Z_OK &&
-	    ret != Z_STREAM_END) zlib_error(ret, "bitio:inflate_inflate", &z->zs);
+        if (ret != Z_OK &&
+            ret != Z_STREAM_END) zlib_error(ret, "bitio:inflate_inflate", &z->zs);
 
-	if (ret == Z_STREAM_END) {
-		int pos = z->zs.next_out - (Bytef*)data;
-		ret = inflateEnd(&z->zs);
-		if (ret != Z_OK) zlib_error(ret, "bitio:inflate_end", &z->zs);
-		free(reader->internal);
-		reader->internal = 0;
-		reader->pos += pos;
-		return pos;
-	}
-	if(!z->zs.avail_out) {
-	    break;
-	}
+        if (ret == Z_STREAM_END) {
+                int pos = z->zs.next_out - (Bytef*)data;
+                ret = inflateEnd(&z->zs);
+                if (ret != Z_OK) zlib_error(ret, "bitio:inflate_end", &z->zs);
+                free(reader->internal);
+                reader->internal = 0;
+                reader->pos += pos;
+                return pos;
+        }
+        if(!z->zs.avail_out) {
+            break;
+        }
     }
     reader->pos += len;
     return len;
@@ -597,8 +597,8 @@ static void reader_zlibinflate_dealloc(reader_t*reader)
     zlibinflate_t*z = (zlibinflate_t*)reader->internal;
     /* test whether read() already did basic deallocation */
     if(reader->internal) {
-	inflateEnd(&z->zs);
-	free(reader->internal);
+        inflateEnd(&z->zs);
+        free(reader->internal);
     }
     memset(reader, 0, sizeof(reader_t));
     free(reader);
@@ -651,34 +651,34 @@ static int writer_zlibdeflate_write(writer_t*writer, void* data, int len)
     zlibdeflate_t*z = (zlibdeflate_t*)writer->internal;
     int ret;
     if(writer->type != WRITER_TYPE_ZLIB) {
-	fprintf(stderr, "Wrong writer ID (writer not initialized?)\n");
-	return 0;
+        fprintf(stderr, "Wrong writer ID (writer not initialized?)\n");
+        return 0;
     }
     if(!z) {
-	fprintf(stderr, "zlib not initialized!\n");
-	return 0;
+        fprintf(stderr, "zlib not initialized!\n");
+        return 0;
     }
     if(!len)
-	return 0;
+        return 0;
     
     z->zs.next_in = (Bytef *)data;
     z->zs.avail_in = len;
 
     while(1) {
-	ret = deflate(&z->zs, Z_NO_FLUSH);
-	
-	if (ret != Z_OK) zlib_error(ret, "bitio:deflate_deflate", &z->zs);
+        ret = deflate(&z->zs, Z_NO_FLUSH);
+        
+        if (ret != Z_OK) zlib_error(ret, "bitio:deflate_deflate", &z->zs);
 
-	if(z->zs.next_out != z->writebuffer) {
-	    writer->pos += z->zs.next_out - (Bytef*)z->writebuffer;
-	    z->output->write(z->output, z->writebuffer, z->zs.next_out - (Bytef*)z->writebuffer);
-	    z->zs.next_out = z->writebuffer;
-	    z->zs.avail_out = ZLIB_BUFFER_SIZE;
-	}
+        if(z->zs.next_out != z->writebuffer) {
+            writer->pos += z->zs.next_out - (Bytef*)z->writebuffer;
+            z->output->write(z->output, z->writebuffer, z->zs.next_out - (Bytef*)z->writebuffer);
+            z->zs.next_out = z->writebuffer;
+            z->zs.avail_out = ZLIB_BUFFER_SIZE;
+        }
 
-	if(!z->zs.avail_in) {
-	    break;
-	}
+        if(!z->zs.avail_in) {
+            break;
+        }
     }
     return len;
 #else
@@ -693,27 +693,27 @@ void writer_zlibdeflate_flush(writer_t*writer)
     zlibdeflate_t*z = (zlibdeflate_t*)writer->internal;
     int ret;
     if(writer->type != WRITER_TYPE_ZLIB) {
-	fprintf(stderr, "Wrong writer ID (writer not initialized?)\n");
-	return;
+        fprintf(stderr, "Wrong writer ID (writer not initialized?)\n");
+        return;
     }
     if(!z) {
-	fprintf(stderr, "zlib not initialized!\n");
-	return;
+        fprintf(stderr, "zlib not initialized!\n");
+        return;
     }
 
     z->zs.next_in = 0;
     z->zs.avail_in = 0;
     while(1) {
-	ret = deflate(&z->zs, Z_SYNC_FLUSH);
-	if (ret != Z_OK) zlib_error(ret, "bitio:deflate_flush", &z->zs);
-	if(z->zs.next_out != z->writebuffer) {
-	    writer->pos += z->zs.next_out - (Bytef*)z->writebuffer;
-	    z->output->write(z->output, z->writebuffer, z->zs.next_out - (Bytef*)z->writebuffer);
-	    z->zs.next_out = z->writebuffer;
-	    z->zs.avail_out = ZLIB_BUFFER_SIZE;
-	} 
-	/* TODO: how will zlib let us know it needs more buffer space? */
-	break;
+        ret = deflate(&z->zs, Z_SYNC_FLUSH);
+        if (ret != Z_OK) zlib_error(ret, "bitio:deflate_flush", &z->zs);
+        if(z->zs.next_out != z->writebuffer) {
+            writer->pos += z->zs.next_out - (Bytef*)z->writebuffer;
+            z->output->write(z->output, z->writebuffer, z->zs.next_out - (Bytef*)z->writebuffer);
+            z->zs.next_out = z->writebuffer;
+            z->zs.avail_out = ZLIB_BUFFER_SIZE;
+        } 
+        /* TODO: how will zlib let us know it needs more buffer space? */
+        break;
     }
     return;
 #else
@@ -729,28 +729,28 @@ static void writer_zlibdeflate_finish(writer_t*writer)
     writer_t*output;
     int ret;
     if(writer->type != WRITER_TYPE_ZLIB) {
-	fprintf(stderr, "Wrong writer ID (writer not initialized?)\n");
-	return;
+        fprintf(stderr, "Wrong writer ID (writer not initialized?)\n");
+        return;
     }
     if(!z)
-	return;
+        return;
     output= z->output;
     while(1) {
-	ret = deflate(&z->zs, Z_FINISH);
-	if (ret != Z_OK &&
-	    ret != Z_STREAM_END) zlib_error(ret, "bitio:deflate_finish", &z->zs);
+        ret = deflate(&z->zs, Z_FINISH);
+        if (ret != Z_OK &&
+            ret != Z_STREAM_END) zlib_error(ret, "bitio:deflate_finish", &z->zs);
 
-	if(z->zs.next_out != z->writebuffer) {
-	    writer->pos += z->zs.next_out - (Bytef*)z->writebuffer;
-	    z->output->write(z->output, z->writebuffer, z->zs.next_out - (Bytef*)z->writebuffer);
-	    z->zs.next_out = z->writebuffer;
-	    z->zs.avail_out = ZLIB_BUFFER_SIZE;
-	}
+        if(z->zs.next_out != z->writebuffer) {
+            writer->pos += z->zs.next_out - (Bytef*)z->writebuffer;
+            z->output->write(z->output, z->writebuffer, z->zs.next_out - (Bytef*)z->writebuffer);
+            z->zs.next_out = z->writebuffer;
+            z->zs.avail_out = ZLIB_BUFFER_SIZE;
+        }
 
-	if (ret == Z_STREAM_END) {
-	    break;
+        if (ret == Z_STREAM_END) {
+            break;
 
-	}
+        }
     }
     ret = deflateEnd(&z->zs);
     if (ret != Z_OK) zlib_error(ret, "bitio:deflate_end", &z->zs);
@@ -802,11 +802,11 @@ void writer_writebit(writer_t*w, int bit)
     if(w->bitpos==8) 
     {
         w->write(w, &w->mybyte, 1);
-	w->bitpos = 0;
-	w->mybyte = 0;
+        w->bitpos = 0;
+        w->mybyte = 0;
     }
     if(bit&1)
-	w->mybyte |= 1 << (7 - w->bitpos);
+        w->mybyte |= 1 << (7 - w->bitpos);
     w->bitpos ++;
 }
 void writer_writebits(writer_t*w, unsigned int data, int bits)
@@ -814,13 +814,13 @@ void writer_writebits(writer_t*w, unsigned int data, int bits)
     int t;
     for(t=0;t<bits;t++)
     {
-	writer_writebit(w, (data >> (bits-t-1))&1);
+        writer_writebit(w, (data >> (bits-t-1))&1);
     }
 }
 void writer_resetbits(writer_t*w)
 {
     if(w->bitpos)
-	w->write(w, &w->mybyte, 1);
+        w->write(w, &w->mybyte, 1);
     w->bitpos = 0;
     w->mybyte = 0;
 }
@@ -829,7 +829,7 @@ unsigned int reader_readbit(reader_t*r)
 {
     if(r->bitpos==8) 
     {
-	r->bitpos=0;
+        r->bitpos=0;
         r->read(r, &r->mybyte, 1);
     }
     return (r->mybyte>>(7-r->bitpos++))&1;
@@ -840,8 +840,8 @@ unsigned int reader_readbits(reader_t*r, int num)
     int val = 0;
     for(t=0;t<num;t++)
     {
-	val<<=1;
-	val|=reader_readbit(r);
+        val<<=1;
+        val|=reader_readbit(r);
     }
     return val;
 }
@@ -857,7 +857,7 @@ uint8_t read_uint8(reader_t*r)
     uint8_t b = 0;
     int ret = r->read(r, &b, 1);
     if(ret<1) {
-	fprintf(stderr, "io.c:read_uint8: Couldn't read uint8 (%d)\n", ret);
+        fprintf(stderr, "io.c:read_uint8: Couldn't read uint8 (%d)\n", ret);
         return 0;
     }
     return b;
@@ -867,7 +867,7 @@ int8_t read_int8(reader_t*r)
     int8_t b = 0;
     int ret = r->read(r, &b, 1);
     if(ret<1) {
-	fprintf(stderr, "io.c:read_uint8: Couldn't read uint8 (%d)\n", ret);
+        fprintf(stderr, "io.c:read_uint8: Couldn't read uint8 (%d)\n", ret);
         return 0;
     }
     return b;
@@ -877,11 +877,11 @@ uint16_t read_uint16(reader_t*r)
     uint8_t b1=0,b2=0;
     int ret = r->read(r, &b1, 1);
     if(ret<1) {
-	fprintf(stderr, "io.c:read_uint16: Couldn't read byte (%d)\n", ret);
+        fprintf(stderr, "io.c:read_uint16: Couldn't read byte (%d)\n", ret);
     }
     ret = r->read(r, &b2, 1);
     if(ret<1) {
-	fprintf(stderr, "io.c:read_uint16: Couldn't read byte (%d)\n", ret);
+        fprintf(stderr, "io.c:read_uint16: Couldn't read byte (%d)\n", ret);
     }
     return b1|b2<<8;
 }
@@ -889,13 +889,13 @@ uint32_t read_uint32(reader_t*r)
 {
     uint8_t b1=0,b2=0,b3=0,b4=0;
     if(r->read(r, &b1, 1)<1)
-	fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
+        fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
     if(r->read(r, &b2, 1)<1)
-	fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
+        fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
     if(r->read(r, &b3, 1)<1)
-	fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
+        fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
     if(r->read(r, &b4, 1)<1)
-	fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
+        fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
     return b1|b2<<8|b3<<16|b4<<24;
 }
 uint32_t read_compressed_uint(reader_t*r)
@@ -954,15 +954,15 @@ char*read_string(reader_t*r)
 {
     writer_t*g = growingmemwriter_new(16);
     while(1) {
-	uint8_t b = 0;
+        uint8_t b = 0;
         int ret = r->read(r, &b, 1);
         if(ret<=0) {
             g->finish(g);
             return NULL;
         }
-	write_uint8(g, b);
-	if(!b)
-	    break;
+        write_uint8(g, b);
+        if(!b)
+            break;
     }
     char*string = (char*)writer_growmemwrite_getmem(g, 0);
     g->finish(g);

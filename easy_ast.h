@@ -10,9 +10,9 @@
    START_CODE
     IF 
       GT
-	ADD
-	  PARAM(column1)
-	  PARAM(column2)
+        ADD
+          PARAM(column1)
+          PARAM(column2)
         END;
         PARAM(column3)
       END;
@@ -25,8 +25,8 @@
 
 */
 #define NODE_BEGIN(new_type,args...) \
-	    do { \
-		node_t* new_node = node_new_with_args(new_type,##args); \
+            do { \
+                node_t* new_node = node_new_with_args(new_type,##args); \
                 if(current_node) { \
                     node_append_child(current_node, (new_node)); \
                 } else { \
@@ -35,11 +35,11 @@
                         (*current_program) = new_node; \
                     } \
                 } \
-		if((new_node->type->flags) & NODE_FLAG_HAS_CHILDREN) { \
-		    new_node->parent = current_node; \
-		    current_node = new_node; \
-		} \
-	    } while(0);
+                if((new_node->type->flags) & NODE_FLAG_HAS_CHILDREN) { \
+                    new_node->parent = current_node; \
+                    current_node = new_node; \
+                } \
+            } while(0);
 
 #define INSERT_NODE(new_node) \
             do { \
@@ -52,12 +52,12 @@
                    } while(0)
 
 #define START_CODE(program) \
-	node_t* program = 0; \
-	{ \
-	    node_t*current_node = 0; \
+        node_t* program = 0; \
+        { \
+            node_t*current_node = 0; \
             node_t**current_program = &program;
 #define END_CODE \
-	}
+        }
 #define END NODE_CLOSE
 #define END_BLOCK NODE_CLOSE
 #define BLOCK NODE_BEGIN(&node_block)

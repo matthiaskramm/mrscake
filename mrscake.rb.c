@@ -100,9 +100,9 @@ static example_t*value_to_example(VALUE input)
         e->num_inputs = 0;
         rb_hash_foreach(input, hash_fill, (VALUE)e);
         if(e->num_inputs != len)
-	    rb_raise(rb_eArgError, "Couldn't process hash");
+            rb_raise(rb_eArgError, "Couldn't process hash");
     } else {
-	rb_raise(rb_eArgError, "expected array or a hash");
+        rb_raise(rb_eArgError, "expected array or a hash");
     }
     e->desired_response = variable_new_missing();
     return e;
@@ -125,7 +125,7 @@ static VALUE rb_dataset_get_model(VALUE cls)
     Get_Model(model, model_value);
     model->model = trainingdata_train(dataset->trainingdata);
     if(!model->model)
-	rb_raise(rb_eArgError, "bad (empty?) data");
+        rb_raise(rb_eArgError, "bad (empty?) data");
     return model_value;
 }
 static VALUE rb_dataset_print(VALUE cls)
@@ -168,8 +168,8 @@ static void rb_model_free(model_internal_t*model)
 {
     if(!model) return;
     if(model->model) {
-	model_destroy(model->model);
-	model->model = 0;
+        model_destroy(model->model);
+        model->model = 0;
     }
     free(model);
 }
@@ -203,7 +203,7 @@ static VALUE rb_load_model(VALUE module, VALUE _filename)
     Get_Model(model,cls);
     model->model = model_load(filename);
     if(!model->model) {
-	rb_raise(rb_eIOError, "couldn't open %s", filename);
+        rb_raise(rb_eIOError, "couldn't open %s", filename);
     }
     return cls;
 }
@@ -215,7 +215,7 @@ static VALUE rb_load_dataset(VALUE module, VALUE _filename)
     Get_DataSet(dataset,cls);
     dataset->trainingdata = trainingdata_load(filename);
     if(!dataset->trainingdata) {
-	rb_raise(rb_eIOError, "couldn't open %s", filename);
+        rb_raise(rb_eIOError, "couldn't open %s", filename);
     }
     return cls;
 }

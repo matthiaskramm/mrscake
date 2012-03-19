@@ -34,25 +34,25 @@ void ruby_write_node_block(node_t*n, state_t*s)
 void ruby_write_node_if(node_t*n, state_t*s)
 {
     if(!node_terminates(n) && node_has_consumer_parent(n)) {
-	strf(s, "if ");
-	write_node(s, n->child[0]);
-	strf(s, " then ");
-	indent(s);write_node(s, n->child[1]);dedent(s);
-	if(!node_is_missing(n->child[2])) {
-	    strf(s, " else ");
-	    indent(s);write_node(s, n->child[2]);dedent(s);
-	}
-	strf(s, " end");
+        strf(s, "if ");
+        write_node(s, n->child[0]);
+        strf(s, " then ");
+        indent(s);write_node(s, n->child[1]);dedent(s);
+        if(!node_is_missing(n->child[2])) {
+            strf(s, " else ");
+            indent(s);write_node(s, n->child[2]);dedent(s);
+        }
+        strf(s, " end");
     } else {
-	strf(s, "if ");
-	write_node(s, n->child[0]);
-	strf(s, " then\n");
-	indent(s);write_node(s, n->child[1]);dedent(s);
-	if(!node_is_missing(n->child[2])) {
-	    strf(s, "\nelse\n");
-	    indent(s);write_node(s, n->child[2]);dedent(s);
-	}
-	strf(s, "\nend");
+        strf(s, "if ");
+        write_node(s, n->child[0]);
+        strf(s, " then\n");
+        indent(s);write_node(s, n->child[1]);dedent(s);
+        if(!node_is_missing(n->child[2])) {
+            strf(s, "\nelse\n");
+            indent(s);write_node(s, n->child[2]);dedent(s);
+        }
+        strf(s, "\nend");
     }
 }
 void ruby_write_node_add(node_t*n, state_t*s)

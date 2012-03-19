@@ -181,7 +181,7 @@ void js_write_constant(constant_t*c, state_t*s)
                 strf(s, "false");
         case CONSTANT_STRING:
             strf(s, "\"");
-	    write_escaped_string(s, c->s);
+            write_escaped_string(s, c->s);
             strf(s, "\"");
             break;
         case CONSTANT_MISSING:

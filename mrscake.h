@@ -36,8 +36,8 @@ typedef enum {CATEGORICAL,CONTINUOUS,TEXT,MISSING} columntype_t;
 typedef struct _variable {
     columntype_t type;
     union {
-	category_t category;
-	float value;
+        category_t category;
+        float value;
         const char*text;
     };
 } variable_t;
