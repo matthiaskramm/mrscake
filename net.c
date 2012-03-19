@@ -39,9 +39,6 @@
 #include "settings.h"
 #include "job.h"
 
-#define TIME_LIMIT 3600
-#define NUM_WORKERS 32
-
 typedef struct _worker {
     pid_t pid;
     int start_time;
@@ -61,7 +58,7 @@ void clean_old_workers(worker_t*jobs, int*num)
             jobs[t] = jobs[--(*num)];
         }
 
-        if(time(0) - jobs[t].start_time > TIME_LIMIT) {
+        if(time(0) - jobs[t].start_time > config_remote_worker_timeout) {
             printf("killing worker %d\n", jobs[t].pid);
             kill(jobs[t].pid, 9);
             waitpid(jobs[t].pid, &status, 0);
@@ -70,7 +67,7 @@ void clean_old_workers(worker_t*jobs, int*num)
     }
 }
 
-void process_request(int socket)
+static void process_request(int socket)
 {
     reader_t*r = filereader_new(socket);
 
@@ -140,7 +137,7 @@ int start_server(int port)
         exit(1);
     }
 
-    worker_t jobs[NUM_WORKERS];
+    worker_t* jobs = malloc(sizeof(worker_t)*config_number_of_remote_workers);
     int num_workers = 0;
 
     printf("listing on port %d\n", port);
@@ -172,9 +169,9 @@ int start_server(int port)
             }
 
             char buf[128];
-            while(num_workers == NUM_WORKERS) {
+            while(num_workers == config_number_of_remote_workers) {
                 clean_old_workers(jobs, &num_workers);
-                if(num_workers == NUM_WORKERS) {
+                if(num_workers == config_number_of_remote_workers) {
                     sleep(1);
                 }
             }

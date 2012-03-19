@@ -20,6 +20,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include <stdlib.h>
+#include <limits.h>
 #include <float.h>
 #include <math.h>
 #include <memory.h>
@@ -32,7 +33,7 @@ bool node_has_consumer_parent(node_t*n)
         n = n->parent;
         if(!n)
 	    break;
-	if(n->type == &node_return) 
+        if(n->type == &node_return) 
 	    break;
 	if(n->type == &node_setlocal) 
 	    return true;
@@ -92,7 +93,7 @@ constant_type_t local_type(node_t*node, int num, model_t*m)
     }
     return node_type(setlocal, m);
 }
-void fill_locals(node_t*node, model_t*m, constant_type_t*types)
+static void fill_locals(node_t*node, model_t*m, constant_type_t*types)
 {
     if(node->type == &node_setlocal) {
         types[node->value.i] = node_type(node->child[0], m);
@@ -352,7 +353,7 @@ int node_precedence(node_t*n)
 	case opcode_node_param:
             return 10;
         default:
-            return 1024;
+            return INT_MAX;
     }
 }
 bool lower_precedence(node_t*n1, node_t*n2)
