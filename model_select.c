@@ -280,7 +280,6 @@ int model_errors_old(model_t*m, dataset_t*s)
 
     int y;
     int error = 0;
-    dataset_print(s);
     for(y=0;y<s->num_rows;y++) {
         dataset_fill_row(s, row, y);
         constant_t prediction = node_eval(code, env);
