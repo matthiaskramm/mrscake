@@ -594,5 +594,3 @@ dataset_t* dataset_pick_columns(dataset_t*data, int*index, int num)
     }
     return newdata;
 }
-
-

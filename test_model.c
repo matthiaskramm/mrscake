@@ -40,8 +40,9 @@ int main(int argn, char*argv[])
         example_t*e = example_new(16);
         int s;
         for(s=0;s<16;s++) {
-            e->inputs[s] = variable_new_continuous((lrand48()%256)/256.0);
+            e->inputs[s] = variable_new_continuous(lrand48()%256);
         }
+        e->inputs[7] = variable_new_continuous(((t%2)+1)*100+lrand48()*16);
         e->desired_response = variable_new_categorical(t%2);
         trainingdata_add_example(data, e);
     }

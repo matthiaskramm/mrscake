@@ -73,7 +73,6 @@ model_collection_t collections[] = {
     {dtree_models, &num_dtree_models},
     {svm_models, &num_svm_models},
     {ann_models, &num_ann_models},
-    {twoclass_perceptron_models, &num_twoclass_perceptron_models},
     {perceptron_models, &num_perceptron_models},
 };
 
