@@ -29,79 +29,128 @@ typedef struct _perceptron_model_factory {
     model_factory_t head;
 } perceptron_model_factory_t;
 
-category_t predict(dataset_t*d, double*weights, int row)
+typedef struct _perceptron {
+    float**weights;
+    int intercept;
+} perceptron_t;
+
+static double category_score(perceptron_t*p, category_t c, dataset_t*d, int row)
 {
     double result = 0;
-    int t;
-    for(t=0;t<d->num_columns;t++)
+    int i;
+    for(i=0;i<d->num_columns;i++)
     {
-        column_t*column = d->columns[t];
+        column_t*column = d->columns[i];
         double v = column->entries[row].f;
-        result += weights[t]*v;
+        result += p->weights[c][i]*v;
     }
-    return result > 0 ? 1 : 0;
+    result += p->weights[c][p->intercept];
+    return result;
 }
 
-void update_weights(double*weights, dataset_t*d, int row, double eta)
+static perceptron_t* perceptron_new(dataset_t*d)
 {
-    double y = d->desired_response->entries[row].c ? 1 : -1;
-    int t;
-    for(t=0;t<d->num_columns;t++)
+    perceptron_t*p = (perceptron_t*)malloc(sizeof(perceptron_t));
+    p->weights = malloc(sizeof(float*) * d->desired_response->num_classes);
+    int i;
+    for(i=0;i<d->desired_response->num_classes;i++)
+        p->weights[i] = calloc(sizeof(float), d->num_columns + 1);
+    p->intercept = d->num_columns;
+    return p;
+}
+
+static category_t perceptron_predict(perceptron_t*p, dataset_t*d, int row)
+{
+    double best_score = category_score(p, 0, d, row);
+    int best_category = 0;
+    int c;
+    for(c=1;c<d->desired_response->num_classes;c++)
     {
-        column_t*column = d->columns[t];
-        weights[t] += column->entries[row].f * y;
+        double score = category_score(p, c, d, row);
+        if(score > best_score) {
+            best_score = score;
+            best_category = c;
+        }
     }
+    return best_category;
+}
+
+static void perceptron_update_weights(perceptron_t*p, dataset_t*d, int row, double eta)
+{
+    category_t label = d->desired_response->entries[row].c;
+    category_t guess = perceptron_predict(p, d, row);
+    if(label == guess)
+        return;
+
+    int x;
+    for(x=0;x<d->num_columns;x++)
+    {
+        column_t*column = d->columns[x];
+        double d = column->entries[row].f;
+        p->weights[label][x] += d * eta;
+        p->weights[guess][x] -= d * eta;
+    }
+    p->weights[label][p->intercept] += 1 * eta;
+    p->weights[guess][p->intercept] -= 1 * eta;
+}
+
+static void perceptron_destroy(perceptron_t*p)
+{
+    if(p->weights) {
+        free(p->weights);
+        p->weights = 0;
+    }
+    free(p);
 }
 
 static model_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
 {
     int num_iterations = d->num_rows*100;
-    double base_eta = 0.1;
     double lastperf = 1.0;
     double currentperf = -1;
-    int t;
-
-    double*weights = calloc(sizeof(double), d->num_columns);
-
+    int i;
+   
     if(dataset_has_categorical_columns(d))
-        return NULL;
-    if(d->desired_response->num_classes > 2)
-        return NULL;
+        return 0; // we don't pass expanded_columns to the perceptron_ methods
 
-    double class_to_level[2] = {-1, 1};
-    for(t=1;t<num_iterations;t++)
+    perceptron_t*p = perceptron_new(d);
+
+    for(i=1;i<num_iterations;i++)
     {
-        int i = lrand48() % d->num_rows;
-        double eta = base_eta / t;
-        if(predict(d, weights, i) != d->desired_response->entries[i].c) {
-            update_weights(weights, d, i, eta);
+        int row = lrand48() % d->num_rows;
+        double eta = 1.0 / i;
+        if(perceptron_predict(p, d, row) != d->desired_response->entries[row].c) {
+            perceptron_update_weights(p, d, row, eta);
         }
     }
 
     expanded_columns_t*expanded_columns = expanded_columns_new(d);
+    assert(expanded_columns->num == d->num_columns); // we used the raw dataset to train the weights
+
     START_CODE(program)
     BLOCK
-
-        IF
-            LT
-            ADD
-                for(t=0;t<d->num_columns;t++) {
-                    MUL
-                        INSERT_NODE(expanded_columns_parameter_code(expanded_columns, t))
-                        FLOAT_CONSTANT(weights[t])
+        int c;
+        ARRAY_AT_POS
+            ARRAY_CONSTANT(dataset_classes_as_array(d));
+            ARG_MAX_F;
+                for(c=0;c<d->desired_response->num_classes;c++) {
+                    ADD
+                        for(i=0;i<expanded_columns->num;i++) {
+                            MUL
+                                INSERT_NODE(expanded_columns_parameter_code(expanded_columns, i))
+                                FLOAT_CONSTANT(p->weights[c][i])
+                            END;
+                        }
+                        FLOAT_CONSTANT(p->weights[c][p->intercept]);
                     END;
                 }
             END;
-            FLOAT_CONSTANT(0.0);
-            END;
-        THEN
-            GENERIC_CONSTANT(d->desired_response->classes[0]);
-        ELSE
-            GENERIC_CONSTANT(d->desired_response->classes[1]);
         END;
-
+    END;
     END_CODE;
     expanded_columns_destroy(expanded_columns);
+
+    perceptron_destroy(p);
 
     model_t*m = model_new(d);
     m->code = program;
@@ -113,6 +162,10 @@ static perceptron_model_factory_t perceptron_model_factory = {
         name: "perceptron",
         train: (training_function_t)perceptron_train,
     },
+    /*head: {
+        name: "voted-perceptron",
+        train: (training_function_t)voted_perceptron_train,
+    },*/
 };
 
 model_factory_t* perceptron_models[] =

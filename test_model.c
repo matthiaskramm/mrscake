@@ -22,12 +22,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "mrscake.h"
-#include "ast.h"
-#include "settings.h"
+#include "model_select.h"
 
-int main()
+int main(int argn, char*argv[])
 {
-    config_parse_remote_servers("servers.txt");
+    char* model_name = "perceptron";
+
+    if(argn>1)
+        model_name = argv[1];
+
+    //config_parse_remote_servers("servers.txt");
 
     trainingdata_t* data = trainingdata_new();
 
@@ -42,12 +46,26 @@ int main()
         trainingdata_add_example(data, e);
     }
 
+    /* test load&save */
     trainingdata_save(data, "/tmp/data.data");
     trainingdata_destroy(data);
-
     data = trainingdata_load("/tmp/data.data");
 
-    model_t*m = trainingdata_train(data);
+    model_t*m = trainingdata_train_specific_model(data, model_name);
+    if(!m) {
+        fprintf(stderr, "Error training %s (or no models called %s)\n", model_name, model_name);
+        exit(0);
+    }
+
+    dataset_t* dataset = trainingdata_sanitize(data);
+    confusion_matrix_t* confusion = model_get_confusion_matrix(m, dataset);
+    confusion_matrix_print(confusion);
+    confusion_matrix_destroy(confusion);
+
+    printf("size: %d\n", model_size(m));
+    printf("errors: %d\n", model_errors_old(m, dataset));
+    printf("confusion matrix errors: %d\n", model_errors(m, dataset));
+    printf("score: %d\n", model_score(m, dataset));
 
     char*code = model_generate_code(m, "python");
     printf("%s\n", code);

@@ -60,6 +60,9 @@ extern int num_svm_models;
 extern model_factory_t* perceptron_models[];
 extern int num_perceptron_models;
 
+extern model_factory_t* twoclass_perceptron_models[];
+extern int num_twoclass_perceptron_models;
+
 typedef struct _model_collection {
     model_factory_t**models;
     int* num_models;
@@ -70,6 +73,7 @@ model_collection_t collections[] = {
     {dtree_models, &num_dtree_models},
     {svm_models, &num_svm_models},
     {ann_models, &num_ann_models},
+    {twoclass_perceptron_models, &num_twoclass_perceptron_models},
     {perceptron_models, &num_perceptron_models},
 };
 
@@ -186,31 +190,26 @@ model_t* model_select(trainingdata_t*trainingdata)
 
 model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name)
 {
-    dataset_t*data = trainingdata_sanitize(trainingdata);
-    varorder_t*order = dtree_var_order(data);
-    jobqueue_t*jobs = generate_jobs(order, data);
-
-    /* filter out all the jobs except the one(s) we're looking for */
-    job_t*j = jobs->first;
-    while(j) {
-        job_t*next = j->next;
-        if(strcmp(j->factory->name, name)) {
-            jobqueue_delete_job(jobs, j);
-        }
-        j = next;
-    }
-    jobqueue_process(jobs);
-    return jobqueue_extract_best_and_destroy(jobs);
+    job_t job;
+    memset(&job, 0, sizeof(job_t));
+    job.data = trainingdata_sanitize(trainingdata);
+    job.factory = model_factory_get_by_name(name);
+    if(!job.factory)
+        return 0;
+    job_process(&job);
+    dataset_destroy(job.data);
+    return job.model;
 }
 
-confusion_matrix_t* confusion_matrix_new(int n)
+confusion_matrix_t* confusion_matrix_new(dataset_t*d)
 {
     confusion_matrix_t*m = (confusion_matrix_t*)malloc(sizeof(confusion_matrix_t));
-    m->n = n;
-    m->entries = malloc(sizeof(m->entries[0])*n);
-    int t;
-    for(t=0;t<m->n;t++) {
-        m->entries[t] = calloc(1, sizeof(m->entries[0][0])*n);
+    m->dataset = d;
+    m->n = d->desired_response->num_classes;
+    m->entries = malloc(sizeof(m->entries[0])*m->n);
+    int i;
+    for(i=0;i<m->n;i++) {
+        m->entries[i] = calloc(1, sizeof(m->entries[0][0])*m->n);
     }
     return m;
 }
@@ -226,14 +225,21 @@ void confusion_matrix_destroy(confusion_matrix_t*m)
 void confusion_matrix_print(confusion_matrix_t*m)
 {
     int row,column;
+    printf("p / r");
+    for(column=0;column<m->n;column++) {
+        printf("\t");
+        constant_print(&m->dataset->desired_response->classes[column]);
+    }
+    printf("\n");
     for(row=0;row<m->n;row++) {
+        constant_print(&m->dataset->desired_response->classes[row]);
         for(column=0;column<m->n;column++) {
-            if(column)
-                printf("\t");
+            printf("\t");
             printf("%d", m->entries[row][column]);
         }
         printf("\n");
     }
+    printf("\n");
 }
 confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s)
 {
@@ -248,7 +254,7 @@ confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s)
     row_t* row = row_new(s->sig->num_inputs);
     environment_t*env = environment_new(code, row);
 
-    confusion_matrix_t*matrix = confusion_matrix_new(s->desired_response->num_classes);
+    confusion_matrix_t*matrix = confusion_matrix_new(s);
 
     int y;
     for(y=0;y<s->num_rows;y++) {
@@ -279,9 +285,6 @@ int model_errors_old(model_t*m, dataset_t*s)
         dataset_fill_row(s, row, y);
         constant_t prediction = node_eval(code, env);
         constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];
-        if(constant_equals(&prediction,desired)) {
-            row_print(row);
-        }
         if(!constant_equals(&prediction, desired)) {
             error++;
         }
