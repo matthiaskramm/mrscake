@@ -31,28 +31,32 @@ extern "C" {
 #endif
 
 struct _column;
+struct _transformation;
 typedef struct _column column_t;
+typedef struct _transform transform_t;
 
 typedef struct _dataset {
-
     signature_t*sig;
 
     int num_columns;
     int num_rows;
-    column_t**columns;
 
+    column_t**columns;
     column_t*desired_response;
+
+    /* some datasets are transformed versions of the original. This
+       field specifies the untransformed original and how to modify code 
+       to target said untransformed version */
+    transform_t* transform;
 } dataset_t;
 
 struct _column {
     int index;
-
     bool is_categorical;
 
     int num_classes;
     constant_t*classes;
     int* class_occurence_count;
-
     const char*name;
 
     union {
@@ -70,8 +74,17 @@ int dataset_count_expanded_columns(dataset_t*s);
 dataset_t* dataset_pick_columns(dataset_t*data, int*index, int num);
 bool dataset_has_categorical_columns(dataset_t*data);
 
+typedef node_t* (transform_reverse_function_t)(dataset_t*, node_t* code);
+struct _transform
+{
+    /* make code target the original dataset */
+    node_t* (*revert_in_code)(dataset_t*, node_t* code);
+    void (*destroy)(dataset_t*);
+    dataset_t*original;
+};
+
 /* structure for storing "exploded" version of columns where every class
-   has its own column */
+   has its own 0/1 column */
 typedef struct _expanded_columns {
     dataset_t*dataset;
     int num;
