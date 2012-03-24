@@ -119,11 +119,11 @@ static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_da
         int y;
         if(orig_dataset->columns[x]->is_categorical) {
             for(y=0;y<dataset->num_rows;y++) {
-                c->entries[y].f = source_column->entries[y].f;
+                c->entries[y].f = (source_column->entries[y].c==cls) ? 1.0 : 0.0;
             }
         } else {
             for(y=0;y<dataset->num_rows;y++) {
-                c->entries[y].f = (source_column->entries[y].c==cls) ? 1.0 : 0.0;
+                c->entries[y].f = source_column->entries[y].f;
             }
         }
         dataset->columns[i] = c;
