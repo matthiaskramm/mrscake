@@ -24,6 +24,11 @@
 #include "mrscake.h"
 #include "model_select.h"
 
+//#define HEIGHT 256
+//#define WIDTH 16
+#define HEIGHT 64
+#define WIDTH 4
+
 int main(int argn, char*argv[])
 {
     //config_parse_remote_servers("servers.txt");
@@ -31,14 +36,14 @@ int main(int argn, char*argv[])
     trainingdata_t* data = trainingdata_new();
 
     int t;
-    for(t=0;t<256;t++) {
-        example_t*e = example_new(16);
+    for(t=0;t<HEIGHT;t++) {
+        example_t*e = example_new(WIDTH);
         int s;
-        for(s=0;s<16;s++) {
+        for(s=0;s<WIDTH;s++) {
             e->inputs[s] = variable_new_continuous(lrand48()%256);
         }
-        e->inputs[7] = variable_new_continuous(((t%2)+1)*100+lrand48()*16);
-        e->inputs[8] = variable_new_categorical(t%4);
+        e->inputs[2] = variable_new_continuous(((t%2)+1)*100+lrand48()*16);
+        e->inputs[3] = variable_new_categorical(t%4);
         e->desired_response = variable_new_categorical(t%2);
         trainingdata_add_example(data, e);
     }

@@ -32,9 +32,10 @@ extern "C" {
 
 /* transformations */
 dataset_t* expand_categorical_columns(dataset_t*old_dataset);
+dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num);
 
-dataset_t* reverse_transformation(dataset_t*dataset, node_t**code);
-dataset_t* reverse_transformations(dataset_t*dataset, node_t**code);
+dataset_t* dataset_revert_one_transformation(dataset_t*dataset, node_t**code);
+dataset_t* dataset_revert_all_transformations(dataset_t*dataset, node_t**code);
 
 #ifdef __cplusplus
 }

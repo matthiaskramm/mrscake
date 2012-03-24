@@ -84,8 +84,14 @@ static int read_with_retry(reader_t*r, int handle, void*_data, int len)
     int pos = 0;
     while(pos<len) {
         int ret = read(handle, data+pos, len-pos);
-        if(ret<=0) {
+        if(ret<0) {
+            if(errno == EINTR)
+                continue;
             perror("read");
+            return ret;
+        }
+        if(ret==0) {
+            // EOF
             return ret;
         }
         pos += ret;
@@ -110,6 +116,9 @@ static int reader_fileread_with_timeout(reader_t*r, void* data, int len)
     FD_ZERO(&readfds);
     FD_SET(i->handle, &readfds);
     int ret;
+    
+    /* FIXME: this will only time out on the first read, but not
+       reads after that (because read_with_retry is a loop) */
     while(1) {
         ret = select(i->handle+1, &readfds, NULL, NULL, &timeout);
         if(ret<0) {

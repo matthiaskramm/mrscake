@@ -32,10 +32,8 @@
 #include "net.h"
 #include "serialize.h"
 
-#define FORK_FOR_TRAINING
-void job_process(job_t*job)
+void job_train_and_score(job_t*job)
 {
-#ifndef FORK_FOR_TRAINING
     node_t*code = job->factory->train(job->factory, job->data);
     if(code) {
         job->model = model_new(job->data);
@@ -43,6 +41,13 @@ void job_process(job_t*job)
         job->model->name = job->factory->name;
     }
     job->score = model_score(job->model, job->data);
+}
+
+#define FORK_FOR_TRAINING
+void job_process(job_t*job)
+{
+#ifndef FORK_FOR_TRAINING
+    job_train_and_score(job);
     return;
 #else
     int p[2];
@@ -57,13 +62,8 @@ void job_process(job_t*job)
     if(!pid) {
         //child
         close(read_fd); // close read
-        node_t*code = job->factory->train(job->factory, job->data);
-        if(code) {
-            job->model = model_new(job->data);
-            job->model->code = code;
-            job->model->name = job->factory->name;
-        }
-        job->score = model_score(job->model, job->data);
+
+        job_train_and_score(job);
 
         writer_t*w = filewriter_new(write_fd);
         write_compressed_int(w, job->score);

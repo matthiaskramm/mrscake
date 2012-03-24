@@ -51,7 +51,6 @@ typedef struct _dataset {
 } dataset_t;
 
 struct _column {
-    int index;
     bool is_categorical;
 
     int num_classes;
@@ -71,7 +70,6 @@ void dataset_print(dataset_t*s);
 constant_t dataset_map_response_class(dataset_t*dataset, int i);
 void dataset_destroy(dataset_t*dataset);
 int dataset_count_expanded_columns(dataset_t*s);
-dataset_t* dataset_pick_columns(dataset_t*data, int*index, int num);
 bool dataset_has_categorical_columns(dataset_t*data);
 
 typedef node_t* (transform_reverse_function_t)(dataset_t*, node_t* code);
@@ -83,7 +81,7 @@ struct _transform
     dataset_t*original;
 };
 
-column_t*column_new(int num_rows, bool is_categorical, int x);
+column_t*column_new(int num_rows, bool is_categorical);
 
 model_t* model_new(dataset_t*dataset);
 example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags);

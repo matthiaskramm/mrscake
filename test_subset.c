@@ -21,8 +21,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "mrscake.h"
 #include "ast.h"
+#include "dataset.h"
+#include "job.h"
+#include "transform.h"
 
 int main()
 {
@@ -30,8 +34,9 @@ int main()
 
     int s;
     for(s=0;s<16;s++) {
+        printf("---- test iteration %d ----\n", s);
 
-        trainingdata_t* data = trainingdata_new();
+        trainingdata_t* trainingdata = trainingdata_new();
 
         int t;
         for(t=0;t<64;t++) {
@@ -42,17 +47,42 @@ int main()
             }
             e->inputs[s] = variable_new_continuous(t%4);
             e->desired_response = variable_new_categorical(t%4);
-            trainingdata_add_example(data, e);
-
+            trainingdata_add_example(trainingdata, e);
         }
 
-        model_t*m = trainingdata_train(data);
+        dataset_t* data = trainingdata_sanitize(trainingdata);
+        
+        int num_columns = 0;
+        int pos = 0;
+        int positions[data->num_columns];
+        while(1) {
+            pos += (lrand48()%(data->num_columns-1)) + 1;
+            if(pos >= data->num_columns)
+                break;
+            positions[num_columns++] = pos;
+        }
+        
+        for(t=0;t<num_columns;t++)
+            printf("%d ", positions[t]);
+        printf("\n");
 
-        char*code = model_generate_code(m, "python");
-        printf("%s\n", code);
+        job_t job;
+        memset(&job, 0, sizeof(job_t));
+        data = pick_columns(data, positions, num_columns);
 
-        trainingdata_destroy(data);
+        job.data = data;
+        job.factory = model_factory_get_by_name("simplified linear svm");
+        job_process(&job);
+        if(!job.model) {
+            continue;
+        }
 
+        data = dataset_revert_all_transformations(data, (node_t**)&job.model->code);
+        //node_print(job.model->code);
+
+        trainingdata_destroy(trainingdata);
+
+#if 0
         for(t=0;t<4;t++) {
             row_t*r = row_new(16);
             int i;
@@ -64,7 +94,6 @@ int main()
             row_destroy(r);
             printf("%d %d\n", t, result.category);
         }
-
-        model_destroy(m);
+#endif
     }
 }

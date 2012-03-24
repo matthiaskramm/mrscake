@@ -40,6 +40,7 @@
 #include "serialize.h"
 #include "net.h"
 #include "settings.h"
+#include "transform.h"
 #include "var_selection.h"
 #include "job.h"
 
@@ -93,14 +94,19 @@ model_factory_t* model_factory_get_by_name(const char*name)
 
 static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
 {
+    /* TODO:
+       We should pass required transformations (like variable subsetting)
+       all the way to the slave and apply them there, so the main dataset
+       can be cached.
+    */
     jobqueue_t* queue = jobqueue_new();
     int t;
     int s;
     int i;
-//#define SUBSET_VARIABLES
+#define SUBSET_VARIABLES
 #ifdef SUBSET_VARIABLES
     for(i=1;i<order->num;i++) {
-        dataset_t*newdata = dataset_pick_columns(data, order->order, i);
+        dataset_t*newdata = pick_columns(data, order->order, i);
         for(s=0;s<NUM(collections);s++) {
             model_collection_t*collection = &collections[s];
             for(t=0;t<*collection->num_models;t++) {
@@ -129,8 +135,18 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
     return queue;
 }
 
-extern varorder_t*dtree_var_order(dataset_t*d);
+void jobqueue_revert_dataset_transformations(jobqueue_t*jobs)
+{
+    job_t*job;
+    for(job=jobs->first;job;job=job->next) {
+        if(job->model) {
+            job->data = dataset_revert_all_transformations(job->data, (node_t**)&job->model->code);
+        }
+    }
+}
 
+extern varorder_t*dtree_var_order(dataset_t*d);
+    
 model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
 {
     model_t*best_model = NULL;
@@ -169,6 +185,7 @@ model_t* model_select(trainingdata_t*trainingdata)
 
     jobqueue_t*jobs = generate_jobs(order, data);
     jobqueue_process(jobs);
+    jobqueue_revert_dataset_transformations(jobs);
     model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
     if(!best_model) {
         return 0;
@@ -250,7 +267,7 @@ confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s)
     
     node_t*node = m->code;
     node_t*code = (node_t*)m->code;
-    row_t* row = row_new(s->sig->num_inputs);
+    row_t* row = row_new(s->num_columns);
     environment_t*env = environment_new(code, row);
 
     confusion_matrix_t*matrix = confusion_matrix_new(s);
@@ -274,7 +291,7 @@ int model_errors_old(model_t*m, dataset_t*s)
 {
     node_t*node = m->code;
     node_t*code = (node_t*)m->code;
-    row_t* row = row_new(s->sig->num_inputs);
+    row_t* row = row_new(s->num_columns);
     environment_t*env = environment_new(code, row);
 
     int y;
@@ -337,6 +354,13 @@ int model_size(model_t*m)
 
 int model_score(model_t*m, dataset_t*data)
 {
+    /* Note: The dataset might be transformed. If we ever introduce
+       transformations that might affect the score (like row
+       subsetting), this function will return wrong results.
+       Also, the dataset might look like it's untransformed (data->transform is NULL) 
+       even though it really is- transformation information is 
+       lost when data is transferred between machines.
+    */
     if(!m)
         return INT_MAX;
     int size = model_size(m);

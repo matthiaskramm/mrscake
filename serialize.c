@@ -496,7 +496,6 @@ void trainingdata_save(trainingdata_t*d, const char*filename)
 void column_write(column_t*c, int num_rows, writer_t*w)
 {
     write_string(w, c->name);
-    write_compressed_int(w, c->index);
     write_uint8(w, c->is_categorical);
     int y;
     if(c->is_categorical) {
@@ -518,9 +517,8 @@ void column_write(column_t*c, int num_rows, writer_t*w)
 column_t* column_read(int num_rows, reader_t*r)
 {
     char*name = read_string(r);
-    int index = read_compressed_int(r);
     char is_categorical = read_uint8(r);
-    column_t* c = column_new(num_rows, is_categorical, index);
+    column_t* c = column_new(num_rows, is_categorical);
     if(*name) {
         c->name = register_string(name);
     } else {

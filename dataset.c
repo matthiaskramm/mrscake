@@ -120,11 +120,10 @@ void trainingdata_destroy(trainingdata_t*trainingdata)
     free(trainingdata);
 }
 
-column_t*column_new(int num_rows, bool is_categorical, int x)
+column_t*column_new(int num_rows, bool is_categorical)
 {
     column_t*c = calloc(1, sizeof(column_t)+sizeof(c->entries[0])*num_rows);
     c->is_categorical = is_categorical;
-    c->index = x;
     return c;
 }
 void column_destroy(column_t*c)
@@ -256,7 +255,7 @@ example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags)
         /* build a column out of the response column, thus making
            the column build process count the classes for us */
         int num_columns = d->first_example->num_inputs;
-        column_t*c = column_new(d->num_examples, true, -1);
+        column_t*c = column_new(d->num_examples, true);
         columnbuilder_t*b = columnbuilder_new(c);
         int y;
         example_t*i = d->first_example;
@@ -358,7 +357,7 @@ dataset_t* trainingdata_sanitize(trainingdata_t*dataset)
     for(x=0;x<s->num_columns;x++) {
         columntype_t ltype = first_row->inputs[x].type;
         bool is_categorical = ltype!=CONTINUOUS;
-        s->columns[x] = column_new(s->num_rows, is_categorical, x);
+        s->columns[x] = column_new(s->num_rows, is_categorical);
         builders[x] = columnbuilder_new(s->columns[x]);
     }
     example_t*example = dataset->first_example;
@@ -382,7 +381,7 @@ dataset_t* trainingdata_sanitize(trainingdata_t*dataset)
     free(builders);
 
     /* copy response column to the new dataset */
-    s->desired_response = column_new(s->num_rows, true, -1);
+    s->desired_response = column_new(s->num_rows, true);
     columnbuilder_t*builder = columnbuilder_new(s->desired_response);
     for(y=0;y<num_examples;y++) {
         example_t*example = examples[y];
@@ -502,9 +501,9 @@ void dataset_fill_row(dataset_t*s, row_t*row, int y)
     for(x=0;x<s->num_columns;x++) {
         column_t*c = s->columns[x];
         if(c->is_categorical) {
-            row->inputs[c->index] = constant_to_variable(&c->classes[c->entries[y].c]);
+            row->inputs[x] = constant_to_variable(&c->classes[c->entries[y].c]);
         } else {
-            row->inputs[c->index] = variable_new_continuous(c->entries[y].f);
+            row->inputs[x] = variable_new_continuous(c->entries[y].f);
         }
     }
 }
@@ -516,15 +515,3 @@ model_t* model_new(dataset_t*dataset)
     return m;
 }
 
-dataset_t* dataset_pick_columns(dataset_t*data, int*index, int num)
-{
-    dataset_t*newdata = malloc(sizeof(dataset_t)+sizeof(column_t*)*num);
-    memcpy(newdata, data, sizeof(dataset_t));
-    newdata->num_columns = num;
-    newdata->columns = (column_t**)(&newdata[1]);
-    int t;
-    for(t=0;t<num;t++) {
-        newdata->columns[t] = data->columns[index[t]];
-    }
-    return newdata;
-}

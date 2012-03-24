@@ -86,6 +86,14 @@ class CodeGeneratingLinearSVM: public CvSVM
         return(code);
     }
 
+    /* Does the class count of the desired_response column match
+       the number of distinct entries actually present? */
+    bool class_counts_match()
+    {
+        int class_count = this->dataset->desired_response->num_classes;
+        return class_labels->cols == class_count;
+    }
+
     node_t* get_program() const
     {
         assert(kernel);
@@ -158,6 +166,8 @@ class CodeGeneratingLinearSVM: public CvSVM
 static node_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
 {
     d = expand_categorical_columns(d);
+    
+    assert(!dataset_has_categorical_columns(d));
 
     int num_rows = training_set_size(d->num_rows);
 
@@ -170,17 +180,23 @@ static node_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
     CvMat* response;
     make_ml_multicolumn(d, &input, &response, num_rows, false);
 
-    node_t*code = 0;
     if(svm.train_auto(input, response, 0, 0, params, 5)) {
-        code = svm.get_program();
+        // ok
     } else if(svm.train(input, response, 0, 0, params)) {
-        code = svm.get_program();
+        // ok
+    } else {
+        return NULL;
     }
+    /* check whether we were operating on a sane subset of the data */
+    if(!svm.class_counts_match())
+        return NULL;
+
+    node_t*code = svm.get_program();
 
     cvReleaseMat(&input);
     cvReleaseMat(&response);
     
-    d = reverse_transformations(d, &code);
+    d = dataset_revert_one_transformation(d, &code);
     return code;
 }
 

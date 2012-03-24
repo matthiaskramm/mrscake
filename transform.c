@@ -20,8 +20,10 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include <stdlib.h>
+#include <assert.h>
 #include "transform.h"
 #include "easy_ast.h"
+#include "util.h"
 
 // ----------------------- expand columns transform ----------------------------
 
@@ -33,7 +35,6 @@ typedef struct _expanded_column {
 typedef struct _transform_expand {
     transform_t head;
     int num;
-    bool use_header_code;
     expanded_column_t* ecolumns;
 } transform_expand_t;
 
@@ -117,7 +118,7 @@ static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_da
         int cls = transform->ecolumns[i].source_class;
         column_t* source_column = orig_dataset->columns[x];
 
-        column_t*c = column_new(dataset->num_rows, false, i);
+        column_t*c = column_new(dataset->num_rows, false);
         int y;
         if(orig_dataset->columns[x]->is_categorical) {
             for(y=0;y<dataset->num_rows;y++) {
@@ -159,23 +160,90 @@ dataset_t* expand_categorical_columns(dataset_t*old_dataset)
     return expand_dataset(transform, old_dataset);
 }
 
+// ----------------------- pick colummns transform -----------------------------
+
+typedef struct _transform_pick_columns {
+    transform_t head;
+    int*original_column;
+} transform_pick_columns_t;
+
+static node_t* pick_columns_revert_in_code(dataset_t*dataset, node_t*node)
+{
+    transform_pick_columns_t*transform = (transform_pick_columns_t*)dataset->transform;
+    dataset_t*orig_dataset = dataset->transform->original;
+   
+    if(node->type == &node_param) {
+        int i = node->value.i;
+        assert(i >= 0 && i < dataset->num_columns);
+        int x = transform->original_column[i];
+        assert(x >= 0 && x < orig_dataset->num_columns);
+
+        START_CODE(new_node);
+            PARAM(x);
+        END_CODE;
+        node_destroy(node);
+        return new_node;
+    }
+    int i;
+    for(i=0;i<node->num_children;i++) {
+        node_set_child(node, i, pick_columns_revert_in_code(dataset, node->child[i]));
+    }
+    return node;
+}
+
+static void pick_columns_destroy(dataset_t*dataset)
+{
+    transform_pick_columns_t* transform = (transform_pick_columns_t*)dataset->transform;
+    free(dataset->columns);
+    free(dataset);
+    free(transform->original_column);
+    free(transform);
+}
+
+dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num)
+{
+    dataset_t*newdata = memdup(old_dataset, sizeof(dataset_t));
+    transform_pick_columns_t*transform = calloc(1, sizeof(transform_pick_columns_t));
+    transform->head.revert_in_code = pick_columns_revert_in_code;
+    transform->head.destroy = pick_columns_destroy;
+    transform->head.original = old_dataset;
+    newdata->transform = (transform_t*)transform;
+
+    transform->original_column = (int*)memdup(index, sizeof(int)*num);
+   
+    newdata->num_columns = num;
+    newdata->columns = (column_t**)malloc(sizeof(column_t*)*num);
+    int i;
+    for(i=0;i<num;i++) {
+        newdata->columns[i] = old_dataset->columns[index[i]];
+    }
+    return newdata;
+}
+
 // ----------------------------------------------------------------------------
 
-dataset_t* reverse_transformation(dataset_t*dataset, node_t**code)
+dataset_t* dataset_revert_one_transformation(dataset_t*dataset, node_t**code)
 {
     if(!dataset->transform)
         return dataset;
     transform_t*transform = dataset->transform;
     dataset_t*original = transform->original;
     *code = transform->revert_in_code(dataset, *code);
-    transform->destroy(dataset);
+
+    //in the presence of variable selection, some transformations are shared
+    //between models (see generate_jobs() in model_select.c)
+    //We need reference counting or instance pooling for transforms in order
+    //to free them properly.
+    //
+    //transform->destroy(dataset);
+    
     return original;
 }
 
-dataset_t* reverse_transformations(dataset_t*dataset, node_t**code)
+dataset_t* dataset_revert_all_transformations(dataset_t*dataset, node_t**code)
 {
     while(dataset->transform) {
-        dataset = reverse_transformation(dataset, code);
+        dataset = dataset_revert_one_transformation(dataset, code);
     }
     return dataset;
 }
