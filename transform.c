@@ -28,7 +28,6 @@
 typedef struct _expanded_column {
     int source_column;
     int source_class;
-    bool needs_to_be_freed;
 } expanded_column_t;
 
 typedef struct _transform_expand {
@@ -94,7 +93,6 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
             for(c=0;c<dataset->columns[x]->num_classes;c++) {
                 ecolumns[pos].source_column = x;
                 ecolumns[pos].source_class = c;
-                ecolumns[pos].needs_to_be_freed = true;
                 pos++;
             }
         }
@@ -117,16 +115,18 @@ static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_da
         int cls = transform->ecolumns[i].source_class;
         column_t* source_column = orig_dataset->columns[x];
 
+        column_t*c = column_new(dataset->num_rows, false, i);
+        int y;
         if(orig_dataset->columns[x]->is_categorical) {
-            column_t*c = column_new(dataset->num_rows, false, x);
-            int y;
+            for(y=0;y<dataset->num_rows;y++) {
+                c->entries[y].f = source_column->entries[y].f;
+            }
+        } else {
             for(y=0;y<dataset->num_rows;y++) {
                 c->entries[y].f = (source_column->entries[y].c==cls) ? 1.0 : 0.0;
             }
-            dataset->columns[i] = c;
-        } else {
-            dataset->columns[i] = orig_dataset->columns[x];
         }
+        dataset->columns[i] = c;
     }
     return dataset;
 }
@@ -136,8 +136,7 @@ static void expand_destroy(dataset_t*dataset)
     transform_expand_t* transform = (transform_expand_t*)dataset->transform;
     int i;
     for(i=0;i<transform->num;i++) {
-        if(transform->ecolumns[i].needs_to_be_freed)
-            free(dataset->columns[i]);
+        free(dataset->columns[i]);
     }
     free(dataset->columns);
     free(dataset);
