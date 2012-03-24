@@ -26,11 +26,6 @@
 
 int main(int argn, char*argv[])
 {
-    char* model_name = "perceptron";
-
-    if(argn>1)
-        model_name = argv[1];
-
     //config_parse_remote_servers("servers.txt");
 
     trainingdata_t* data = trainingdata_new();
@@ -53,10 +48,16 @@ int main(int argn, char*argv[])
     trainingdata_destroy(data);
     data = trainingdata_load("/tmp/data.data");
 
-    model_t*m = trainingdata_train_specific_model(data, model_name);
-    if(!m) {
-        fprintf(stderr, "Error training %s (or no models called %s)\n", model_name, model_name);
-        exit(0);
+    model_t*m = 0;
+    if(argn>1) {
+        char*model_name = argv[1];
+        m = trainingdata_train_specific_model(data, model_name);
+        if(!m) {
+            fprintf(stderr, "Error training %s (or no models called %s)\n", model_name, model_name);
+            exit(0);
+        }
+    } else {
+        m = trainingdata_train(data);
     }
 
     dataset_t* dataset = trainingdata_sanitize(data);
