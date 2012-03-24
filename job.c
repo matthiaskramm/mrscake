@@ -32,7 +32,7 @@
 #include "net.h"
 #include "serialize.h"
 
-//#define FORK_FOR_TRAINING
+#define FORK_FOR_TRAINING
 void job_process(job_t*job)
 {
 #ifndef FORK_FOR_TRAINING
@@ -66,8 +66,8 @@ void job_process(job_t*job)
         job->score = model_score(job->model, job->data);
 
         writer_t*w = filewriter_new(write_fd);
-        write_compressed_int(writer_t*w, job->score);
-        model_write(m, w);
+        write_compressed_int(w, job->score);
+        model_write(job->model, w);
         w->finish(w);
         close(write_fd); // close write
         _exit(0);
@@ -92,11 +92,11 @@ void job_process(job_t*job)
 
 static void process_jobs(jobqueue_t*jobs)
 {
-    printf("\n");
+    //printf("\n");
     job_t*job;
     int count = 0;
     for(job=jobs->first;job;job=job->next) {
-        printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
+        //printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
         job_process(job);
         count++;
     }
