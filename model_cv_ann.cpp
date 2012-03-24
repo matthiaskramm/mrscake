@@ -24,6 +24,7 @@
 #include "dataset.h"
 #include "easy_ast.h"
 #include "model_select.h"
+#include "transform.h"
 
 //#define VERIFY 1
 
@@ -290,6 +291,8 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
 
 static model_t*ann_train(ann_model_factory_t*factory, dataset_t*d)
 {
+    d = expand_categorical_columns(d);
+
     int num_layers = factory->num_layers;
 
     CvMat* layers = cvCreateMat( 1, num_layers, CV_32SC1);
@@ -320,6 +323,7 @@ static model_t*ann_train(ann_model_factory_t*factory, dataset_t*d)
 
     model_t*m = model_new(d);
     m->code = ann.get_program();
+    d = reverse_transformations(d, (node_t**)&m->code);
 
 #ifdef VERIFY
     verify(dataset, m, &ann);

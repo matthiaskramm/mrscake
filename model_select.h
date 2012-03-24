@@ -30,6 +30,7 @@ extern "C" {
 
 typedef struct _model_factory {
     const char*name;
+    /* FIXME: make this return node_t instead */
     model_t*(*train)(struct _model_factory*factory, dataset_t*dataset);
     void*internal;
 } model_factory_t;

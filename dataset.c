@@ -334,7 +334,7 @@ signature_t* signature_from_columns(column_t**columns, int num_columns, bool has
 
 dataset_t* trainingdata_sanitize(trainingdata_t*dataset)
 {
-    dataset_t*s = malloc(sizeof(dataset_t));
+    dataset_t*s = calloc(1,sizeof(dataset_t));
 
     if(!trainingdata_check_format(dataset))
         return 0;

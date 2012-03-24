@@ -71,18 +71,7 @@ static node_t* expand_revert_in_code(dataset_t*dataset, node_t* node)
     for(i=0;i<node->num_children;i++) {
         node_set_child(node, i, expand_revert_in_code(dataset, node->child[i]));
     }
-}
-
-static void expand_destroy(dataset_t*dataset)
-{
-    transform_expand_t* transform = (transform_expand_t*)dataset->transform;
-    int i;
-    for(i=0;i<transform->num;i++) {
-        if(transform->ecolumns[i].needs_to_be_freed)
-            free(dataset->columns[i]);
-    }
-    free(transform->ecolumns);
-    free(transform);
+    return node;
 }
 
 static expanded_column_t* expanded_columns(dataset_t*dataset)
@@ -90,28 +79,29 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
     /* build expanded column info (version of the data where every class of every
        input variable has its own 0/1 column)
      */
-    transform_expand_t* transform = (transform_expand_t*)dataset->transform;
     int num = dataset_count_expanded_columns(dataset);
     
-    expanded_column_t* columns = malloc(sizeof(expanded_column_t)*num);
+    expanded_column_t* ecolumns = calloc(sizeof(expanded_column_t),num);
     int pos=0;
     int x;
     for(x=0;x<dataset->num_columns;x++) {
         if(!dataset->columns[x]->is_categorical) {
-            transform->ecolumns[pos].source_column = x;
-            transform->ecolumns[pos].source_class = 0;
+            ecolumns[pos].source_column = x;
+            ecolumns[pos].source_class = 0;
             pos++;
         } else {
             int c;
             for(c=0;c<dataset->columns[x]->num_classes;c++) {
-                transform->ecolumns[pos].source_column = x;
-                transform->ecolumns[pos].source_class = c;
+                ecolumns[pos].source_column = x;
+                ecolumns[pos].source_class = c;
+                ecolumns[pos].needs_to_be_freed = true;
                 pos++;
             }
         }
     }
+
     assert(pos == num);
-    return columns;
+    return ecolumns;
 }
 
 static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_dataset)
@@ -139,6 +129,20 @@ static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_da
         }
     }
     return dataset;
+}
+
+static void expand_destroy(dataset_t*dataset)
+{
+    transform_expand_t* transform = (transform_expand_t*)dataset->transform;
+    int i;
+    for(i=0;i<transform->num;i++) {
+        if(transform->ecolumns[i].needs_to_be_freed)
+            free(dataset->columns[i]);
+    }
+    free(dataset->columns);
+    free(dataset);
+    free(transform->ecolumns);
+    free(transform);
 }
 
 dataset_t* expand_categorical_columns(dataset_t*old_dataset)
@@ -170,7 +174,7 @@ dataset_t* reverse_transformation(dataset_t*dataset, node_t**code)
 dataset_t* reverse_transformations(dataset_t*dataset, node_t**code)
 {
     while(dataset->transform) {
-        dataset = reverse_transformations(dataset, code);
+        dataset = reverse_transformation(dataset, code);
     }
     return dataset;
 }
