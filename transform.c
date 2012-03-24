@@ -108,6 +108,8 @@ static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_da
     *dataset = *orig_dataset;
     dataset->transform = (transform_t*)transform;
     dataset->columns = (column_t**)malloc(sizeof(column_t*)*transform->num);
+    dataset->num_columns = transform->num;
+    dataset->sig = 0;
 
     int i;
     for(i=0;i<transform->num;i++) {
