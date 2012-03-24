@@ -51,7 +51,7 @@ static node_t* expand_revert_in_code(dataset_t*dataset, node_t* node)
             START_CODE(program);
                 BOOL_TO_FLOAT
                     EQUALS
-                        PARAM(orig_dataset->columns[x]);
+                        PARAM(x);
                         GENERIC_CONSTANT(orig_dataset->columns[x]->classes[cls]);
                     END;
                 END;
@@ -60,7 +60,7 @@ static node_t* expand_revert_in_code(dataset_t*dataset, node_t* node)
             return program;
         } else {
             START_CODE(program);
-                PARAM(orig_dataset->columns[x]);
+                PARAM(x);
             END_CODE;
             node_destroy(node);
             return program;

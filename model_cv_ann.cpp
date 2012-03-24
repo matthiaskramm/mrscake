@@ -102,7 +102,6 @@ class CodeGeneratingANN: public CvANN_MLP
      */
     node_t* get_program() const
     {
-        expanded_columns_t*expanded_columns = expanded_columns_new(dataset);
         START_CODE(program);
         BLOCK
 	int l_count = layer_sizes->cols;
@@ -114,7 +113,7 @@ class CodeGeneratingANN: public CvANN_MLP
 	    SETLOCAL(var_offset[0]+j)
 		ADD
 		    MUL
-                        INSERT_NODE(expanded_columns_parameter_code(expanded_columns, j));
+                        PARAM(j);
 			FLOAT_CONSTANT(w[j*2])
 		    END;
 		    FLOAT_CONSTANT(w[j*2+1])
@@ -240,13 +239,12 @@ class CodeGeneratingANN: public CvANN_MLP
 
         END_BLOCK;
 	END_CODE;
-        expanded_columns_destroy(expanded_columns);
 	return program;
     }
 
     constant_t predict(row_t*row, bool debug) const
     {
-        CvMat* matrix_row = cvmat_from_row(dataset, row, true, false);
+        CvMat* matrix_row = cvmat_from_row(dataset, row, false);
         CvMat* output = cvCreateMat(1, dataset->desired_response->num_classes, CV_32FC1);
         if(debug)
             cvmat_print(matrix_row);
@@ -289,7 +287,7 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
 }
 #endif
 
-static model_t*ann_train(ann_model_factory_t*factory, dataset_t*d)
+static node_t*ann_train(ann_model_factory_t*factory, dataset_t*d)
 {
     d = expand_categorical_columns(d);
 
@@ -321,9 +319,8 @@ static model_t*ann_train(ann_model_factory_t*factory, dataset_t*d)
     make_ml_multicolumn(d, &ann_input, &ann_response, num_rows, true);
     ann.train(ann_input, ann_response, NULL, NULL, ann_params, 0x0000);
 
-    model_t*m = model_new(d);
-    m->code = ann.get_program();
-    d = reverse_transformations(d, (node_t**)&m->code);
+    node_t*code = ann.get_program();
+    d = reverse_transformations(d, &code);
 
 #ifdef VERIFY
     verify(dataset, m, &ann);
@@ -332,7 +329,7 @@ static model_t*ann_train(ann_model_factory_t*factory, dataset_t*d)
     cvReleaseMat(&layers);
     cvReleaseMat(&ann_input);
     cvReleaseMat(&ann_response);
-    return m;
+    return code;
 }
 
 static ann_model_factory_t ann_2sigmoid_model_factory = {

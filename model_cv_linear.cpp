@@ -22,6 +22,7 @@
 #include "cvtools.h"
 #include "mrscake.h"
 #include "dataset.h"
+#include "transform.h"
 #include "easy_ast.h"
 #include "model_select.h"
 
@@ -44,7 +45,7 @@ class CodeGeneratingLinearSVM: public CvSVM
     {
     }
 
-    node_t* compare_classes(int _i, int _j, expanded_columns_t*expanded_columns) const
+    node_t* compare_classes(int _i, int _j) const
     {
         CvSVMDecisionFunc* df = (CvSVMDecisionFunc*)decision_func;
 
@@ -76,7 +77,7 @@ class CodeGeneratingLinearSVM: public CvSVM
                     sum += sv[df->sv_index[k]][v]*df->alpha[k];
                 }
                 MUL
-                    INSERT_NODE(expanded_columns_parameter_code(expanded_columns, v))
+                    PARAM(v);
                     FLOAT_CONSTANT(sum)
                 END;
             }
@@ -87,8 +88,6 @@ class CodeGeneratingLinearSVM: public CvSVM
 
     node_t* get_program() const
     {
-        expanded_columns_t*expanded_columns = expanded_columns_new(dataset);
-
         assert(kernel);
         assert(params.svm_type == CvSVM::C_SVC);
         assert(params.kernel_type == CvSVM::LINEAR);
@@ -96,18 +95,15 @@ class CodeGeneratingLinearSVM: public CvSVM
         int var_count = get_var_count();
         int class_count = this->dataset->desired_response->num_classes;
 
-        assert(var_count == expanded_columns->num);
         assert(class_labels->cols == class_count);
 
         START_CODE(program)
         BLOCK
 
-        INSERT_NODE(expanded_columns_parameter_init(expanded_columns));
-
         if(class_count == 2) {
             IF
                 GT
-                    INSERT_NODE(compare_classes(0,1,expanded_columns));
+                    INSERT_NODE(compare_classes(0,1));
                     FLOAT_CONSTANT(0.0);
                 END;
             THEN
@@ -129,7 +125,7 @@ class CodeGeneratingLinearSVM: public CvSVM
                 for(j=i+1; j<class_count; j++) {
                     IF
                         GT
-                            INSERT_NODE(compare_classes(i,j,expanded_columns));
+                            INSERT_NODE(compare_classes(i,j));
                             FLOAT_CONSTANT(0.0);
                         END;
                     THEN
@@ -154,15 +150,15 @@ class CodeGeneratingLinearSVM: public CvSVM
         END;
         END_CODE;
 
-        expanded_columns_destroy(expanded_columns);
-
         return program;
     }
     dataset_t*dataset;
 };
 
-static model_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
+static node_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
 {
+    d = expand_categorical_columns(d);
+
     int num_rows = training_set_size(d->num_rows);
 
     CodeGeneratingLinearSVM svm(d);
@@ -174,18 +170,18 @@ static model_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
     CvMat* response;
     make_ml_multicolumn(d, &input, &response, num_rows, false);
 
-    model_t*m = 0;
+    node_t*code = 0;
     if(svm.train_auto(input, response, 0, 0, params, 5)) {
-	m = model_new(d);
-        m->code = svm.get_program();
+        code = svm.get_program();
     } else if(svm.train(input, response, 0, 0, params)) {
-	m = model_new(d);
-        m->code = svm.get_program();
+        code = svm.get_program();
     }
 
     cvReleaseMat(&input);
     cvReleaseMat(&response);
-    return m;
+    
+    d = reverse_transformations(d, &code);
+    return code;
 }
 
 static svm_model_factory_t simplified_linear_svm_model_factory = {

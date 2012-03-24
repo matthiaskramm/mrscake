@@ -36,8 +36,10 @@
 void job_process(job_t*job)
 {
 #ifndef FORK_FOR_TRAINING
-    job->model = job->factory->train(job->factory, job->data);
-    if(job->model) {
+    node_t*code = job->factory->train(job->factory, job->data);
+    if(code) {
+        job->model = model_new(job->data);
+        job->model->code = code;
         job->model->name = job->factory->name;
     }
     job->score = model_score(job->model, job->data);
@@ -55,8 +57,10 @@ void job_process(job_t*job)
     if(!pid) {
         //child
         close(read_fd); // close read
-        job->model = job->factory->train(job->factory, job->data);
-        if(job->model) {
+        node_t*code = job->factory->train(job->factory, job->data);
+        if(code) {
+            job->model = model_new(job->data);
+            job->model->code = code;
             job->model->name = job->factory->name;
         }
         job->score = model_score(job->model, job->data);

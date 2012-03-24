@@ -85,7 +85,7 @@
 #define ABS NODE_BEGIN(&node_abs)
 #define NOP NODE_BEGIN(&node_nop)
 
-#define PARAM(column) NODE_BEGIN(&node_param, (column)->index)
+#define PARAM(index) NODE_BEGIN(&node_param, index)
 #define RAW_PARAM(index) NODE_BEGIN(&node_param, index)
 
 #define GENERIC_CONSTANT(c) do {NODE_BEGIN(&node_constant, c)}while(0);

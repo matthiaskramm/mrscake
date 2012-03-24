@@ -120,13 +120,13 @@ static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, dataset
         }
         if(ci<0) { // ordered
                 LTE
-                    PARAM(dataset->columns[split->var_idx]);
+                    PARAM(split->var_idx);
                     FLOAT_CONSTANT(split->ord.c);
                 END;
         } else { //categorical
             array_t*a = parse_bitfield(data, dataset, split->var_idx, ci, split->subset);
                 IN
-                    PARAM(dataset->columns[split->var_idx]);
+                    PARAM(split->var_idx);
                     ARRAY_CONSTANT(a);
                 END;
         }
@@ -151,7 +151,7 @@ class CodeGeneratingDTree: public CvDTree
 
     constant_t predict(row_t*row)
     {
-        CvMat* matrix_row = cvmat_from_row(dataset, row, false, true);
+        CvMat* matrix_row = cvmat_from_row(dataset, row, true);
         int i = (int)floor(CvDTree::predict(matrix_row, NULL, false)->value + FLT_EPSILON);
         cvReleaseMat(&matrix_row);
         return dataset_map_response_class(dataset, i);
@@ -352,7 +352,7 @@ static int get_max_trees(dtree_model_factory_t*factory, dataset_t*d)
     return (int)sqrt(d->num_rows) / factory->max_trees_divide;
 }
 
-static model_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
+static node_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     CvMLDataFromExamples data(d);
 
@@ -360,16 +360,13 @@ static model_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
     CvDTreeParams cvd_params(16, 1, 0, factory->use_surrogate_splits, 16, 0, false, false, 0);
     dtree.train(&data, cvd_params);
 
-    model_t*m = model_new(d);
-    m->code = dtree.get_program();
-
 #ifdef VERIFY
     verify(dataset, m, &dtree);
 #endif
-    return m;
+    return  dtree.get_program();
 }
 
-static model_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
+static node_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     CvMLDataFromExamples data(d);
     CodeGeneratingRTrees rtrees(d);
@@ -378,12 +375,11 @@ static model_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
         return 0;
     CvRTParams params(16, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
     rtrees.train(&data, params);
-    model_t*m = model_new(d);
-    m->code = rtrees.get_program();
-    return m;
+
+    return rtrees.get_program();
 }
 
-static model_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
+static node_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     if(d->num_columns == 1 && !d->columns[0]->is_categorical) {
         /* OpenCV has a bug in their special case code for a 
@@ -397,12 +393,11 @@ static model_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
         return 0;
     CvRTParams params(16, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
     ertrees.train(&data, params);
-    model_t*m = model_new(d);
-    m->code = ertrees.get_program();
-    return m;
+
+    return ertrees.get_program();
 }
 
-static model_t*gbtrees_train(dtree_model_factory_t*factory, dataset_t*d)
+static node_t*gbtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     CvMLDataFromExamples data(d);
     CodeGeneratingGBTrees gbtrees(d);
@@ -411,9 +406,7 @@ static model_t*gbtrees_train(dtree_model_factory_t*factory, dataset_t*d)
     params.loss_function_type = CvGBTrees::DEVIANCE_LOSS; // classification, not regression
     gbtrees.train(&data, params);
 
-    model_t*m = model_new(d);
-    m->code = gbtrees.get_program();
-    return m;
+    return gbtrees.get_program();
 }
 
 static dtree_model_factory_t dtree_model_factory = {

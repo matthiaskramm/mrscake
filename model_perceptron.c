@@ -24,6 +24,7 @@
 #include "dataset.h"
 #include "easy_ast.h"
 #include "model_select.h"
+#include "transform.h"
 
 typedef struct _perceptron_model_factory {
     model_factory_t head;
@@ -103,16 +104,15 @@ static void perceptron_destroy(perceptron_t*p)
     free(p);
 }
 
-static model_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
+static node_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
 {
+    d = expand_categorical_columns(d);
+
     int num_iterations = d->num_rows*100;
     double lastperf = 1.0;
     double currentperf = -1;
     int i;
    
-    if(dataset_has_categorical_columns(d))
-        return 0; // we don't pass expanded_columns to the perceptron_ methods
-
     perceptron_t*p = perceptron_new(d);
 
     for(i=1;i<num_iterations;i++)
@@ -122,9 +122,6 @@ static model_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
             perceptron_update_weights(p, d, row);
         }
     }
-
-    expanded_columns_t*expanded_columns = expanded_columns_new(d);
-    assert(expanded_columns->num == d->num_columns); // we used the raw dataset to train the weights
 
     START_CODE(program)
     if(d->desired_response->num_classes == 2) {
@@ -137,7 +134,7 @@ static model_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
                     ADD
                         for(i=0;i<d->num_columns;i++) {
                             MUL
-                                INSERT_NODE(expanded_columns_parameter_code(expanded_columns, i))
+                                PARAM(i);
                                 FLOAT_CONSTANT(p->weights[class0][i])
                             END;
                         }
@@ -159,9 +156,9 @@ static model_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
                 ARG_MAX_F;
                     for(c=0;c<d->desired_response->num_classes;c++) {
                         ADD
-                            for(i=0;i<expanded_columns->num;i++) {
+                            for(i=0;i<d->num_columns;i++) {
                                 MUL
-                                    INSERT_NODE(expanded_columns_parameter_code(expanded_columns, i))
+                                    PARAM(i);
                                     FLOAT_CONSTANT(p->weights[c][i])
                                 END;
                             }
@@ -174,14 +171,10 @@ static model_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
     }
     END_CODE;
 
-
-    expanded_columns_destroy(expanded_columns);
-
     perceptron_destroy(p);
 
-    model_t*m = model_new(d);
-    m->code = program;
-    return m;
+    d = reverse_transformations(d, &program);
+    return program;
 }
 
 static perceptron_model_factory_t perceptron_model_factory = {

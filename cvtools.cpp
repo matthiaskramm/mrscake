@@ -118,53 +118,18 @@ void cvmat_print(CvMat*mat)
     }
 }
 
-CvMat*cvmat_from_row(dataset_t*dataset, row_t*row, bool expand_categories, bool add_one)
+CvMat*cvmat_from_row(dataset_t*dataset, row_t*row, bool add_one)
 {
     int width = dataset->num_columns;
-
-    expanded_columns_t*e = 0;
-    if(expand_categories) {
-        e = expanded_columns_new(dataset);
-        width = e->num;
-    }
 
     if(add_one)
         width++;
 
     CvMat* matrix_row = cvCreateMat(1, width, CV_32FC1);
-
-    if(!expand_categories) {
-        int t;
-        for(t=0;t<row->num_inputs;t++) {
-            matrix_row->data.fl[t] = variable_value(&row->inputs[t]);
-        }
-    } else {
-        int t;
-        int pos = 0;
-        for(t=0;t<row->num_inputs;t++) {
-            variable_t*v = &row->inputs[t];
-            if(!dataset->columns[t]->is_categorical) {
-                matrix_row->data.fl[pos++] = variable_value(v);
-            } else {
-                constant_t c = variable_to_constant(v);
-                int s;
-                for(s=0;s<dataset->columns[t]->num_classes;s++) {
-                    if(constant_equals(&c, &dataset->columns[t]->classes[s])) {
-                        matrix_row->data.fl[pos] = 1.0;
-                    } else {
-                        matrix_row->data.fl[pos] = 0.0;
-                    }
-                    pos++;
-                }
-            }
-        }
-        assert(pos == e->num);
+    int t;
+    for(t=0;t<row->num_inputs;t++) {
+        matrix_row->data.fl[t] = variable_value(&row->inputs[t]);
     }
-
-    if(e) {
-        expanded_columns_destroy(e);
-    }
-
     if(add_one)
         matrix_row->data.fl[row->num_inputs] = 0;
     return matrix_row;

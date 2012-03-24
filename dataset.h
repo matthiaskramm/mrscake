@@ -83,23 +83,6 @@ struct _transform
     dataset_t*original;
 };
 
-/* structure for storing "exploded" version of columns where every class
-   has its own 0/1 column */
-typedef struct _expanded_columns {
-    dataset_t*dataset;
-    int num;
-    bool use_header_code;
-    struct {
-        int source_column;
-        int source_class;
-    }* columns;
-} expanded_columns_t;
-
-expanded_columns_t* expanded_columns_new(dataset_t*s);
-node_t* expanded_columns_parameter_init(expanded_columns_t*e);
-node_t* expanded_columns_parameter_code(expanded_columns_t*e, int num);
-void expanded_columns_destroy(expanded_columns_t*e);
-
 column_t*column_new(int num_rows, bool is_categorical, int x);
 
 model_t* model_new(dataset_t*dataset);
