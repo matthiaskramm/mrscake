@@ -330,7 +330,7 @@ static PyObject* py_dataset_add(PyObject * _self, PyObject* args, PyObject* kwar
 }
 PyDoc_STRVAR(dataset_get_model_doc, \
 "get_model()\n\n"
-"Adds a row of training data to the model.\n"
+"Train a classifier\n"
 );
 static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* kwargs)
 {
