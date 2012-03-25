@@ -92,11 +92,11 @@ void job_process(job_t*job)
 
 static void process_jobs(jobqueue_t*jobs)
 {
-    //printf("\n");
+    printf("\n");
     job_t*job;
     int count = 0;
     for(job=jobs->first;job;job=job->next) {
-        //printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
+        printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
         job_process(job);
         count++;
     }
@@ -110,6 +110,8 @@ static void process_jobs_remotely(jobqueue_t*jobs)
        will now only return an error, not halt the program */
     sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
 
+    /* Most of the total processing time is usually spent in this loop, as
+       remote_job_start() will block until the next worker becomes available */
     job_t*job;
     int pos = 0;
     for(job=jobs->first;job;job=job->next) {
@@ -117,6 +119,8 @@ static void process_jobs_remotely(jobqueue_t*jobs)
         job->model = 0;
         pos++;
     }
+
+    /* Wait for remaining servers and gather results */
     int open_jobs = jobs->num;
     printf("%d open jobs\n", open_jobs);
     while(open_jobs) {

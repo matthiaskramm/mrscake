@@ -168,7 +168,9 @@ int start_server(int port)
                 exit(1);
             }
 
-            char buf[128];
+            /* Wait for a free worker to become available. Only
+               after we have a worker will we actually read the 
+               job data */
             while(num_workers == config_number_of_remote_workers) {
                 clean_old_workers(jobs, &num_workers);
                 if(num_workers == config_number_of_remote_workers) {
@@ -200,7 +202,7 @@ int connect_to_host(const char *host, int port)
 
     struct hostent *he = gethostbyname(host);
     if(!he) {
-        printf("gethostbyname returned %d\n", h_errno);
+        fprintf(stderr, "gethostbyname returned %d\n", h_errno);
         herror(host);
         return -1;
     }
@@ -292,7 +294,7 @@ time_t remote_job_age(remote_job_t*j)
     return time(0) - j->start_time;
 }
 
-model_t* process_job_remotely(const char*model_name, dataset_t*dataset)
+model_t* process_job_remotely(const char*model_name, dataset_t*dataset) //unused
 {
     remote_job_t*j = remote_job_start(model_name, dataset);
     return remote_job_read_result(j);
