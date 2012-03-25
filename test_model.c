@@ -42,7 +42,7 @@ int main(int argn, char*argv[])
         for(s=0;s<WIDTH;s++) {
             e->inputs[s] = variable_new_continuous(lrand48()%256);
         }
-        e->inputs[2] = variable_new_continuous(((t%2)+1)*100+lrand48()*16);
+        e->inputs[2] = variable_new_continuous(((t%2)+1)*100+(lrand48()%16));
         e->inputs[3] = variable_new_categorical(t%4);
         e->desired_response = variable_new_categorical(t%2);
         trainingdata_add_example(data, e);

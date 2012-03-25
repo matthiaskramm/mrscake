@@ -119,7 +119,8 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
             }
         }
     }
-#else
+#endif
+
     for(s=0;s<NUM(collections);s++) {
         model_collection_t*collection = &collections[s];
         for(t=0;t<*collection->num_models;t++) {
@@ -131,7 +132,6 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
             jobqueue_append(queue,job);
         }
     }
-#endif
     return queue;
 }
 

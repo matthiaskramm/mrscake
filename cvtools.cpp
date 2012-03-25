@@ -107,12 +107,24 @@ int cvmat_get_max_index(CvMat*mat)
 }
 void cvmat_print(CvMat*mat)
 {
-    assert(CV_MAT_TYPE(mat->type) == CV_32FC1);
-    int x,y;
-    float*p = mat->data.fl;
-    for(y=0;y<mat->rows;y++) {
-        for(x=0;x<mat->cols;x++) {
-            printf("%f\n", *p++);
+    if(CV_MAT_TYPE(mat->type) == CV_32FC1) {
+        int x,y;
+        float*p = mat->data.fl;
+        for(y=0;y<mat->rows;y++) {
+            for(x=0;x<mat->cols;x++) {
+                printf("%f ", *p++);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    } else if(CV_MAT_TYPE(mat->type) == CV_32SC1) {
+        int x,y;
+        for(y=0;y<mat->rows;y++) {
+            for(x=0;x<mat->cols;x++) {
+                int32_t*e = (int32_t*)(CV_MAT_ELEM_PTR(*mat, y, 0));
+                printf("%d ", *e);
+            }
+            printf("\n");
         }
         printf("\n");
     }
