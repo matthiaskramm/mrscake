@@ -70,6 +70,7 @@ int main(int argn, char*argv[])
     confusion_matrix_print(confusion);
     confusion_matrix_destroy(confusion);
 
+    printf("model: %s\n", m->name);
     printf("size: %d\n", model_size(m));
     printf("errors: %d\n", model_errors_old(m, dataset));
     printf("confusion matrix errors: %d\n", model_errors(m, dataset));

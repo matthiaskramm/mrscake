@@ -92,7 +92,6 @@ void job_process(job_t*job)
 
 static void process_jobs(jobqueue_t*jobs)
 {
-    printf("\n");
     job_t*job;
     int count = 0;
     for(job=jobs->first;job;job=job->next) {
@@ -100,6 +99,7 @@ static void process_jobs(jobqueue_t*jobs)
         job_process(job);
         count++;
     }
+    printf("\n");
 }
 
 static void process_jobs_remotely(jobqueue_t*jobs)

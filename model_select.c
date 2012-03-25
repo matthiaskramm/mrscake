@@ -191,7 +191,6 @@ model_t* model_select(trainingdata_t*trainingdata)
         return 0;
     }
 
-#define DEBUG
 #ifdef DEBUG
     //model_errors_old(best_model, data);
     printf("# Using %s.\n", best_model->name);
