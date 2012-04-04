@@ -23,6 +23,9 @@
 #include "codegen.h"
 #include "ast_transforms.h"
 
+void js_write_node_empty(node_t*n, state_t*s)
+{
+}
 void js_write_node_block(node_t*n, state_t*s)
 {
     int t;

@@ -60,6 +60,7 @@ struct _node {
 /* all known node types & opcodes */
 #define LIST_NODES \
     NODE(0x71, node_block) \
+    NODE(0x00, node_empty) \
     NODE(0x01, node_if) \
     NODE(0x02, node_add) \
     NODE(0x03, node_sub) \

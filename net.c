@@ -87,16 +87,13 @@ static void process_request(int socket)
     job_t j;
     j.factory = factory;
     j.data = dataset;
-    j.model = 0;
+    j.code = 0;
     job_process(&j);
-    model_t*m = j.model;
-    if(m) {
-        m->name = factory->name;
-    }
+    node_t*code = j.code;
 
     printf("worker %d: writing out model data\n", getpid());
     writer_t*w = filewriter_new(socket);
-    model_write(m, w);
+    node_write(code, w, SERIALIZE_DEFAULTS);
     w->finish(w);
 }
 
@@ -274,13 +271,13 @@ bool remote_job_is_ready(remote_job_t*j)
     return !!FD_ISSET(j->socket, &readfds);
 }
 
-model_t* remote_job_read_result(remote_job_t*j)
+node_t* remote_job_read_result(remote_job_t*j)
 {
     reader_t*r = filereader_with_timeout_new(j->socket, config_remote_read_timeout);
-    model_t*m = model_read(r);
+    node_t*code = node_read(r);
     r->dealloc(r);
     free(j);
-    return m;
+    return code;
 }
 
 void remote_job_cancel(remote_job_t*j)
@@ -294,7 +291,7 @@ time_t remote_job_age(remote_job_t*j)
     return time(0) - j->start_time;
 }
 
-model_t* process_job_remotely(const char*model_name, dataset_t*dataset) //unused
+node_t* process_job_remotely(const char*model_name, dataset_t*dataset) //unused
 {
     remote_job_t*j = remote_job_start(model_name, dataset);
     return remote_job_read_result(j);

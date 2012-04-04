@@ -41,10 +41,11 @@ typedef node_t*(*training_function_t)(model_factory_t*factory, dataset_t*dataset
 model_t* model_select(trainingdata_t*);
 model_t* model_train_specific_model(trainingdata_t*, const char*name);
 
-int model_size(model_t*m);
-int model_errors_old(model_t*m, dataset_t*s);
-int model_errors(model_t*m, dataset_t*s);
-int model_score(model_t*m, dataset_t*data);
+int code_size(node_t*code);
+int code_errors(node_t*code, dataset_t*s);
+int code_errors_old(node_t*code, dataset_t*s);
+int code_score(node_t*code, dataset_t*data);
+
 model_t* train_model(model_factory_t*factory, dataset_t*data);
 
 model_factory_t* model_factory_get_by_name(const char*name);
@@ -58,7 +59,7 @@ typedef struct _confusion_matrix {
 confusion_matrix_t* confusion_matrix_new(dataset_t*d);
 void confusion_matrix_destroy(confusion_matrix_t*m);
 void confusion_matrix_print(confusion_matrix_t*m);
-confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s);
+confusion_matrix_t* code_get_confusion_matrix(node_t*code, dataset_t*s);
 
 #ifdef __cplusplus
 }

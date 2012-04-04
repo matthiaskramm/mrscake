@@ -22,6 +22,9 @@
 #include "codegen.h"
 #include "ast_transforms.h"
 
+void python_write_node_empty(node_t*n, state_t*s)
+{
+}
 void python_write_node_block(node_t*n, state_t*s)
 {
     int t;

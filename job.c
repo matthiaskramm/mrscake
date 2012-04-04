@@ -36,11 +36,9 @@ void job_train_and_score(job_t*job)
 {
     node_t*code = job->factory->train(job->factory, job->data);
     if(code) {
-        job->model = model_new(job->data);
-        job->model->code = code;
-        job->model->name = job->factory->name;
+        job->code = code;
+        job->score = code_score(job->code, job->data);
     }
-    job->score = model_score(job->model, job->data);
 }
 
 #define FORK_FOR_TRAINING
@@ -67,7 +65,7 @@ void job_process(job_t*job)
 
         writer_t*w = filewriter_new(write_fd);
         write_compressed_int(w, job->score);
-        model_write(job->model, w);
+        node_write(job->code, w, SERIALIZE_DEFAULTS);
         w->finish(w);
         close(write_fd); // close write
         _exit(0);
@@ -76,10 +74,7 @@ void job_process(job_t*job)
         close(write_fd); // close write
         reader_t*r = filereader_with_timeout_new(read_fd, config_job_wait_timeout);
         job->score = read_compressed_int(r);
-        job->model = model_read(r);
-        if(job->model) {
-            job->model->name = job->factory->name;
-        }
+        job->code = node_read(r);
         r->dealloc(r);
         close(read_fd); // close read
         ret = waitpid(pid, NULL, WNOHANG);
@@ -116,7 +111,7 @@ static void process_jobs_remotely(jobqueue_t*jobs)
     int pos = 0;
     for(job=jobs->first;job;job=job->next) {
         r[pos] = remote_job_start(job->factory->name, job->data);
-        job->model = 0;
+        job->code = 0;
         pos++;
     }
 
@@ -127,9 +122,9 @@ static void process_jobs_remotely(jobqueue_t*jobs)
         int pos = 0;
         for(job=jobs->first;job;job=job->next) {
             if(r[pos]) {
-                if(!job->model && remote_job_is_ready(r[pos])) {
-                    job->model = remote_job_read_result(r[pos]);
-                    if(job->model) {
+                if(!job->code && remote_job_is_ready(r[pos])) {
+                    job->code = remote_job_read_result(r[pos]);
+                    if(job->code) {
                         printf("Finished: %s\n", job->factory->name);
                     } else {
                         printf("Failed (bad data): %s\n", job->factory->name);
@@ -215,7 +210,7 @@ void jobqueue_print(jobqueue_t*queue)
 {
     job_t*job = queue->first;
     while(job) {
-        printf("[%c] %s\n", job->model?'x':' ', job->factory->name);
+        printf("[%c] %s\n", job->code?'x':' ', job->factory->name);
         job = job->next;
     }
 }

@@ -113,7 +113,7 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
                 model_factory_t*factory = collection->models[t];
                 job_t* job = job_new();
                 job->factory = factory;
-                job->model = NULL;
+                job->code = NULL;
                 job->data = newdata;
                 jobqueue_append(queue,job);
             }
@@ -127,7 +127,7 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
             model_factory_t*factory = collection->models[t];
             job_t* job = job_new();
             job->factory = factory;
-            job->model = NULL;
+            job->code = NULL;
             job->data = data;
             jobqueue_append(queue,job);
         }
@@ -139,36 +139,47 @@ void jobqueue_revert_dataset_transformations(jobqueue_t*jobs)
 {
     job_t*job;
     for(job=jobs->first;job;job=job->next) {
-        if(job->model) {
-            job->data = dataset_revert_all_transformations(job->data, (node_t**)&job->model->code);
+        if(job->code) {
+            job->data = dataset_revert_all_transformations(job->data, &job->code);
         }
     }
 }
 
 extern varorder_t*dtree_var_order(dataset_t*d);
-    
+
+model_t* job_to_model(job_t*job)
+{
+    model_t* model = model_new(job->data);
+    model->code = job->code;
+    model->name = job->factory->name;
+    return model;
+}
+
 model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
 {
-    model_t*best_model = NULL;
-    int best_score = INT_MAX;
+    if(!jobs)
+        return NULL;
+
+    job_t*best_job = NULL;
+
     job_t*job;
     for(job=jobs->first;job;job=job->next) {
-        model_t*m = job->model;
-        if(m) {
-            if(job->score < best_score) {
-                if(best_model) {
-                    model_destroy(best_model);
+        if(job->code) {
+            if(!best_job || job->score < best_job->score) {
+                if(best_job) {
+                    node_destroy(best_job->code);
+                    best_job->code = 0;
                 }
-                best_score = job->score;
-                best_model = m;
+                best_job = job;
             } else {
-                model_destroy(m);
+                node_destroy(job->code);
+                job->code = 0;
             }
         }
-        job->model = 0;
     }
+    model_t*model = job_to_model(best_job);
     jobqueue_destroy(jobs);
-    return best_model;
+    return model;
 }
 
 model_t* model_select(trainingdata_t*trainingdata)
@@ -212,8 +223,9 @@ model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name
     if(!job.factory)
         return 0;
     job_process(&job);
+    model_t*model = job_to_model(&job);
     dataset_destroy(job.data);
-    return job.model;
+    return model;
 }
 
 confusion_matrix_t* confusion_matrix_new(dataset_t*d)
@@ -256,7 +268,7 @@ void confusion_matrix_print(confusion_matrix_t*m)
     }
     printf("\n");
 }
-confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s)
+confusion_matrix_t* code_get_confusion_matrix(node_t*code, dataset_t*s)
 {
     dict_t*d = dict_new(&constant_hash_type);
     int t;
@@ -264,8 +276,6 @@ confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s)
         dict_put(d, &s->desired_response->classes[t], INT_TO_PTR(t));
     }
     
-    node_t*node = m->code;
-    node_t*code = (node_t*)m->code;
     row_t* row = row_new(s->num_columns);
     environment_t*env = environment_new(code, row);
 
@@ -286,10 +296,8 @@ confusion_matrix_t* model_get_confusion_matrix(model_t*m, dataset_t*s)
     return matrix;
 }
 
-int model_errors_old(model_t*m, dataset_t*s)
+int code_errors_old(node_t*code, dataset_t*s)
 {
-    node_t*node = m->code;
-    node_t*code = (node_t*)m->code;
     row_t* row = row_new(s->num_columns);
     environment_t*env = environment_new(code, row);
 
@@ -308,9 +316,9 @@ int model_errors_old(model_t*m, dataset_t*s)
     return error;
 }
 
-int model_errors(model_t*m, dataset_t*s)
+int code_errors(node_t*code, dataset_t*s)
 {
-    confusion_matrix_t* c = model_get_confusion_matrix(m, s);
+    confusion_matrix_t* c = code_get_confusion_matrix(code, s);
     int x,y,t;
     double error = 0;
     int total = 0;
@@ -341,17 +349,16 @@ int model_errors(model_t*m, dataset_t*s)
     return (int)(error * total / cn / 2);
 }
 
-int model_size(model_t*m)
+int code_size(node_t*code)
 {
-    node_t*node = m->code;
     writer_t *w = nullwriter_new();
-    node_write(node, w, SERIALIZE_FLAG_OMIT_STRINGS);
+    node_write(code, w, SERIALIZE_FLAG_OMIT_STRINGS);
     int size = w->pos;
     w->finish(w);
     return size;
 }
 
-int model_score(model_t*m, dataset_t*data)
+int code_score(node_t*code, dataset_t*data)
 {
     /* Note: The dataset might be transformed. If we ever introduce
        transformations that might affect the score (like row
@@ -360,10 +367,10 @@ int model_score(model_t*m, dataset_t*data)
        even though it really is- transformation information is 
        lost when data is transferred between machines.
     */
-    if(!m)
+    if(!code)
         return INT_MAX;
-    int size = model_size(m);
-    int errors = model_errors(m, data);
+    int size = code_size(code);
+    int errors = code_errors(code, data);
     return size + errors * sizeof(uint32_t);
 }
 

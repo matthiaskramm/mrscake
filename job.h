@@ -31,7 +31,7 @@ extern "C" {
 typedef struct _job {
     dataset_t*data;
     model_factory_t*factory;
-    model_t*model;
+    node_t*code;
 
     int score;
 

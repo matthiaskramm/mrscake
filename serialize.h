@@ -30,6 +30,7 @@
 extern "C" {
 #endif
 
+#define SERIALIZE_DEFAULTS 0
 #define SERIALIZE_FLAG_OMIT_STRINGS 1
 
 node_t* node_read(reader_t*read);

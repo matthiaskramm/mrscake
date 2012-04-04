@@ -160,6 +160,9 @@ node_t* node_read(reader_t*reader)
 
     do {
         uint8_t opcode = read_uint8(reader);
+        if(!opcode) {
+            return NULL;
+        }
         nodetype_t*type = opcode_to_node(opcode);
         if(!type)
             return NULL;
@@ -288,6 +291,10 @@ static void node_write_internal_data(node_t*node, writer_t*writer, unsigned flag
 
 void node_write(node_t*node, writer_t*writer, unsigned flags)
 {
+    if(!node) {
+        write_uint8(writer, opcode_node_empty);
+        return;
+    }
     uint8_t opcode = node_get_opcode(node);
     write_uint8(writer, opcode);
     node_write_internal_data(node, writer, flags);

@@ -66,15 +66,15 @@ int main(int argn, char*argv[])
     }
 
     dataset_t* dataset = trainingdata_sanitize(data);
-    confusion_matrix_t* confusion = model_get_confusion_matrix(m, dataset);
+    confusion_matrix_t* confusion = code_get_confusion_matrix(m->code, dataset);
     confusion_matrix_print(confusion);
     confusion_matrix_destroy(confusion);
 
     printf("model: %s\n", m->name);
-    printf("size: %d\n", model_size(m));
-    printf("errors: %d\n", model_errors_old(m, dataset));
-    printf("confusion matrix errors: %d\n", model_errors(m, dataset));
-    printf("score: %d\n", model_score(m, dataset));
+    printf("size: %d\n", code_size(m->code));
+    printf("errors: %d\n", code_errors_old(m->code, dataset));
+    printf("confusion matrix errors: %d\n", code_errors(m->code, dataset));
+    printf("score: %d\n", code_score(m->code, dataset));
 
     char*code = model_generate_code(m, "python");
     printf("%s\n", code);

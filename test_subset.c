@@ -73,11 +73,11 @@ int main()
         job.data = data;
         job.factory = model_factory_get_by_name("simplified linear svm");
         job_process(&job);
-        if(!job.model) {
+        if(!job.code) {
             continue;
         }
 
-        data = dataset_revert_all_transformations(data, (node_t**)&job.model->code);
+        data = dataset_revert_all_transformations(data, &job.code);
         //node_print(job.model->code);
 
         trainingdata_destroy(trainingdata);

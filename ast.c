@@ -29,6 +29,21 @@
 
 #define EVAL_CHILD(i) ((n)->child[(i)]->type->eval((n)->child[(i)],env))
 
+// -------------------------- empty node -------------------------------
+
+constant_t node_empty_eval(node_t*n, environment_t* env)
+{
+    return missing_constant();
+}
+nodetype_t node_empty =
+{
+name:"empty",
+flags:0,
+eval:node_empty_eval,
+min_args:0,
+max_args:0,
+};
+
 // -------------------------- block node -------------------------------
 
 constant_t node_block_eval(node_t*n, environment_t* env)

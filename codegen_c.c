@@ -53,6 +53,9 @@ char* c_type_name(constant_type_t c)
     }
 }
 
+void c_write_node_empty(node_t*n, state_t*s)
+{
+}
 void c_write_node_block(node_t*n, state_t*s)
 {
     int t;
