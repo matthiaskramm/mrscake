@@ -49,7 +49,7 @@ class Server:
 
 # distribute the load to the git server, by delaying
 # instance startup by a random number of seconds
-time.sleep(ord(hashlib.md5(run("hostname")).digest()[0]))
+time.sleep(ord(hashlib.md5(run("hostname")).digest()[0]) / 10.0)
 
 server = Server()
 server.start()
