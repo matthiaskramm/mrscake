@@ -44,25 +44,45 @@ typedef struct _worker {
     int start_time;
 } worker_t;
 
-void clean_old_workers(worker_t*jobs, int*num)
-{
-    int t;
-    for(t=0;t<*num;t++) {
-        int status;
-        pid_t p = waitpid(jobs[t].pid, &status, WNOHANG);
-        if(p == jobs[t].pid) {
-            printf("worker %d: finished: %s %d\n", jobs[t].pid,
-                    WIFEXITED(status)?"exit": (WIFSIGNALED(status)?"signal": "abnormal"),
-                    WIFEXITED(status)? WEXITSTATUS(status):WTERMSIG(status)
-                    );
-            jobs[t] = jobs[--(*num)];
-        }
+typedef struct _server {
+    worker_t* jobs;
+    int num_workers;
+} server_t;
 
-        if(time(0) - jobs[t].start_time > config_remote_worker_timeout) {
-            printf("killing worker %d\n", jobs[t].pid);
-            kill(jobs[t].pid, 9);
-            waitpid(jobs[t].pid, &status, 0);
-            jobs[t] = jobs[--(*num)];
+static volatile server_t server;
+static sigset_t sigchld_set;
+
+void clean_old_workers()
+{
+    sigprocmask(SIG_BLOCK, &sigchld_set, 0);
+    int t;
+    for(t=0;t<server.num_workers;t++) {
+        if(time(0) - server.jobs[t].start_time > config_remote_worker_timeout) {
+            printf("killing worker %d\n", server.jobs[t].pid);
+            kill(server.jobs[t].pid, 9);
+        }
+    }
+    sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
+}
+
+static void sigchild(int signal)
+{
+    while(1) {
+        int status;
+        pid_t pid = waitpid(-1, &status, WNOHANG);
+        if(pid<0)
+            break;
+
+        int i;
+        for(i=0;i<server.num_workers;i++) {
+            if(pid == server.jobs[i].pid) {
+                printf("worker %d: finished: %s %d\n", pid,
+                        WIFEXITED(status)?"exit": (WIFSIGNALED(status)?"signal": "abnormal"),
+                        WIFEXITED(status)? WEXITSTATUS(status):WTERMSIG(status)
+                        );
+                server.jobs[i] = server.jobs[--server.num_workers];
+                break;
+            }
         }
     }
 }
@@ -134,8 +154,13 @@ int start_server(int port)
         exit(1);
     }
 
-    worker_t* jobs = malloc(sizeof(worker_t)*config_number_of_remote_workers);
-    int num_workers = 0;
+    server.jobs = malloc(sizeof(worker_t)*config_number_of_remote_workers);
+    server.num_workers = 0;
+
+    sigemptyset(&sigchld_set);
+    sigaddset(&sigchld_set, SIGCHLD);
+
+    signal(SIGCHLD, sigchild);
 
     printf("listing on port %d\n", port);
     while(1) {
@@ -143,9 +168,11 @@ int start_server(int port)
         FD_ZERO(&fds);
         FD_SET(sock, &fds);
 
-        ret = select(sock + 1, &fds, 0, 0, 0);
+        do {
+            ret = select(sock + 1, &fds, 0, 0, 0);
+        } while(ret == -1 && errno == EINTR);
         if(ret<0) {
-            perror("listen");
+            perror("select");
             exit(1);
         }
         if(FD_ISSET(sock, &fds)) {
@@ -168,23 +195,28 @@ int start_server(int port)
             /* Wait for a free worker to become available. Only
                after we have a worker will we actually read the 
                job data */
-            while(num_workers == config_number_of_remote_workers) {
-                clean_old_workers(jobs, &num_workers);
-                if(num_workers == config_number_of_remote_workers) {
-                    sleep(1);
-                }
+            while(server.num_workers >= config_number_of_remote_workers) {
+                printf("Wait for free worker (%d/%d)", server.num_workers, config_number_of_remote_workers);
+                sleep(1);
+                clean_old_workers();
             }
+
+            /* block child signals while we're modifying num_workers / jobs */
+            sigprocmask(SIG_BLOCK, &sigchld_set, 0);
 
             pid_t pid = fork();
             if(!pid) {
+                sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
                 process_request(newsock);
                 printf("worker %d: close\n", getpid());
                 close(newsock);
                 _exit(0);
             }
-            jobs[num_workers].pid = pid;
-            jobs[num_workers].start_time = time(0);
-            num_workers++;
+            server.jobs[server.num_workers].pid = pid;
+            server.jobs[server.num_workers].start_time = time(0);
+            server.num_workers++;
+
+            sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
 
             close(newsock);
         }
