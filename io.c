@@ -116,28 +116,42 @@ static int reader_fileread_with_timeout(reader_t*r, void* data, int len)
     FD_ZERO(&readfds);
     FD_SET(i->handle, &readfds);
     int ret;
-    
-    /* FIXME: this will only time out on the first read, but not
-       reads after that (because read_with_retry is a loop) */
-    while(1) {
-        ret = select(i->handle+1, &readfds, NULL, NULL, &timeout);
+
+    int pos = 0;
+    while(pos<len) {
+        while(1) {
+            ret = select(i->handle+1, &readfds, NULL, NULL, &timeout);
+            if(ret<0) {
+                if(errno == EINTR || errno == EAGAIN)
+                    continue;
+                perror("select");
+                r->error = strerror(errno);
+                return -1;
+            }
+            if(ret>=0)
+                break;
+        }
+        if(!FD_ISSET(i->handle, &readfds)) {
+            fprintf(stderr, "timeout while trying to read %d bytes\n", len);
+            r->error = "timeout";
+            return -1;
+        }
+
+        ret = read(i->handle, data+pos, len-pos);
         if(ret<0) {
             if(errno == EINTR || errno == EAGAIN)
                 continue;
-            perror("select");
+            perror("read");
             r->error = strerror(errno);
-            return -1;
+            return ret;
         }
-        if(ret>=0)
-            break;
+        if(ret==0) {
+            // EOF
+            return pos;
+        }
+        pos += ret;
     }
-    if(!FD_ISSET(i->handle, &readfds)) {
-        fprintf(stderr, "timeout while trying to read %d bytes\n", len);
-        r->error = "timeout";
-        return -1;
-    }
-    ret = read_with_retry(r, i->handle, data, len);
-    return ret;
+    return len;
 }
 static void reader_fileread_dealloc(reader_t*r)
 {
