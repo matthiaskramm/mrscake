@@ -5,6 +5,7 @@ import os
 import time
 import hashlib
 import traceback
+import stat
 
 def run(cmd):
     fi = os.popen(cmd, "rb")
@@ -24,6 +25,10 @@ def exception_as_string():
         s += "  File \"%s\", line %d, in %s\n" % (l[0],l[1],l[2])
         s += "    %s\n" % l[3]
     return s.strip()
+
+# this function doesn't return
+def restart_script():
+    os.execv(sys.executable, [sys.executable] + sys.argv)
 
 class Server:
     def __init__(self):
@@ -61,13 +66,20 @@ while 1:
 
     if current_revision != server_revision:
         print "upgrading from revision %s to revision %s" % (current_revision, server_revision)
+
+        script_mtime_before = sys.stat("autoupdate.py")[stat.ST_MTIME]
         try:
             print run("git merge FETCH_HEAD")
         except:
             print "Error merging revision %s" % server_revision
+        script_mtime_after = sys.stat("autoupdate.py")[stat.ST_MTIME]
+
         try:
             server.stop()
             run("make mrscake-job-server")
+
+            if script_mtime_after != script_mtime_before:
+                restart_script()
             server.start()
         except:
             print exception_as_string()
