@@ -67,12 +67,12 @@ while 1:
     if current_revision != server_revision:
         print "upgrading from revision %s to revision %s" % (current_revision, server_revision)
 
-        script_mtime_before = sys.stat("autoupdate.py")[stat.ST_MTIME]
+        script_mtime_before = os.stat("autoupdate.py")[stat.ST_MTIME]
         try:
             print run("git merge FETCH_HEAD")
         except:
             print "Error merging revision %s" % server_revision
-        script_mtime_after = sys.stat("autoupdate.py")[stat.ST_MTIME]
+        script_mtime_after = os.stat("autoupdate.py")[stat.ST_MTIME]
 
         try:
             server.stop()
