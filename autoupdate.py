@@ -54,7 +54,9 @@ class Server:
 
 # distribute the load to the git server, by delaying
 # instance startup by a random number of seconds
-time.sleep(ord(hashlib.md5(run("hostname")).digest()[0]) / 10.0)
+delay = ord(hashlib.md5(run("hostname")).digest()[0]) / 10.0
+print "Waiting %.1f seconds before startup" % delay
+time.sleep(delay)
 
 server = Server()
 server.start()
