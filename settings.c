@@ -31,7 +31,8 @@ int config_remote_read_timeout = 10;
 int config_model_timeout = 15;
 bool config_do_remote_processing = false;
 int config_number_of_remote_workers = 32;
-int config_remote_worker_timeout = 3600;
+
+int config_remote_worker_timeout = 60;
 
 static int remote_server_size = 0;
 
@@ -47,6 +48,7 @@ void config_add_remote_server(char*host, int port)
     remote_server_t*s = &config_remote_servers[config_num_remote_servers++];
     s->host = host;
     s->port = port;
+    config_do_remote_processing = true;
 }
 
 void config_parse_remote_servers(char*filename)

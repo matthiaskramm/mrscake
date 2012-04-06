@@ -24,6 +24,7 @@
 #include "mrscake.h"
 #include "list.h"
 #include "stringpool.h"
+#include "settings.h"
 
 #if PY_MAJOR_VERSION >= 3
 #define PYTHON3
@@ -468,7 +469,22 @@ static PyTypeObject ModelClass =
 
 //=====================================================================
 
-PyDoc_STRVAR(mrcake_setparameter_doc, \
+PyDoc_STRVAR(mrscake_add_server_doc, \
+"add_server(host, port=3075)\n\n"
+);
+static PyObject* mrscake_add_server(PyObject* module, PyObject* args, PyObject* kwargs)
+{
+    static char *kwlist[] = {"host", "port", NULL};
+    char*host=0;
+    int port=3075;
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwlist, &host, &port))
+        return NULL;
+    state_t*state = STATE(module);
+    config_add_remote_server(host, port);
+    return PY_NONE;
+}
+
+PyDoc_STRVAR(mrscake_setparameter_doc, \
 "setparameter(key,value)\n\n"
 );
 static PyObject* mrscake_setparameter(PyObject* module, PyObject* args, PyObject* kwargs)
@@ -483,7 +499,8 @@ static PyObject* mrscake_setparameter(PyObject* module, PyObject* args, PyObject
 
 static PyMethodDef mrscake_methods[] =
 {
-    {"setparameter", (PyCFunction)mrscake_setparameter, M_FLAGS, mrcake_setparameter_doc},
+    {"add_server", (PyCFunction)mrscake_add_server, M_FLAGS, mrscake_add_server_doc},
+    {"setparameter", (PyCFunction)mrscake_setparameter, M_FLAGS, mrscake_setparameter_doc},
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},
     {"load_data", (PyCFunction)py_dataset_load, M_FLAGS, dataset_load_doc},
 

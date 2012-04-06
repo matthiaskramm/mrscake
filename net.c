@@ -70,7 +70,7 @@ static void sigchild(int signal)
     while(1) {
         int status;
         pid_t pid = waitpid(-1, &status, WNOHANG);
-        if(pid<0)
+        if(pid<=0)
             break;
 
         int i;
@@ -196,7 +196,7 @@ int start_server(int port)
                after we have a worker will we actually read the 
                job data */
             while(server.num_workers >= config_number_of_remote_workers) {
-                printf("Wait for free worker (%d/%d)", server.num_workers, config_number_of_remote_workers);
+                printf("Wait for free worker (%d/%d)\n", server.num_workers, config_number_of_remote_workers);
                 sleep(1);
                 clean_old_workers();
             }

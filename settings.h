@@ -40,4 +40,5 @@ extern bool config_do_remote_processing;
 extern int config_number_of_remote_workers;
 
 void config_parse_remote_servers(char*filename);
+void config_add_remote_server(char*host, int port);
 #endif
