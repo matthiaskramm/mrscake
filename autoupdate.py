@@ -84,5 +84,5 @@ while 1:
         except:
             print exception_as_string()
 
-    time.sleep(60)
+    time.sleep(30)
 
