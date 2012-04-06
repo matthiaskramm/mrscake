@@ -147,6 +147,7 @@ static int reader_fileread_with_timeout(reader_t*r, void* data, int len)
         }
         if(ret==0) {
             // EOF
+            r->error = "short read";
             return pos;
         }
         pos += ret;
