@@ -32,7 +32,7 @@ ifeq ($(IS_MACOS),)
     SO_RUBY=rb.so
 endif
 
-MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o model_perceptron.o
+MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o model_perceptron.o model_knearest.o
 VAR_SELECTORS=varselect_cv_dtree.o
 CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
 OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o var_selection.o transform.o mrscake.o util.o
@@ -124,6 +124,9 @@ model_cv_linear.o: model_cv_linear.cpp mrscake.h ast.h cvtools.h dataset.h easy_
 	$(CXX) -Ilib $< -c -o $@
 
 model_perceptron.o: model_perceptron.c mrscake.h ast.h cvtools.h dataset.h easy_ast.h
+	$(CC) -Ilib $< -c -o $@
+
+model_knearest.o: model_knearest.c mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CC) -Ilib $< -c -o $@
 
 varselect_cv_dtree.o: varselect_cv_dtree.cpp mrscake.h cvtools.h dataset.h var_selection.h

@@ -30,6 +30,7 @@
 typedef struct _expanded_column {
     int source_column;
     int source_class;
+    bool from_category;
 } expanded_column_t;
 
 typedef struct _transform_expand {
@@ -88,12 +89,14 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
         if(!dataset->columns[x]->is_categorical) {
             ecolumns[pos].source_column = x;
             ecolumns[pos].source_class = 0;
+            ecolumns[pos].from_category = false;
             pos++;
         } else {
             int c;
             for(c=0;c<dataset->columns[x]->num_classes;c++) {
                 ecolumns[pos].source_column = x;
                 ecolumns[pos].source_class = c;
+                ecolumns[pos].from_category = true;
                 pos++;
             }
         }
@@ -105,8 +108,7 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
 
 static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_dataset)
 {
-    dataset_t* dataset = malloc(sizeof(dataset_t));
-    *dataset = *orig_dataset;
+    dataset_t* dataset = memdup(orig_dataset, sizeof(dataset_t));
     dataset->transform = (transform_t*)transform;
     dataset->columns = (column_t**)malloc(sizeof(column_t*)*transform->num);
     dataset->num_columns = transform->num;
@@ -114,22 +116,22 @@ static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_da
 
     int i;
     for(i=0;i<transform->num;i++) {
-        int x = transform->ecolumns[i].source_column;
-        int cls = transform->ecolumns[i].source_class;
+        expanded_column_t*e = &transform->ecolumns[i];
+        int x = e->source_column;
+        int cls = e->source_class;
         column_t* source_column = orig_dataset->columns[x];
 
-        column_t*c = column_new(dataset->num_rows, false);
         int y;
         if(orig_dataset->columns[x]->is_categorical) {
+            assert(e->from_category);
+            column_t*c = column_new(dataset->num_rows, false);
             for(y=0;y<dataset->num_rows;y++) {
                 c->entries[y].f = (source_column->entries[y].c==cls) ? 1.0 : 0.0;
             }
+            dataset->columns[i] = c;
         } else {
-            for(y=0;y<dataset->num_rows;y++) {
-                c->entries[y].f = source_column->entries[y].f;
-            }
+            dataset->columns[i] = source_column;
         }
-        dataset->columns[i] = c;
     }
     return dataset;
 }
@@ -139,7 +141,10 @@ static void expand_destroy(dataset_t*dataset)
     transform_expand_t* transform = (transform_expand_t*)dataset->transform;
     int i;
     for(i=0;i<transform->num;i++) {
-        free(dataset->columns[i]);
+        expanded_column_t*e = &transform->ecolumns[i];
+        if(e->from_category) {
+            free(dataset->columns[i]);
+        }
     }
     free(dataset->columns);
     free(dataset);

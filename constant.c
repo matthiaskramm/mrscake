@@ -62,28 +62,39 @@ void array_destroy(array_t*a)
     free(a);
 }
 
-bool constant_equals(const constant_t*c1, const constant_t*c2)
+static inline int cmp_f(float f1, float f2) {if(f1<f2) return -1;if(f1>f2) return 1;return 0;}
+static inline int cmp_i(int i1, int i2) {return i1-i2;}
+static inline int cmp_c(category_t c1, category_t c2) {return c1-c2;}
+static inline int cmp_b(bool b1, bool b2) {return b1-b2;}
+
+int constant_compare(const constant_t*c1, const constant_t*c2)
 {
+    /* FIXME: do typecasting when comparing int to float */
     if(c1->type != c2->type)
-        return false;
+        return (int)c1->type - (int)c2->type;
+
     switch(c1->type) {
         case CONSTANT_FLOAT:
-            return c1->f == c2->f;
+            return cmp_f(c1->f,c2->f);
         case CONSTANT_INT:
-            return c1->i == c2->i;
+            return cmp_i(c1->i,c2->i);
         case CONSTANT_CATEGORY:
-            return c1->c == c2->c;
+            return cmp_i(c1->c,c2->c);
         case CONSTANT_BOOL:
-            return c1->b == c2->b;
+            return cmp_b(c1->b,c2->b);
         case CONSTANT_STRING:
-            return !strcmp(c1->s, c2->s);
+            return strcmp(c1->s, c2->s);
         case CONSTANT_MISSING:
-            return true;
+            return 0;
         default:
             /* FIXME */
             //fprintf(stderr, "Can't compare types %s\n", type_name[c1->type]);
-            return false;
+            return 0;
     }
+}
+bool constant_equals(const constant_t*c1, const constant_t*c2)
+{
+    return constant_compare(c1,c2)==0;
 }
 unsigned int constant_hash(const constant_t*o)
 {

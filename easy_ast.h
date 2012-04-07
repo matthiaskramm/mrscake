@@ -86,7 +86,7 @@
 #define NOP NODE_BEGIN(&node_nop)
 
 #define PARAM(index) NODE_BEGIN(&node_param, index)
-#define RAW_PARAM(index) NODE_BEGIN(&node_param, index)
+#define RAW_PARAM(index) PARAM(index)
 
 #define GENERIC_CONSTANT(c) do {NODE_BEGIN(&node_constant, c)}while(0);
 #define BOOL_CONSTANT(b) NODE_BEGIN(&node_bool, ((int)(b)))
@@ -101,16 +101,26 @@
 #define GETLOCAL(i) NODE_BEGIN(&node_getlocal, i)
 #define INCLOCAL(i) NODE_BEGIN(&node_inclocal, i)
 
+#define RETURN NODE_BEGIN(&node_return)
+
 #define BOOL_TO_FLOAT NODE_BEGIN(&node_bool_to_float)
 #define ARG_MAX_F NODE_BEGIN(&node_arg_max)
 #define ARG_MAX_I NODE_BEGIN(&node_arg_max_i)
 #define ARRAY_AT_POS NODE_BEGIN(&node_array_at_pos)
 
-#define ARRAY_AT_POS_INC NODE_BEGIN(&node_array_at_pos_inc)
+#define SORT_FLOAT_ARRAY NODE_BEGIN(&node_sort_float_array)
+
+#define INC_ARRAY_AT_POS NODE_BEGIN(&node_inc_array_at_pos)
+#define SET_ARRAY_AT_POS NODE_BEGIN(&node_set_array_at_pos)
 #define ARRAY_ARG_MAX_I NODE_BEGIN(&node_array_arg_max_i)
-#define ARRAY_NEW(size) NODE_BEGIN(&node_zero_int_array, size)
+
+#define NEW_ZERO_INT_ARRAY(size) NODE_BEGIN(&node_zero_int_array, size)
+
+#define NEW_FLOAT_ARRAY(size) NODE_BEGIN(&node_float_array, array_new(size))
 
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)
 #define VERIFY_STRING(s) do{if(0){(s)[0];};}while(0)
+        
+#define FOR_LOCAL_FROM_N_TO_M(var) NODE_BEGIN(&node_for_local_from_n_to_m, var)
 
 #endif // __easy_ast__

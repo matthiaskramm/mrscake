@@ -37,7 +37,7 @@ bool node_has_consumer_parent(node_t*n)
             break;
         if(n->type == &node_setlocal) 
             return true;
-        if(n->type == &node_array_at_pos_inc) 
+        if(n->type == &node_inc_array_at_pos) 
             return true;
         if(n->type == &node_block) {
             if(n->child[n->num_children-1] != child)
@@ -135,7 +135,7 @@ constant_type_t node_type(node_t*n, model_t*m)
         case opcode_node_arg_max:
         case opcode_node_arg_max_i:
         case opcode_node_array_arg_max_i:
-        case opcode_node_array_at_pos_inc:
+        case opcode_node_inc_array_at_pos:
         case opcode_node_int:
         case opcode_node_inclocal:
             return CONSTANT_INT;
@@ -193,6 +193,8 @@ constant_type_t node_type(node_t*n, model_t*m)
             return node_type(n->child[n->num_children-1],m);
         case opcode_node_if:
             return node_type(n->child[1],m);
+        case opcode_node_set_array_at_pos:
+            return node_type(n->child[2],m);
         case opcode_node_array_at_pos:
             return node_array_element_type(n->child[0]);
         case opcode_node_param:
@@ -326,7 +328,7 @@ int node_precedence(node_t*n)
             return 1;
         case opcode_node_setlocal:
         case opcode_node_inclocal:
-        case opcode_node_array_at_pos_inc: // x[y]+=1
+        case opcode_node_inc_array_at_pos: // x[y]+=1
             return 2;
         case opcode_node_equals:
         case opcode_node_lt:

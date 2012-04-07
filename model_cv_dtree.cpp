@@ -192,7 +192,7 @@ class CodeGeneratingRTrees: public CvRTrees
             walk_dtree_node(trees[0]->data,trees[0]->pruned_tree_idx,dataset,trees[0]->root,current_node,true,false);
         } else {
             SETLOCAL(0)
-                ARRAY_NEW(dataset->desired_response->num_classes);
+                NEW_ZERO_INT_ARRAY(dataset->desired_response->num_classes);
             END;
 
             int k;
@@ -201,7 +201,7 @@ class CodeGeneratingRTrees: public CvRTrees
                 SETLOCAL(k+1)
                     walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false,false);
                 END;
-                ARRAY_AT_POS_INC
+                INC_ARRAY_AT_POS
                     GETLOCAL(0);
                     GETLOCAL(k+1);
                 END;
@@ -242,7 +242,7 @@ class CodeGeneratingERTrees: public CvERTrees
             walk_dtree_node(trees[0]->data,trees[0]->pruned_tree_idx,dataset,trees[0]->root,current_node,true,false);
         } else {
             SETLOCAL(0)
-                ARRAY_NEW(dataset->desired_response->num_classes);
+                NEW_ZERO_INT_ARRAY(dataset->desired_response->num_classes);
             END;
 
             int k;
@@ -251,7 +251,7 @@ class CodeGeneratingERTrees: public CvERTrees
                 SETLOCAL(k+1)
                     walk_dtree_node(trees[k]->data,trees[k]->pruned_tree_idx,dataset,trees[k]->root,current_node,false,false);
                 END;
-                ARRAY_AT_POS_INC
+                INC_ARRAY_AT_POS
                     GETLOCAL(0);
                     GETLOCAL(k+1);
                 END;

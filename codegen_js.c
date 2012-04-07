@@ -57,14 +57,15 @@ void js_write_node_if(node_t*n, state_t*s)
     } else {
         strf(s, "if(");
         write_node(s, n->child[0]);
-        strf(s, ")\n");
+        strf(s, ") {\n");
         indent(s);write_node(s, n->child[1]);
         if(!node_is_missing(n->child[2])) {
-            strf(s, ";");dedent(s);
-            strf(s, "\nelse\n");
-            indent(s);write_node(s, n->child[2]);
+            strf(s, ";");
+            dedent(s);strf(s, "\n} else {\n");indent(s);
+            write_node(s, n->child[2]);
         }
         dedent(s);
+        strf(s, "\n}\n");
     }
 }
 void js_write_node_add(node_t*n, state_t*s)
@@ -310,12 +311,35 @@ void js_write_node_array_at_pos(node_t*n, state_t*s)
     write_node(s, n->child[1]);
     strf(s, "]");
 }
-void js_write_node_array_at_pos_inc(node_t*n, state_t*s)
+void js_write_node_inc_array_at_pos(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "[");
     write_node(s, n->child[1]);
     strf(s, "]++");
+}
+void js_write_node_set_array_at_pos(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "[");
+    write_node(s, n->child[1]);
+    strf(s, "]=");
+    write_node(s, n->child[2]);
+}
+void js_write_node_sort_float_array(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, ".sort();");
+}
+void js_write_node_for_local_from_n_to_m(node_t*n, state_t*s)
+{
+    strf(s, "for(v%d=", n->value.i);
+    write_node(s, n->child[0]);
+    strf(s, ";v%d<", n->value.i);
+    write_node(s, n->child[1]);
+    strf(s, ";v%d++) {\n", n->value.i);
+    indent(s);write_node(s, n->child[2]);dedent(s);
+    strf(s, "\n}\n");
 }
 void js_write_node_return(node_t*n, state_t*s)
 {

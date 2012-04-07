@@ -99,10 +99,13 @@ struct _node {
     NODE(0x24, node_arg_max) \
     NODE(0x25, node_arg_max_i) \
     NODE(0x26, node_array_at_pos) \
-    NODE(0x27, node_return) \
-    NODE(0x28, node_brackets) \
-    NODE(0x29, node_array_at_pos_inc) \
-    NODE(0x2a, node_array_arg_max_i) \
+    NODE(0x27, node_sort_float_array) \
+    NODE(0x28, node_return) \
+    NODE(0x29, node_brackets) \
+    NODE(0x2a, node_inc_array_at_pos) \
+    NODE(0x2b, node_set_array_at_pos) \
+    NODE(0x2c, node_array_arg_max_i) \
+    NODE(0x2d, node_for_local_from_n_to_m) \
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES

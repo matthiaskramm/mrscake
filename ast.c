@@ -427,9 +427,9 @@ min_args:2,
 max_args:2,
 };
 
-// -------------------------- array_at_pos_inc --------------------------
+// -------------------------- inc_array_at_pos --------------------------
 
-constant_t node_array_at_pos_inc_eval(node_t*n, environment_t* env)
+constant_t node_inc_array_at_pos_eval(node_t*n, environment_t* env)
 {
     constant_t array = EVAL_CHILD(0);
     constant_t index = EVAL_CHILD(1);
@@ -438,13 +438,52 @@ constant_t node_array_at_pos_inc_eval(node_t*n, environment_t* env)
     a->entries[i] = int_constant(AS_INT(a->entries[i]) + 1);
     return a->entries[i];
 }
-nodetype_t node_array_at_pos_inc =
+nodetype_t node_inc_array_at_pos =
 {
-name:"array_at_pos_inc",
+name:"inc_array_at_pos",
 flags:NODE_FLAG_HAS_CHILDREN,
-eval: node_array_at_pos_inc_eval,
+eval: node_inc_array_at_pos_eval,
 min_args:2,
 max_args:2,
+};
+
+// -------------------------- set_array_at_pos -------------------------
+
+constant_t node_set_array_at_pos_eval(node_t*n, environment_t* env)
+{
+    constant_t array = EVAL_CHILD(0);
+    constant_t index = EVAL_CHILD(1);
+    constant_t value = EVAL_CHILD(2);
+    array_t*a = AS_ARRAY(array);
+    int i = AS_INT(index);
+    a->entries[i] = value;
+    return value;
+}
+nodetype_t node_set_array_at_pos =
+{
+name:"set_array_at_pos",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_set_array_at_pos_eval,
+min_args:3,
+max_args:3,
+};
+
+// -------------------------- sort_float_array -------------------------
+
+constant_t node_sort_float_array_eval(node_t*n, environment_t* env)
+{
+    constant_t array = EVAL_CHILD(0);
+    array_t*a = AS_ARRAY(array);
+    qsort(&a->entries, a->size, sizeof(a->entries[0]), (int(*)(const void*,const void*))constant_compare);
+    return missing_constant();
+}
+nodetype_t node_sort_float_array =
+{
+name:"sort_float_array",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_sort_float_array_eval,
+min_args:1,
+max_args:1,
 };
 
 // -------------------------- array_arg_max_i --------------------------
@@ -634,6 +673,31 @@ nodetype_t node_if =
 name:"if",
 flags:NODE_FLAG_HAS_CHILDREN,
 eval: node_if_eval,
+min_args:3,
+max_args:3,
+};
+
+// ------------------------ for_local_from_n_to_m --------------------------
+
+constant_t node_for_local_from_n_to_m_eval(node_t*n, environment_t* env)
+{
+    int loop_counter = AS_INT(n->value);
+    int start = AS_INT(EVAL_CHILD(0));
+    int end = AS_INT(EVAL_CHILD(1));
+    constant_t ret = missing_constant();
+    int i;
+    assert(loop_counter >= 0 && loop_counter < env->num_locals);
+    for(i=start;i<end;i++) {
+        env->locals[loop_counter] = int_constant(i);
+        ret = EVAL_CHILD(2);
+    }
+    return ret;
+}
+nodetype_t node_for_local_from_n_to_m =
+{
+name:"array_for_local_from_n_to_m",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_for_local_from_n_to_m_eval,
 min_args:3,
 max_args:3,
 };
@@ -892,6 +956,7 @@ node_t* node_new_with_args(nodetype_t*t,...)
         case opcode_node_setlocal:
         case opcode_node_getlocal:
         case opcode_node_inclocal:
+        case opcode_node_for_local_from_n_to_m:
             n->value = int_constant(va_arg(arglist,int));
             break;
     }

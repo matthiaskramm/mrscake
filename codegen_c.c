@@ -384,12 +384,43 @@ void c_write_node_array_at_pos(node_t*n, state_t*s)
     write_node(s, n->child[1]);
     strf(s, "]");
 }
-void c_write_node_array_at_pos_inc(node_t*n, state_t*s)
+void c_write_node_inc_array_at_pos(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "[");
     write_node(s, n->child[1]);
     strf(s, "]++");
+}
+void c_write_node_set_array_at_pos(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "[");
+    write_node(s, n->child[1]);
+    strf(s, "]=");
+    write_node(s, n->child[2]);
+}
+void c_write_node_sort_float_array(node_t*n, state_t*s)
+{
+    strf(s, "qsort(");
+    write_node(s, n->child[0]);
+    strf(s, ";sizeof(");
+    write_node(s, n->child[0]);
+    strf(s, ")/sizeof(");
+    write_node(s, n->child[0]);
+    strf(s, "[0]),sizeof(");
+    write_node(s, n->child[0]);
+    strf(s, "[0]), compare_float_ptr)");
+    strf(s, ");");
+}
+void c_write_node_for_local_from_n_to_m(node_t*n, state_t*s)
+{
+    strf(s, "for(v%d=", n->value.i);
+    write_node(s, n->child[0]);
+    strf(s, ";v%d<", n->value.i);
+    write_node(s, n->child[1]);
+    strf(s, ";v%d++) {\n", n->value.i);
+    indent(s);write_node(s, n->child[2]);dedent(s);
+    strf(s, "\n}\n");
 }
 void c_write_node_return(node_t*n, state_t*s)
 {
@@ -451,6 +482,19 @@ static void c_write_function_sqr(state_t*s)
 "}\n"
     );
 }
+static void c_write_function_compare_float_ptr(state_t*s)
+{
+    strf(s, "%s",
+"static int compare_float_ptr(const void*p1, const void*p2)\n"
+"{\n"
+"    const float*f1 = (const float*)p1;\n"
+"    const float*f2 = (const float*)p2;\n"
+"    if(*f1<*f2) return -1;\n"
+"    if(*f1>*f2) return 1;\n"
+"    return 0;\n"
+"}\n"
+    );
+}
 void c_enumerate_arrays(node_t*node, state_t*s)
 {
     if(node_is_array(node)) {
@@ -483,6 +527,9 @@ void c_write_header(model_t*model, state_t*s)
     }
     if(node_has_child(root, &node_sqr)) {
         c_write_function_sqr(s);
+    }
+    if(node_has_child(root, &node_sort_float_array)) {
+        c_write_function_compare_float_ptr(s);
     }
 
     constant_type_t type = node_type(root, model);

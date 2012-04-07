@@ -293,18 +293,41 @@ void ruby_write_node_array_at_pos(node_t*n, state_t*s)
     write_node(s, n->child[1]);
     strf(s, "]");
 }
-void ruby_write_node_array_at_pos_inc(node_t*n, state_t*s)
+void ruby_write_node_inc_array_at_pos(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, "[");
     write_node(s, n->child[1]);
     strf(s, "]+=1");
 }
+void ruby_write_node_set_array_at_pos(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "[");
+    write_node(s, n->child[1]);
+    strf(s, "]=");
+    write_node(s, n->child[2]);
+}
 void ruby_write_node_array_arg_max_i(node_t*n, state_t*s)
 {
     strf(s, "(");
     write_node(s, n->child[0]);
     strf(s, ".each.inject([]) {|i,n| [i,[n,i[1]+1]].max})[1]");
+}
+void ruby_write_node_sort_float_array(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, ".sort!");
+}
+void ruby_write_node_for_local_from_n_to_m(node_t*n, state_t*s)
+{
+    strf(s, "(");
+    write_node(s, n->child[0]);
+    strf(s, ").upto((");
+    write_node(s, n->child[1]);
+    strf(s, ")-1) do:\n");
+    indent(s);write_node(s, n->child[2]);dedent(s);
+    strf(s, "\nend");
 }
 void ruby_write_node_return(node_t*n, state_t*s)
 {
