@@ -49,7 +49,7 @@ variable_t variable_new_missing();
 double variable_value(variable_t*v);
 const char*variable_type(variable_t*v);
 bool variable_equals(variable_t*v1, variable_t*v2);
-void variable_print(variable_t*v, FILE*stream);
+void variable_print(const variable_t*v, FILE*stream);
 
 typedef struct _row {
     int num_inputs;

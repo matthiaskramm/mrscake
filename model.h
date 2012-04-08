@@ -29,7 +29,7 @@ variable_t variable_new_continuous(float f);
 variable_t variable_new_text(const char*s);
 variable_t variable_new_missing();
 const char*variable_type(variable_t*v);
-void variable_print(variable_t*v, FILE*stream);
+void variable_print(const variable_t*v, FILE*stream);
 bool variable_equals(variable_t*v1, variable_t*v2);
 double variable_value(variable_t*v);
 example_t*example_new(int num_inputs);

@@ -53,6 +53,24 @@ char* c_type_name(constant_type_t c)
     }
 }
 
+char* c_printf_type(constant_type_t c)
+{
+    switch(c) {
+        case CONSTANT_FLOAT:
+            return "%f";
+        case CONSTANT_INT:
+            return "%d";
+        case CONSTANT_CATEGORY:
+            return "%d";
+        case CONSTANT_BOOL:
+            return "%d";
+        case CONSTANT_STRING:
+            return "%s";
+        default:
+            return "<error>";
+    }
+}
+
 void c_write_node_empty(node_t*n, state_t*s)
 {
 }
@@ -149,6 +167,30 @@ void c_write_node_gte(node_t*n, state_t*s)
     strf(s, ">=");
     write_node(s, n->child[1]);
 }
+void c_write_node_lt_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "<");
+    write_node(s, n->child[1]);
+}
+void c_write_node_lte_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "<=");
+    write_node(s, n->child[1]);
+}
+void c_write_node_gt_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, ">");
+    write_node(s, n->child[1]);
+}
+void c_write_node_gte_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, ">=");
+    write_node(s, n->child[1]);
+}
 void c_write_node_in(node_t*n, state_t*s)
 {
     if(node_is_array(n->child[1])) {
@@ -222,6 +264,12 @@ void c_write_node_nop(node_t*n, state_t*s)
 {
     strf(s, "(void)");
 }
+void c_write_node_debug_print(node_t*n, state_t*s)
+{
+    strf(s, "printf(\"%s\n\", ", c_printf_type(node_type(n, s->model)));
+    write_node(s, n->child[0]);
+    strf(s, ");");
+}
 void c_write_constant(constant_t*c, state_t*s)
 {
     int t;
@@ -294,6 +342,10 @@ void c_write_node_category_array(node_t*n, state_t*s)
     strf(s, "a%x", (long)n->value.a);
 }
 void c_write_node_zero_int_array(node_t*n, state_t*s)
+{
+    strf(s, "a%x", (long)n->value.a);
+}
+void c_write_node_zero_float_array(node_t*n, state_t*s)
 {
     strf(s, "a%x", (long)n->value.a);
 }
@@ -371,6 +423,30 @@ void c_write_node_arg_max_i(node_t*n, state_t*s)
     }
     strf(s, ")");
 }
+void c_write_node_arg_min(node_t*n, state_t*s)
+{
+    strf(s, "arg_min(%d, ", n->num_children);
+    int t;
+    for(t=0;t<n->num_children;t++) {
+        if(t)
+            strf(s, ", ");
+        strf(s, "(double)");
+        write_node(s, n->child[t]);
+    }
+    strf(s, ")");
+}
+void c_write_node_arg_min_i(node_t*n, state_t*s)
+{
+    strf(s, "arg_min_i(%d, ", n->num_children);
+    int t;
+    for(t=0;t<n->num_children;t++) {
+        if(t)
+            strf(s, ", ");
+        strf(s, "(int)");
+        write_node(s, n->child[t]);
+    }
+    strf(s, ")");
+}
 void c_write_node_array_arg_max_i(node_t*n, state_t*s)
 {
     strf(s, "array_arg_max_i(");
@@ -399,7 +475,7 @@ void c_write_node_set_array_at_pos(node_t*n, state_t*s)
     strf(s, "]=");
     write_node(s, n->child[2]);
 }
-void c_write_node_sort_float_array(node_t*n, state_t*s)
+void c_write_node_sort_float_array_asc(node_t*n, state_t*s)
 {
     strf(s, "qsort(");
     write_node(s, n->child[0]);
@@ -433,10 +509,10 @@ void c_write_node_brackets(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ")");
 }
-static void c_write_function_arg_max(state_t*s, char*suffix, char*type)
+static void c_write_function_arg_min_or_max(state_t*s, char*min_or_max, char*suffix, char*type, char*cmp)
 {
     strf(s,
-"int arg_max%s(int count, ...)\n"
+"int arg_%s%s(int count, ...)\n"
 "{\n"
 "    va_list arglist;\n"
 "    va_start(arglist, count);\n"
@@ -445,14 +521,14 @@ static void c_write_function_arg_max(state_t*s, char*suffix, char*type)
 "    int best = 0;\n"
 "    for(i=1;i<count;i++) {\n"
 "        double a = va_arg(arglist,%s)\n"
-"        if(a>best) {\n"
+"        if(a%sbest) {\n"
 "            best = i;\n"
 "            max = a;\n"
 "        }\n"
 "    }\n"
 "    va_end(arglist);\n"
 "    return best;\n"
-"}\n", suffix, type, type
+"}\n", min_or_max, suffix, type, type, cmp
     );
 }
 static void c_write_function_array_arg_max_i(state_t*s)
@@ -517,10 +593,16 @@ void c_write_header(model_t*model, state_t*s)
     node_t*root = (node_t*)model->code;
 
     if(node_has_child(root, &node_arg_max)) {
-        c_write_function_arg_max(s, "", "double");
+        c_write_function_arg_min_or_max(s, "max", "", "double", ">");
     }
     if(node_has_child(root, &node_arg_max_i)) {
-        c_write_function_arg_max(s, "_i", "int");
+        c_write_function_arg_min_or_max(s, "max", "_i", "int", ">");
+    }
+    if(node_has_child(root, &node_arg_min)) {
+        c_write_function_arg_min_or_max(s, "min", "", "double", "<");
+    }
+    if(node_has_child(root, &node_arg_min_i)) {
+        c_write_function_arg_min_or_max(s, "min", "_i", "int", "<");
     }
     if(node_has_child(root, &node_array_arg_max_i)) {
         c_write_function_array_arg_max_i(s);
@@ -528,7 +610,7 @@ void c_write_header(model_t*model, state_t*s)
     if(node_has_child(root, &node_sqr)) {
         c_write_function_sqr(s);
     }
-    if(node_has_child(root, &node_sort_float_array)) {
+    if(node_has_child(root, &node_sort_float_array_asc)) {
         c_write_function_compare_float_ptr(s);
     }
 

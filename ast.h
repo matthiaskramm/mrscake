@@ -86,26 +86,34 @@ struct _node {
     NODE(0x17, node_category_array) \
     NODE(0x18, node_int_array) \
     NODE(0x19, node_zero_int_array) \
-    NODE(0x1a, node_mixed_array) \
-    NODE(0x1b, node_float) \
-    NODE(0x1c, node_int) \
-    NODE(0x1d, node_string) \
-    NODE(0x1e, node_missing) \
-    NODE(0x1f, node_getlocal)  \
-    NODE(0x20, node_setlocal) \
-    NODE(0x21, node_inclocal) \
-    NODE(0x22, node_bool_to_float) \
-    NODE(0x23, node_equals) \
-    NODE(0x24, node_arg_max) \
-    NODE(0x25, node_arg_max_i) \
-    NODE(0x26, node_array_at_pos) \
-    NODE(0x27, node_sort_float_array) \
-    NODE(0x28, node_return) \
-    NODE(0x29, node_brackets) \
-    NODE(0x2a, node_inc_array_at_pos) \
-    NODE(0x2b, node_set_array_at_pos) \
-    NODE(0x2c, node_array_arg_max_i) \
-    NODE(0x2d, node_for_local_from_n_to_m) \
+    NODE(0x1a, node_zero_float_array) \
+    NODE(0x1b, node_mixed_array) \
+    NODE(0x1c, node_float) \
+    NODE(0x1d, node_int) \
+    NODE(0x1e, node_string) \
+    NODE(0x20, node_missing) \
+    NODE(0x21, node_getlocal)  \
+    NODE(0x22, node_setlocal) \
+    NODE(0x23, node_inclocal) \
+    NODE(0x24, node_bool_to_float) \
+    NODE(0x25, node_equals) \
+    NODE(0x26, node_arg_max) \
+    NODE(0x27, node_arg_max_i) \
+    NODE(0x28, node_arg_min) \
+    NODE(0x29, node_arg_min_i) \
+    NODE(0x2a, node_array_at_pos) \
+    NODE(0x2b, node_sort_float_array_asc) \
+    NODE(0x2c, node_return) \
+    NODE(0x2d, node_brackets) \
+    NODE(0x2e, node_inc_array_at_pos) \
+    NODE(0x2f, node_set_array_at_pos) \
+    NODE(0x30, node_array_arg_max_i) \
+    NODE(0x31, node_for_local_from_n_to_m) \
+    NODE(0x32, node_lt_i) \
+    NODE(0x33, node_lte_i) \
+    NODE(0x34, node_gt_i) \
+    NODE(0x35, node_gte_i) \
+    NODE(0x36, node_debug_print)
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES

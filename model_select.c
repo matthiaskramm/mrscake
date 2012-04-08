@@ -61,6 +61,9 @@ extern int num_svm_models;
 extern model_factory_t* perceptron_models[];
 extern int num_perceptron_models;
 
+extern model_factory_t* knearest_models[];
+extern int num_knearest_models;
+
 extern model_factory_t* twoclass_perceptron_models[];
 extern int num_twoclass_perceptron_models;
 
@@ -70,11 +73,12 @@ typedef struct _model_collection {
 } model_collection_t;
 
 model_collection_t collections[] = {
-    {linear_models, &num_linear_models},
-    {dtree_models, &num_dtree_models},
-    {svm_models, &num_svm_models},
-    {ann_models, &num_ann_models},
-    {perceptron_models, &num_perceptron_models},
+    //{linear_models, &num_linear_models},
+    //{dtree_models, &num_dtree_models},
+    //{svm_models, &num_svm_models},
+    //{ann_models, &num_ann_models},
+    //{perceptron_models, &num_perceptron_models},
+    {knearest_models, &num_knearest_models},
 };
 
 model_factory_t* model_factory_get_by_name(const char*name)
@@ -177,6 +181,8 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
             }
         }
     }
+    if(!best_job)
+        return NULL;
     model_t*model = job_to_model(best_job);
     jobqueue_destroy(jobs);
     return model;

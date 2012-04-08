@@ -79,6 +79,7 @@ constant_t category_array_constant(array_t*a);
 constant_t string_constant(const char*s);
 
 int constant_compare(const constant_t*c1, const constant_t*c2);
+int constant_compare_rev(const constant_t*c1, const constant_t*c2);
 bool constant_equals(const constant_t*c1, const constant_t*c2);
 void constant_print(constant_t*v);
 void constant_clear(constant_t*v);

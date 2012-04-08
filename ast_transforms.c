@@ -56,7 +56,8 @@ node_t* node_find_root(node_t*n)
 int node_highest_local(node_t*node)
 {
     int max = 0;
-    if(node->type == &node_setlocal) {
+    if(node->type == &node_setlocal ||
+       node->type == &node_for_local_from_n_to_m) {
         max = node->value.i+1;
     }
     int t;
@@ -140,7 +141,10 @@ constant_type_t node_type(node_t*n, model_t*m)
         case opcode_node_inclocal:
             return CONSTANT_INT;
         case opcode_node_nop:
+        case opcode_node_debug_print:
         case opcode_node_missing:
+        case opcode_node_for_local_from_n_to_m:
+        case opcode_node_sort_float_array_asc:
             return CONSTANT_MISSING;
         case opcode_node_in:
         case opcode_node_not:
@@ -168,6 +172,8 @@ constant_type_t node_type(node_t*n, model_t*m)
             return CONSTANT_MIXED_ARRAY;
         case opcode_node_zero_int_array:
             return CONSTANT_INT_ARRAY;
+        case opcode_node_zero_float_array:
+            return CONSTANT_FLOAT_ARRAY;
         case opcode_node_string:
             return CONSTANT_STRING;
         case opcode_node_constant:
@@ -213,6 +219,7 @@ constant_type_t node_array_element_type(node_t*n)
         case opcode_node_zero_int_array:
             return CONSTANT_INT;
         case opcode_node_float_array:
+        case opcode_node_zero_float_array:
             return CONSTANT_FLOAT;
         case opcode_node_category_array:
             return CONSTANT_CATEGORY;
@@ -237,6 +244,7 @@ int node_array_size(node_t*n)
         case opcode_node_category_array:
         case opcode_node_string_array:
         case opcode_node_zero_int_array:
+        case opcode_node_zero_float_array:
             return n->value.a->size;
         case opcode_node_getlocal:
             n = node_find_setlocal(node_find_root(n), n->value.i);
@@ -258,6 +266,8 @@ bool node_terminates(node_t*n)
         case opcode_node_if:
             return node_terminates(n->child[1]) &&
                    node_terminates(n->child[2]);
+        case opcode_node_for_local_from_n_to_m:
+            return node_terminates(n->child[2]);
         default:
             return false;
     }
@@ -323,18 +333,25 @@ int node_precedence(node_t*n)
 {
     switch(node_get_opcode(n)) {
         case opcode_node_block:
+        case opcode_node_for_local_from_n_to_m:
             return 0;
         case opcode_node_if:
+        case opcode_node_debug_print:
             return 1;
         case opcode_node_setlocal:
         case opcode_node_inclocal:
         case opcode_node_inc_array_at_pos: // x[y]+=1
+        case opcode_node_set_array_at_pos:
             return 2;
         case opcode_node_equals:
         case opcode_node_lt:
         case opcode_node_gt:
         case opcode_node_lte:
         case opcode_node_gte:
+        case opcode_node_lt_i:
+        case opcode_node_gt_i:
+        case opcode_node_lte_i:
+        case opcode_node_gte_i:
             return 4;
         case opcode_node_add:
         case opcode_node_sub:
@@ -342,14 +359,16 @@ int node_precedence(node_t*n)
         case opcode_node_mul:
         case opcode_node_div:
             return 6;
+        case opcode_node_sort_float_array_asc:
+            return 7;
         case opcode_node_neg: // -x
         case opcode_node_sqr: // x ** 2
         case opcode_node_exp:
         case opcode_node_abs:
         case opcode_node_arg_max_i:
         case opcode_node_arg_max:
-        case opcode_node_array_at_pos:
         case opcode_node_array_arg_max_i:
+        case opcode_node_array_at_pos:
             return 9;
         case opcode_node_getlocal:
         case opcode_node_param:
@@ -377,8 +396,29 @@ node_t* node_insert_brackets(node_t*n)
     }
     return n;
 }
+node_t* node_clean_arrays(node_t*n)
+{
+    /* arrays are not stored in the enviroment- hence their data is not reset
+       in between function invocations. The arrays are allocated once and 
+       their pointer is stored in the node that "creates" them 
+       (in truth it doesn't create them- corresponding eval only fills them
+        with zeros since they're already there)
+       For code generation, we need them to be initialized properly, hence
+       we execute all the initializers we find in the code.
+    */
+    if(n->type == &node_zero_int_array ||
+       n->type == &node_zero_float_array) {
+        node_eval(n, 0);
+    }
+    int i;
+    for(i=0;i<n->num_children;i++) {
+        node_clean_arrays(n->child[i]);
+    }
+    return n;
+}
 node_t* node_prepare_for_code_generation(node_t*n)
 {
+    n = node_clean_arrays(n);
     n = node_optimize(n);
     n = node_do_cascade_returns(n);
     n = node_insert_brackets(n);

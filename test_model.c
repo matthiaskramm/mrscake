@@ -40,11 +40,11 @@ int main(int argn, char*argv[])
         example_t*e = example_new(WIDTH);
         int s;
         for(s=0;s<WIDTH;s++) {
-            e->inputs[s] = variable_new_continuous(lrand48()%256);
+            e->inputs[s] = variable_new_continuous(lrand48()&255);
         }
-        e->inputs[2] = variable_new_continuous(((t%2)+1)*100+(lrand48()%16));
-        e->inputs[3] = variable_new_categorical(t%4);
-        e->desired_response = variable_new_categorical(t%2);
+        e->inputs[2] = variable_new_continuous(((t%2)+1)*100+(lrand48()&15));
+        //e->inputs[3] = variable_new_categorical(t&3);
+        e->desired_response = variable_new_categorical(t&1);
         trainingdata_add_example(data, e);
     }
 
@@ -63,6 +63,10 @@ int main(int argn, char*argv[])
         }
     } else {
         m = trainingdata_train(data);
+        if(!m) {
+            fprintf(stderr, "Error selecting model\n");
+            exit(0);
+        }
     }
 
     dataset_t* dataset = trainingdata_sanitize(data);
@@ -75,6 +79,31 @@ int main(int argn, char*argv[])
     printf("errors: %d\n", code_errors_old(m->code, dataset));
     printf("confusion matrix errors: %d\n", code_errors(m->code, dataset));
     printf("score: %d\n", code_score(m->code, dataset));
+    
+//#define VERIFY_RESULT
+#ifdef VERIFY_RESULT
+    while(1) {
+        row_t*r = row_new(WIDTH);
+        int i;
+        for(i=0;i<WIDTH;i++) {
+            r->inputs[i] = variable_new_continuous(lrand48()&255);
+        }
+        variable_t v = model_predict(m, r);
+    }
+
+    example_t*e;
+    int count = 0;
+    for(e = data->first_example; e; e = e->next) {
+        row_t*r = example_to_row(e, 0);
+        variable_t v = model_predict(m, r);
+        printf("%d) ", count);
+        variable_print(&v, stdout);
+        printf(" / ");
+        variable_print(&e->desired_response, stdout);
+        printf("\n");
+        count++;
+    }
+#endif
 
     char*code = model_generate_code(m, "python");
     printf("%s\n", code);

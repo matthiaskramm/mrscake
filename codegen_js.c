@@ -120,6 +120,30 @@ void js_write_node_gte(node_t*n, state_t*s)
     strf(s, ">=");
     write_node(s, n->child[1]);
 }
+void js_write_node_lt_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "<");
+    write_node(s, n->child[1]);
+}
+void js_write_node_lte_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "<=");
+    write_node(s, n->child[1]);
+}
+void js_write_node_gt_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, ">");
+    write_node(s, n->child[1]);
+}
+void js_write_node_gte_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, ">=");
+    write_node(s, n->child[1]);
+}
 void js_write_node_in(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
@@ -166,6 +190,12 @@ void js_write_node_param(node_t*n, state_t*s)
 void js_write_node_nop(node_t*n, state_t*s)
 {
     strf(s, "");
+}
+void js_write_node_debug_print(node_t*n, state_t*s)
+{
+    strf(s, "trace(");
+    write_node(s, n->child[0]);
+    strf(s, ");\n");
 }
 void js_write_constant(constant_t*c, state_t*s)
 {
@@ -242,6 +272,10 @@ void js_write_node_zero_int_array(node_t*n, state_t*s)
 {
     js_write_constant(&n->value, s);
 }
+void js_write_node_zero_float_array(node_t*n, state_t*s)
+{
+    js_write_constant(&n->value, s);
+}
 void js_write_node_float(node_t*n, state_t*s)
 {
     js_write_constant(&n->value, s);
@@ -298,6 +332,21 @@ void js_write_node_arg_max_i(node_t*n, state_t*s)
 {
     js_write_node_arg_max(n,s);
 }
+void js_write_node_arg_min(node_t*n, state_t*s)
+{
+    strf(s, "arg_min([");
+    int t;
+    for(t=0;t<n->num_children;t++) {
+        if(t)
+            strf(s, ", ");
+        write_node(s, n->child[t]);
+    }
+    strf(s, "])");
+}
+void js_write_node_arg_min_i(node_t*n, state_t*s)
+{
+    js_write_node_arg_min(n,s);
+}
 void js_write_node_array_arg_max_i(node_t*n, state_t*s)
 {
     strf(s, "arg_max(");
@@ -326,10 +375,10 @@ void js_write_node_set_array_at_pos(node_t*n, state_t*s)
     strf(s, "]=");
     write_node(s, n->child[2]);
 }
-void js_write_node_sort_float_array(node_t*n, state_t*s)
+void js_write_node_sort_float_array_asc(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
-    strf(s, ".sort();");
+    strf(s, ".sort();\n");
 }
 void js_write_node_for_local_from_n_to_m(node_t*n, state_t*s)
 {
@@ -360,6 +409,14 @@ static void js_write_function_arg_max(state_t*s, char*suffix, char*type)
 "    //TODO\n"
 "}\n");
 }
+static void js_write_function_arg_min(state_t*s, char*suffix, char*type)
+{
+    strf(s,
+"function arg_min(array)\n"
+"{\n"
+"    //TODO\n"
+"}\n");
+}
 void js_write_header(model_t*model, state_t*s)
 {
     node_t*root = (node_t*)model->code;
@@ -369,6 +426,10 @@ void js_write_header(model_t*model, state_t*s)
        node_has_child(root, &node_arg_max_i) ||
        node_has_child(root, &node_array_arg_max_i)) {
         js_write_function_arg_max(s, "", "double");
+    }
+    if(node_has_child(root, &node_arg_min) ||
+       node_has_child(root, &node_arg_min_i)) {
+        js_write_function_arg_min(s, "", "double");
     }
 
     strf(s, "function predict(");

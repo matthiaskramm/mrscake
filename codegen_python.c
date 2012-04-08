@@ -107,6 +107,30 @@ void python_write_node_gte(node_t*n, state_t*s)
     strf(s, ">=");
     write_node(s, n->child[1]);
 }
+void python_write_node_lt_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "<");
+    write_node(s, n->child[1]);
+}
+void python_write_node_lte_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, "<=");
+    write_node(s, n->child[1]);
+}
+void python_write_node_gt_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, ">");
+    write_node(s, n->child[1]);
+}
+void python_write_node_gte_i(node_t*n, state_t*s)
+{
+    write_node(s, n->child[0]);
+    strf(s, ">=");
+    write_node(s, n->child[1]);
+}
 void python_write_node_in(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
@@ -151,12 +175,21 @@ void python_write_node_param(node_t*n, state_t*s)
 void python_write_node_nop(node_t*n, state_t*s)
 {
 }
+void python_write_node_debug_print(node_t*n, state_t*s)
+{
+    strf(s, "print repr(");
+    write_node(s, n->child[0]);
+    strf(s, ")\n");
+}
 void python_write_constant(constant_t*c, state_t*s)
 {
     int t;
     switch(c->type) {
         case CONSTANT_FLOAT:
-            strf(s, "%f", c->f);
+            if((fabs(c->f) - (int)fabs(c->f)) == 0.0)
+                strf(s, "%.1f", c->f);
+            else
+                strf(s, "%f", c->f);
             break;
         case CONSTANT_INT:
         case CONSTANT_CATEGORY:
@@ -226,6 +259,10 @@ void python_write_node_zero_int_array(node_t*n, state_t*s)
 {
     python_write_constant(&n->value, s);
 }
+void python_write_node_zero_float_array(node_t*n, state_t*s)
+{
+    python_write_constant(&n->value, s);
+}
 void python_write_node_float(node_t*n, state_t*s)
 {
     python_write_constant(&n->value, s);
@@ -267,9 +304,9 @@ void python_write_node_equals(node_t*n, state_t*s)
     strf(s, " == ");
     write_node(s, n->child[1]);
 }
-void python_write_node_arg_max(node_t*n, state_t*s)
+static void python_write_node_arg_min_or_max(node_t*n, state_t*s, char*min_or_max)
 {
-    strf(s, "max(((v,nr) for nr,v in enumerate(\n");
+    strf(s, "%s(((v,nr) for nr,v in enumerate(\n", min_or_max);
     indent(s);
     strf(s,"[\n");
     indent(s);
@@ -283,9 +320,21 @@ void python_write_node_arg_max(node_t*n, state_t*s)
     dedent(s);
     strf(s, "])))[1]");
 }
+void python_write_node_arg_min(node_t*n, state_t*s)
+{
+    python_write_node_arg_min_or_max(n, s, "min");
+}
+void python_write_node_arg_min_i(node_t*n, state_t*s)
+{
+    python_write_node_arg_min_or_max(n, s, "min");
+}
+void python_write_node_arg_max(node_t*n, state_t*s)
+{
+    python_write_node_arg_min_or_max(n, s, "max");
+}
 void python_write_node_arg_max_i(node_t*n, state_t*s)
 {
-    python_write_node_arg_max(n, s);
+    python_write_node_arg_min_or_max(n, s, "max");
 }
 void python_write_node_array_at_pos(node_t*n, state_t*s)
 {
@@ -315,7 +364,7 @@ void python_write_node_array_arg_max_i(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ")))[1]");
 }
-void python_write_node_sort_float_array(node_t*n, state_t*s)
+void python_write_node_sort_float_array_asc(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
     strf(s, ".sort()");

@@ -71,7 +71,7 @@ const char*variable_type(variable_t*v)
         break;
     }
 }
-void variable_print(variable_t*v, FILE*stream)
+void variable_print(const variable_t*v, FILE*stream)
 {
     switch(v->type) {
         case CATEGORICAL:

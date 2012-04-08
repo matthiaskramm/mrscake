@@ -92,6 +92,10 @@ int constant_compare(const constant_t*c1, const constant_t*c2)
             return 0;
     }
 }
+int constant_compare_rev(const constant_t*c1, const constant_t*c2)
+{
+    return -constant_compare(c1,c2);
+}
 bool constant_equals(const constant_t*c1, const constant_t*c2)
 {
     return constant_compare(c1,c2)==0;
@@ -346,6 +350,9 @@ variable_t constant_to_variable(constant_t* c)
         break;
         case CONSTANT_FLOAT:
             return variable_new_continuous(c->f);
+        break;
+        case CONSTANT_INT:
+            return variable_new_continuous(c->i);
         break;
         case CONSTANT_MISSING:
             return variable_new_missing();

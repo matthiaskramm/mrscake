@@ -41,11 +41,12 @@ static node_t*knearest_train(knearest_model_factory_t*factory, dataset_t*d)
     int k = factory->k;
     
     START_CODE(code)
+    BLOCK
         int cls;
         for(cls=0;cls<num_classes;cls++) {
             assert(class_count[cls]>0);
             SETLOCAL(cls);
-                NEW_FLOAT_ARRAY(class_count[cls]);
+                NEW_ZERO_FLOAT_ARRAY(class_count[cls]);
             END;
         }
         int i,j;
@@ -58,8 +59,8 @@ static node_t*knearest_train(knearest_model_factory_t*factory, dataset_t*d)
                 for(j=0;j<d->num_columns;j++) {
                     SQR
                         SUB
-                            FLOAT_CONSTANT(d->columns[i]->entries[j].f);
-                            PARAM(d->columns[i]->entries[j].f);
+                            FLOAT_CONSTANT(d->columns[j]->entries[i].f);
+                            PARAM(j);
                         END;
                     END;
                 }
@@ -70,7 +71,7 @@ static node_t*knearest_train(knearest_model_factory_t*factory, dataset_t*d)
         for(cls=0;cls<num_classes;cls++) {
             /* FIXME: we might want to only pick the k*num_classes best entries,
                       not sort the entire array */
-            SORT_FLOAT_ARRAY
+            SORT_FLOAT_ARRAY_ASC
                 GETLOCAL(cls);
             END;
         }
@@ -80,7 +81,7 @@ static node_t*knearest_train(knearest_model_factory_t*factory, dataset_t*d)
         int loop_counter = num_classes+3;
 
         SETLOCAL(position_var);
-            NEW_ZERO_INT_ARRAY(k);
+            NEW_ZERO_INT_ARRAY(num_classes);
         END;
         SETLOCAL(class_count_minus_one_var);
             array_t*a = array_new(num_classes);
@@ -92,72 +93,79 @@ static node_t*knearest_train(knearest_model_factory_t*factory, dataset_t*d)
         FOR_LOCAL_FROM_N_TO_M(loop_counter)
             INT_CONSTANT(0);
             INT_CONSTANT(k);
-            SETLOCAL(best_class);
-                ARG_MAX_F
-                    for(cls=0;cls<num_classes;cls++) {
-                        ARRAY_AT_POS
-                            GETLOCAL(cls);
+            BLOCK
+                SETLOCAL(best_class);
+                    ARG_MIN_F
+                        for(cls=0;cls<num_classes;cls++) {
                             ARRAY_AT_POS
-                                GETLOCAL(position_var);
-                                INT_CONSTANT(cls);
+                                GETLOCAL(cls);
+                                ARRAY_AT_POS
+                                    GETLOCAL(position_var);
+                                    INT_CONSTANT(cls);
+                                END;
                             END;
-                        END;
-                    }
+                        }
+                    END;
                 END;
-            END;
-            /* we do a simplification here: if any given category c is maxed out (i.e.,
-               *all* the examples of that category are within the k nearest entries), we
-               keep the worst example around for further comparisons. That means that
-               this class will potentially shadow other classes that have more entries
-               in the nearest neighbors, but less entries that are better than the worst
-               entry of class c. This is usually what you want, anyway.
-            */
-            IF 
-                LT
-                    ARRAY_AT_POS
+                /* we do a simplification here: if any given category c is maxed out (i.e.,
+                   *all* the examples of that category are within the k nearest entries), we
+                   keep the worst example around for further comparisons. That means that
+                   this class will potentially shadow other classes that have more entries
+                   in the nearest neighbors, but less entries that are better than the worst
+                   entry of class c. This is usually what you want, anyway.
+                */
+                IF 
+                    LT_I
+                        ARRAY_AT_POS
+                            GETLOCAL(position_var);
+                            GETLOCAL(best_class);
+                        END;
+                        ARRAY_AT_POS
+                            GETLOCAL(class_count_minus_one_var);
+                            GETLOCAL(best_class);
+                        END;
+                    END;
+                THEN
+                    INC_ARRAY_AT_POS
                         GETLOCAL(position_var);
                         GETLOCAL(best_class);
                     END;
-                    ARRAY_AT_POS
-                        GETLOCAL(class_count_minus_one_var);
-                        GETLOCAL(best_class);
-                    END;
-                END;
-            THEN
-                INC_ARRAY_AT_POS
-                    GETLOCAL(position_var);
-                    GETLOCAL(best_class);
+                ELSE
+                    NOP;
                 END;
             END;
         END;
         RETURN
-            ARRAY_ARG_MAX_I
-                GETLOCAL(position_var);
+            ARRAY_AT_POS
+                ARRAY_CONSTANT(dataset_classes_as_array(d));
+                ARRAY_ARG_MAX_I
+                    GETLOCAL(position_var);
+                END;
             END;
         END;
+    END;
     END_CODE;
             
-        
     d = dataset_revert_one_transformation(d, &code);
     return code;
 }
 static knearest_model_factory_t knearest_model_factory_1 = {
     head: {
-        name: "knearest",
+        name: "knearest_1",
         train: (training_function_t)knearest_train,
     },
     k: 1,
 };
 static knearest_model_factory_t knearest_model_factory_2 = {
     head: {
-        name: "knearest",
+        name: "knearest_2",
         train: (training_function_t)knearest_train,
     },
     k: 2,
 };
 static knearest_model_factory_t knearest_model_factory_4 = {
     head: {
-        name: "knearest",
+        name: "knearest_4",
         train: (training_function_t)knearest_train,
     },
     k: 4,
@@ -165,8 +173,8 @@ static knearest_model_factory_t knearest_model_factory_4 = {
 
 model_factory_t* knearest_models[] =
 {
-    (model_factory_t*)&knearest_model_factory_1,
-    (model_factory_t*)&knearest_model_factory_2,
+    //(model_factory_t*)&knearest_model_factory_1,
+    //(model_factory_t*)&knearest_model_factory_2,
     (model_factory_t*)&knearest_model_factory_4,
 };
 int num_knearest_models = sizeof(knearest_models) / sizeof(knearest_models[0]);

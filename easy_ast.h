@@ -74,6 +74,12 @@
 #define LTE NODE_BEGIN(&node_lte)
 #define GT NODE_BEGIN(&node_gt)
 #define GTE NODE_BEGIN(&node_gte)
+
+#define LT_I NODE_BEGIN(&node_lt_i)
+#define LTE_I NODE_BEGIN(&node_lte_i)
+#define GT_I NODE_BEGIN(&node_gt_i)
+#define GTE_I NODE_BEGIN(&node_gte_i)
+
 #define MUL NODE_BEGIN(&node_mul)
 #define DIV NODE_BEGIN(&node_div)
 #define EQUALS NODE_BEGIN(&node_equals)
@@ -106,21 +112,24 @@
 #define BOOL_TO_FLOAT NODE_BEGIN(&node_bool_to_float)
 #define ARG_MAX_F NODE_BEGIN(&node_arg_max)
 #define ARG_MAX_I NODE_BEGIN(&node_arg_max_i)
+#define ARG_MIN_F NODE_BEGIN(&node_arg_min)
+#define ARG_MIN_I NODE_BEGIN(&node_arg_min_i)
 #define ARRAY_AT_POS NODE_BEGIN(&node_array_at_pos)
 
-#define SORT_FLOAT_ARRAY NODE_BEGIN(&node_sort_float_array)
+#define SORT_FLOAT_ARRAY_ASC NODE_BEGIN(&node_sort_float_array_asc)
 
 #define INC_ARRAY_AT_POS NODE_BEGIN(&node_inc_array_at_pos)
 #define SET_ARRAY_AT_POS NODE_BEGIN(&node_set_array_at_pos)
 #define ARRAY_ARG_MAX_I NODE_BEGIN(&node_array_arg_max_i)
 
 #define NEW_ZERO_INT_ARRAY(size) NODE_BEGIN(&node_zero_int_array, size)
-
-#define NEW_FLOAT_ARRAY(size) NODE_BEGIN(&node_float_array, array_new(size))
+#define NEW_ZERO_FLOAT_ARRAY(size) NODE_BEGIN(&node_zero_float_array, size)
 
 #define VERIFY_INT(n) do{if(0)(((char*)0)[(n)]);}while(0)
 #define VERIFY_STRING(s) do{if(0){(s)[0];};}while(0)
         
 #define FOR_LOCAL_FROM_N_TO_M(var) NODE_BEGIN(&node_for_local_from_n_to_m, var)
+
+#define DEBUG_PRINT NODE_BEGIN(&node_debug_print)
 
 #endif // __easy_ast__
