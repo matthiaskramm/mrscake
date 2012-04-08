@@ -73,11 +73,11 @@ typedef struct _model_collection {
 } model_collection_t;
 
 model_collection_t collections[] = {
-    //{linear_models, &num_linear_models},
-    //{dtree_models, &num_dtree_models},
-    //{svm_models, &num_svm_models},
-    //{ann_models, &num_ann_models},
-    //{perceptron_models, &num_perceptron_models},
+    {linear_models, &num_linear_models},
+    {dtree_models, &num_dtree_models},
+    {svm_models, &num_svm_models},
+    {ann_models, &num_ann_models},
+    {perceptron_models, &num_perceptron_models},
     {knearest_models, &num_knearest_models},
 };
 

@@ -173,8 +173,8 @@ static knearest_model_factory_t knearest_model_factory_4 = {
 
 model_factory_t* knearest_models[] =
 {
-    //(model_factory_t*)&knearest_model_factory_1,
-    //(model_factory_t*)&knearest_model_factory_2,
+    (model_factory_t*)&knearest_model_factory_1,
+    (model_factory_t*)&knearest_model_factory_2,
     (model_factory_t*)&knearest_model_factory_4,
 };
 int num_knearest_models = sizeof(knearest_models) / sizeof(knearest_models[0]);

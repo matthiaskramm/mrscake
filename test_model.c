@@ -24,10 +24,8 @@
 #include "mrscake.h"
 #include "model_select.h"
 
-//#define HEIGHT 256
-//#define WIDTH 16
-#define HEIGHT 64
-#define WIDTH 4
+#define HEIGHT 256
+#define WIDTH 16
 
 int main(int argn, char*argv[])
 {
