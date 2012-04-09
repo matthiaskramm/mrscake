@@ -406,7 +406,14 @@ static void js_write_function_arg_max(state_t*s, char*suffix, char*type)
     strf(s,
 "function arg_max(array)\n"
 "{\n"
-"    //TODO\n"
+"    var i;\n"
+"    var max = 0;\n"
+"    for(i=1;i<array.length;i++) {\n"
+"        if(array[i] > array[max]) {\n"
+"            max = i;\n"
+"        }\n"
+"    }\n"
+"    return max;\n"
 "}\n");
 }
 static void js_write_function_arg_min(state_t*s, char*suffix, char*type)
@@ -414,7 +421,14 @@ static void js_write_function_arg_min(state_t*s, char*suffix, char*type)
     strf(s,
 "function arg_min(array)\n"
 "{\n"
-"    //TODO\n"
+"    var i;\n"
+"    var min = 0;\n"
+"    for(i=1;i<array.length;i++) {\n"
+"        if(array[i] > array[min]) {\n"
+"            min = i;\n"
+"        }\n"
+"    }\n"
+"    return min;\n"
 "}\n");
 }
 void js_write_header(model_t*model, state_t*s)
@@ -432,7 +446,7 @@ void js_write_header(model_t*model, state_t*s)
         js_write_function_arg_min(s, "", "double");
     }
 
-    strf(s, "function predict(", c_type_name(type));
+    strf(s, "function predict(");
     int t;
     for(t=0;t<model->sig->num_inputs;t++) {
         if(t) strf(s, ", ");
