@@ -432,13 +432,18 @@ void js_write_header(model_t*model, state_t*s)
         js_write_function_arg_min(s, "", "double");
     }
 
-    strf(s, "function predict(");
+    strf(s, "function predict(", c_type_name(type));
     int t;
     for(t=0;t<model->sig->num_inputs;t++) {
         if(t) strf(s, ", ");
-        strf(s, "%s", s->model->sig->column_names[t]);
+        if(s->model->sig->has_column_names) {
+            strf(s, "%s", s->model->sig->column_names[t]);
+        } else {
+            strf(s, "p%d", t);
+        }
     }
     strf(s, ")\n");
+
     strf(s, "{\n");
     indent(s);
 

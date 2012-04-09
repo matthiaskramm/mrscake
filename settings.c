@@ -93,5 +93,4 @@ void config_parse_remote_servers(char*filename)
         }
         p++;
     }
-    config_do_remote_processing = true;
 }

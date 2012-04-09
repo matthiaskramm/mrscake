@@ -100,6 +100,7 @@ void write_node(state_t*s, node_t*n)
 LIST_NODES
 #undef NODE
         default:
+            fprintf(stderr, "Unknown node type %s %02x\n", n->type->name, node_get_opcode(n));
             assert(0);
     }
 }

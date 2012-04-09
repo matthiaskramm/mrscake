@@ -19,15 +19,26 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
+#include "mrscake.h"
 #include "model_select.h"
 
-model_t* trainingdata_train(trainingdata_t*dataset)
+model_t* trainingdata_train(trainingdata_t*trainingdata)
 {
-    return model_select(dataset);
+    dataset_t*data = trainingdata_sanitize(trainingdata);
+    if(!data)
+        return NULL;
+    model_t*model = model_select(data);
+    dataset_destroy(data);
+    return model;
 }
 
 model_t* trainingdata_train_specific_model(trainingdata_t*trainingdata, const char*name)
 {
-    return model_train_specific_model(trainingdata, name);
+    dataset_t*data = trainingdata_sanitize(trainingdata);
+    if(!data)
+        return NULL;
+    model_t*model = model_train_specific_model(data, name);
+    dataset_destroy(data);
+    return model;
 }
 

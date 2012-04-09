@@ -81,6 +81,34 @@ model_collection_t collections[] = {
     {knearest_models, &num_knearest_models},
 };
 
+static const char*const* model_names = 0;
+
+const char*const* mrscake_get_model_names()
+{
+    if(model_names)
+        return model_names;
+
+    int count = 0;
+    int i;
+    for(i=0;i<NUM(collections);i++) {
+        count += *collections[i].num_models;
+    }
+    count++;
+    model_names = malloc(sizeof(char*)*count);
+
+    count = 0;
+    for(i=0;i<NUM(collections);i++) {
+        model_collection_t*collection = &collections[i];
+        int j;
+        for(j=0;j<*collection->num_models;j++) {
+            model_factory_t*factory = collection->models[j];
+            *(const char**)&model_names[count++] = factory->name;
+        }
+    }
+    *(const char**)&model_names[count++] = NULL;
+    return model_names;
+}
+
 model_factory_t* model_factory_get_by_name(const char*name)
 {
     int s,t;
@@ -153,6 +181,8 @@ extern varorder_t*dtree_var_order(dataset_t*d);
 
 model_t* job_to_model(job_t*job)
 {
+    if(!job->code)
+        return NULL; //job failed
     model_t* model = model_new(job->data);
     model->code = job->code;
     model->name = job->factory->name;
@@ -188,11 +218,8 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
     return model;
 }
 
-model_t* model_select(trainingdata_t*trainingdata)
+model_t* model_select(dataset_t*data)
 {
-    dataset_t*data = trainingdata_sanitize(trainingdata);
-    if(!data)
-        return 0;
 #ifdef DEBUG
     printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
             data->num_columns, dataset_count_expanded_columns(data));
@@ -216,21 +243,19 @@ model_t* model_select(trainingdata_t*trainingdata)
     confusion_matrix_print(cm);
     confusion_matrix_destroy(cm);
 #endif
-    dataset_destroy(data);
     return best_model;
 }
 
-model_t* model_train_specific_model(trainingdata_t*trainingdata, const char*name)
+model_t* model_train_specific_model(dataset_t*data, const char*name)
 {
     job_t job;
     memset(&job, 0, sizeof(job_t));
-    job.data = trainingdata_sanitize(trainingdata);
+    job.data = data;
     job.factory = model_factory_get_by_name(name);
     if(!job.factory)
         return 0;
     job_process(&job);
     model_t*model = job_to_model(&job);
-    dataset_destroy(job.data);
     return model;
 }
 

@@ -1,3 +1,5 @@
+A=a
+O=o
 CC=gcc -pg -g -fPIC -Wimplicit
 CXX=g++ -pg -g -fPIC -Wimplicit
 INSTALL=/usr/bin/install -c
@@ -32,129 +34,138 @@ ifeq ($(IS_MACOS),)
     SO_RUBY=rb.so
 endif
 
-MODELS=model_cv_dtree.o model_cv_ann.o model_cv_svm.o model_cv_linear.o model_perceptron.o model_knearest.o
-VAR_SELECTORS=varselect_cv_dtree.o
-CODE_GENERATORS=codegen_python.o codegen_ruby.o codegen_js.o codegen_c.o
-OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.o constant.o ast.o model.o serialize.o io.o list.o model_select.o dict.o dataset.o environment.o codegen.o ast_transforms.o stringpool.o net.o settings.o job.o var_selection.o transform.o mrscake.o util.o
+MODELS=model_cv_dtree.$(O) model_cv_ann.$(O) model_cv_svm.$(O) model_cv_linear.$(O) model_perceptron.$(O) model_knearest.$(O)
+VAR_SELECTORS=varselect_cv_dtree.$(O)
+CODE_GENERATORS=codegen_python.$(O) codegen_ruby.$(O) codegen_js.$(O) codegen_c.$(O)
+OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.$(O) constant.$(O) ast.$(O) model.$(O) serialize.$(O) io.$(O) list.$(O) model_select.$(O) dict.$(O) dataset.$(O) environment.$(O) codegen.$(O) ast_transforms.$(O) stringpool.$(O) net.$(O) settings.$(O) job.$(O) var_selection.$(O) transform.$(O) mrscake.$(O) util.$(O)
+CV_OBJECTS=lib/alloc.$(O) lib/ann_mlp.$(O) lib/arithm.$(O) lib/array.$(O) lib/boost.$(O) lib/cnn.$(O) lib/convert.$(O) lib/copy.$(O) lib/data.$(O) \
+	lib/datastructs.$(O) lib/ertrees.$(O) lib/estimate.$(O) lib/gbt.$(O) lib/inner_functions.$(O) lib/knearest.$(O) lib/mathfuncs.$(O) lib/matmul.$(O) \
+	lib/matrix.$(O) lib/missing.$(O) lib/persistence.$(O) lib/precomp.$(O) lib/rand.$(O) lib/rtrees.$(O) lib/stat.$(O) lib/svm.$(O) lib/system.$(O) lib/tables.$(O) \
+	lib/testset.$(O) lib/tree.$(O)
 
-all: multimodel ast model subset mrscake-job-server mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
+all: multimodel ast model subset mrscake-job-server mrscake.$(A) mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
 
-multimodel.o: multimodel.cpp
+multimodel.$(O): multimodel.cpp
 	$(CXX) -Ilib $< -c -o $@
 
-model.o: model.c constant.h ast.h
+model.$(O): model.c constant.h ast.h
 	$(CC) -c $< -o $@
 
-model_select.o: model_select.c constant.h ast.h
+model_select.$(O): model_select.c constant.h ast.h
 	$(CC) -c $< -o $@
 
-ast.o: ast.c ast.h mrscake.h
+ast.$(O): ast.c ast.h mrscake.h
 	$(CC) -c $< -o $@
 
-mrscake.o: mrscake.c mrscake.h mrscake.h
+mrscake.$(O): mrscake.c mrscake.h mrscake.h
 	$(CC) -c $< -o $@
 
-net.o: net.c net.h mrscake.h
+net.$(O): net.c net.h mrscake.h
 	$(CC) -c $< -o $@
 
-job.o: job.c job.h
+job.$(O): job.c job.h
 	$(CC) -c $< -o $@
 
-ast_transforms.o: ast_transforms.c ast_transforms.h ast.h
+ast_transforms.$(O): ast_transforms.c ast_transforms.h ast.h
 	$(CC) -c $< -o $@
 
-constant.o: constant.c constant.h mrscake.h
+constant.$(O): constant.c constant.h mrscake.h
 	$(CC) -c $< -o $@
 
-environment.o: environment.c environment.h mrscake.h
+environment.$(O): environment.c environment.h mrscake.h
 	$(CC) -c $< -o $@
 
-dataset.o: dataset.c dataset.h mrscake.h
+dataset.$(O): dataset.c dataset.h mrscake.h
 	$(CC) -c $< -o $@
 
-transform.o: transform.c transform.h mrscake.h
+transform.$(O): transform.c transform.h mrscake.h
 	$(CC) -c $< -o $@
 
-dict.o: dict.c dict.h mrscake.h
+dict.$(O): dict.c dict.h mrscake.h
 	$(CC) -c $< -o $@
 
-list.o: list.c list.h
+list.$(O): list.c list.h
 	$(CC) -c $< -o $@
 
-serialize.o: serialize.c serialize.h ast.h constant.h
+serialize.$(O): serialize.c serialize.h ast.h constant.h
 	$(CC) -c $< -o $@
 
-stringpool.o: stringpool.c stringpool.h
+stringpool.$(O): stringpool.c stringpool.h
 	$(CC) -c $< -o $@
 
-settings.o: settings.c settings.h
+settings.$(O): settings.c settings.h
 	$(CC) -c $< -o $@
 
-var_selection.o: var_selection.c var_selection.h
+var_selection.$(O): var_selection.c var_selection.h
 	$(CC) -c $< -o $@
 
-codegen.o: codegen.c codegen.h
+codegen.$(O): codegen.c codegen.h
 	$(CC) -c $< -o $@
 
-codegen_python.o: codegen_python.c codegen.h
+codegen_python.$(O): codegen_python.c codegen.h
 	$(CC) -c $< -o $@
 
-test_server.o: test_server.c
+test_server.$(O): test_server.c
 	$(CC) -c $< -o $@
 
-io.o: io.c io.h
+io.$(O): io.c io.h
 	$(CC) -c $< -o $@
 
-cvtools.o: cvtools.cpp lib/ml.hpp dataset.h
+cvtools.$(O): cvtools.cpp lib/ml.hpp dataset.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_dtree.o: model_cv_dtree.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
+model_cv_dtree.$(O): model_cv_dtree.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_svm.o: model_cv_svm.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
+model_cv_svm.$(O): model_cv_svm.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_ann.o: model_cv_ann.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
+model_cv_ann.$(O): model_cv_ann.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_cv_linear.o: model_cv_linear.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
+model_cv_linear.$(O): model_cv_linear.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CXX) -Ilib $< -c -o $@
 
-model_perceptron.o: model_perceptron.c mrscake.h ast.h cvtools.h dataset.h easy_ast.h
+model_perceptron.$(O): model_perceptron.c mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CC) -Ilib $< -c -o $@
 
-model_knearest.o: model_knearest.c mrscake.h ast.h cvtools.h dataset.h easy_ast.h
+model_knearest.$(O): model_knearest.c mrscake.h ast.h cvtools.h dataset.h easy_ast.h
 	$(CC) -Ilib $< -c -o $@
 
-varselect_cv_dtree.o: varselect_cv_dtree.cpp mrscake.h cvtools.h dataset.h var_selection.h
+varselect_cv_dtree.$(O): varselect_cv_dtree.cpp mrscake.h cvtools.h dataset.h var_selection.h
 	$(CXX) -Ilib $< -c -o $@
 
-test_model.o: test_model.c mrscake.h
+test_model.$(O): test_model.c mrscake.h
 	$(CC) -c $< -o $@
 
-test_ast.o: test_ast.c mrscake.h ast.h
+test_ast.$(O): test_ast.c mrscake.h ast.h
 	$(CC) -c $< -o $@
 
-test_subset.o: test_subset.c mrscake.h ast.h
+test_subset.$(O): test_subset.c mrscake.h ast.h
 	$(CC) -c $< -o $@
 
-ast: test_ast.o $(OBJECTS) lib/libml.a
-	$(CXX) test_ast.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+ast: test_ast.$(O) $(OBJECTS) lib/libml.a
+	$(CXX) test_ast.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
-model: test_model.o $(OBJECTS) lib/libml.a
-	$(CXX) test_model.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+model: test_model.$(O) $(OBJECTS) lib/libml.a
+	$(CXX) test_model.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
-subset: test_subset.o $(OBJECTS) lib/libml.a
-	$(CXX) test_subset.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+subset: test_subset.$(O) $(OBJECTS) lib/libml.a
+	$(CXX) test_subset.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
-test_server: test_server.o $(OBJECTS) lib/libml.a
-	$(CXX) test_server.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+test_server: test_server.$(O) $(OBJECTS) lib/libml.a
+	$(CXX) test_server.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
-mrscake-job-server: server.o $(OBJECTS) lib/libml.a
-	$(CXX) server.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+mrscake-job-server: server.$(O) $(OBJECTS) lib/libml.a
+	$(CXX) server.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+
+# ------------ static library ----------------
+
+mrscake.$(A): $(OBJECTS) $(CV_OBJECTS)
+	$(AR) cru $@ $(OBJECTS) $(CV_OBJECTS)
 
 # ------------ python interface --------------
 
@@ -169,7 +180,7 @@ python_interpreter: python_interpreter.c
 mrscake.$(SO_RUBY): mrscake.rb.c mrscake.h $(OBJECTS)
 	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) mrscake.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
-# ------------ installation ----------------
+# ------------ installation ------------------
 
 install:
 	$(INSTALL) mrscake.$(SO_RUBY) $(RUBY_INSTALLDIR)/mrscake.$(SO_RUBY)
@@ -177,17 +188,17 @@ install:
 
 # ------------ old test code -----------------
 
-multimodel: multimodel.o lib/libml.a $(OBJECTS)
-	$(CXX) multimodel.o $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+multimodel: multimodel.$(O) lib/libml.a $(OBJECTS)
+	$(CXX) multimodel.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 test: mrscake.so
 	python test_python_module.py
 
 local-clean:
-	rm -f svm ast ann multimodel *.o mrscake.$(SO) predict.$(SO) prediction.$(SO)
+	rm -f svm ast ann multimodel *.o *.obj *.$(O) mrscake.$(SO) predict.$(SO) prediction.$(SO)
 
 clean: local-clean
-	rm -f lib/*.o lib/*.a lib/*.gch
+	rm -f lib/*.$(O) lib/*.o lib/*.obj lib/*.a lib/*.gch
 	rm -rf *.dSYM
 
 

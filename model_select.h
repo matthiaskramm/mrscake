@@ -38,8 +38,8 @@ int training_set_size(int total_size);
 
 typedef node_t*(*training_function_t)(model_factory_t*factory, dataset_t*dataset);
 
-model_t* model_select(trainingdata_t*);
-model_t* model_train_specific_model(trainingdata_t*, const char*name);
+model_t* model_select(dataset_t*data);
+model_t* model_train_specific_model(dataset_t*data, const char*name);
 
 int code_size(node_t*code);
 int code_errors(node_t*code, dataset_t*s);

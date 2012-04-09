@@ -164,6 +164,12 @@ if headers:
         headers = headers[1:]
 
 import mrscake
+
+with open("servers.txt", "rb") as fi:
+    for line in fi.readlines():
+        line = line.strip()
+        mrscake.add_server(line)
+
 dataset = mrscake.DataSet()
 if headers:
     for inputs,output in examples:

@@ -114,7 +114,7 @@ static node_t*knearest_train(knearest_model_factory_t*factory, dataset_t*d)
                    in the nearest neighbors, but less entries that are better than the worst
                    entry of class c. This is usually what you want, anyway.
                 */
-                IF 
+                IF
                     LT_I
                         ARRAY_AT_POS
                             GETLOCAL(position_var);

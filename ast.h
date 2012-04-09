@@ -113,7 +113,7 @@ struct _node {
     NODE(0x33, node_lte_i) \
     NODE(0x34, node_gt_i) \
     NODE(0x35, node_gte_i) \
-    NODE(0x36, node_debug_print)
+    NODE(0x36, node_debug_print) \
 
 #define NODE(opcode, name) extern nodetype_t name;
 LIST_NODES

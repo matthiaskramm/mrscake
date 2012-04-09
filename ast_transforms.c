@@ -406,6 +406,8 @@ node_t* node_clean_arrays(node_t*n)
        For code generation, we need them to be initialized properly, hence
        we execute all the initializers we find in the code.
     */
+    if(!n)
+        return n;
     if(n->type == &node_zero_int_array ||
        n->type == &node_zero_float_array) {
         node_eval(n, 0);

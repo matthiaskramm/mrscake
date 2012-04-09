@@ -109,6 +109,8 @@ void model_destroy(model_t*m);
 char*model_generate_code(model_t*m, const char*language);
 
 model_t* trainingdata_train(trainingdata_t*dataset);
+
+const char*const* mrscake_get_model_names();
 model_t* trainingdata_train_specific_model(trainingdata_t*trainingdata, const char*name);
 
 #ifdef __cplusplus
