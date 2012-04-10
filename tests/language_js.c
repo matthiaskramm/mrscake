@@ -14,6 +14,7 @@ typedef struct _js_internal {
     JSContext *cx;
     JSObject *global;
     char*error;
+    char*buffer;
 } js_internal_t;
 
 static JSClass global_class = {
@@ -93,10 +94,12 @@ bool init_js(js_internal_t*js)
         return false;
     if (!JS_DefineFunctions(js->cx, js->global, myjs_global_functions))
         return false;
+
+    js->buffer = malloc(65536);
     return true;
 }
 
-static bool exec_js(language_interpreter_t*li, const char*script)
+static bool define_function_js(language_interpreter_t*li, const char*script)
 {
     js_internal_t*js = (js_internal_t*)li->internal;
     jsval rval;
@@ -108,11 +111,13 @@ static bool exec_js(language_interpreter_t*li, const char*script)
     return ok;
 }
 
-static int eval_js(language_interpreter_t*li, const char*script)
+static int call_function_js(language_interpreter_t*li, row_t*row)
 {
     js_internal_t*js = (js_internal_t*)li->internal;
     jsval rval;
     JSBool ok;
+
+    char*script = row_to_function_call(row, js->buffer, false);
     ok = JS_EvaluateScript(js->cx, js->global, script, strlen(script), "__main__", 1, &rval);
     int i = -1;
     if (ok) {
@@ -133,6 +138,7 @@ void destroy_js(language_interpreter_t* li)
     JS_DestroyContext(js->cx);
     JS_DestroyRuntime(js->rt);
     JS_ShutDown();
+    free(js->buffer);
     free(js);
     free(li);
 }
@@ -141,8 +147,8 @@ language_interpreter_t* javascript_interpreter_new()
 {
     language_interpreter_t * li = calloc(1, sizeof(language_interpreter_t));
     li->name = "js";
-    li->exec = exec_js;
-    li->eval = eval_js;
+    li->define_function = define_function_js;
+    li->call_function = call_function_js;
     li->destroy = destroy_js;
     li->internal = calloc(1, sizeof(js_internal_t));
     js_internal_t*js = (js_internal_t*)li->internal;

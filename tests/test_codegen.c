@@ -21,41 +21,10 @@ trainingdata_t* trainingdata1(int width, int height)
     return data;
 }
 
-char* row_to_function_call(row_t*row, char*buffer)
-{
-    char*pos = buffer;
-    pos += sprintf(pos, "predict(");
-    int i;
-    for(i=0;i<row->num_inputs;i++) {
-        variable_t v = row->inputs[i];
-        switch(v.type) {
-            case CATEGORICAL:
-                pos += sprintf(pos, "%d", v.category);
-            break;
-            case CONTINUOUS:
-                pos += sprintf(pos, "%f", v.value);
-            break;
-            case TEXT:
-                pos += sprintf(pos, "\"%s\"", v.text);
-            break;
-            case MISSING:
-                pos += sprintf(pos, "undefined");
-            break;
-        }
-        if(i < row->num_inputs - 1) {
-            pos += sprintf(pos, ", ");
-        }
-    }
-    pos += sprintf(pos, ")");
-    return buffer;
-}
-
 void test_language(language_interpreter_t*lang)
 {
-    trainingdata_t*tdata1 = trainingdata1(256, 16);
+    trainingdata_t*tdata1 = trainingdata1(16, 256);
     dataset_t*data1 = trainingdata_sanitize(tdata1);
-
-    char*buffer = malloc(65536);
 
     const char*const*model_names = mrscake_get_model_names();
     while(*model_names) {
@@ -65,14 +34,13 @@ void test_language(language_interpreter_t*lang)
         bool fail_predict = false;
         if(model) {
             char*code = model_generate_code(model, lang->name);
-            lang->exec(lang, code);
+            lang->define_function(lang, code);
 
             example_t*e;
             for(e = tdata1->first_example; e; e = e->next) {
                 row_t*r = example_to_row(e, 0);
                 variable_t v = model_predict(model, r);
-                char*script = row_to_function_call(r, buffer);
-                int c = lang->eval(lang, script);
+                int c = lang->call_function(lang, r);
                 if(v.category != c) {
                     fail_predict = true;
                     break;
@@ -91,8 +59,13 @@ void test_language(language_interpreter_t*lang)
     dataset_destroy(data1);
 }
 
-int main()
+int main(int argn, char*argv[])
 {
-    language_interpreter_t*lang = javascript_interpreter_new();
-    test_language(lang);
+    if(argn > 1 && !strcmp(argv[1], "js")) {
+        language_interpreter_t*lang = javascript_interpreter_new();
+        test_language(lang);
+    } else {
+        language_interpreter_t*python = python_interpreter_new();
+        test_language(python);
+    }
 }

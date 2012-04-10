@@ -410,6 +410,11 @@ void python_write_header(model_t*model, state_t*s)
 void python_write_footer(model_t*model, state_t*s)
 {
     dedent(s);
+
+    /* Python is confused if a string to be evaluated ends
+       with spaces (i.e., an indented empty line without a
+       line break), so make sure our last line is empty */
+    s->writer->write(s->writer, "\n", 1);
 }
 
 
