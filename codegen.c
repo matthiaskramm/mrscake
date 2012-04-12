@@ -144,17 +144,13 @@ char*model_generate_code(model_t*m, const char*language)
 {
     if(!language) {
         return generate_code(codegen_default, m);
-    } else if(!strcmp(language,"python")) {
+    } else if(!strcmp(language,"python") || !strcmp(language,"py")) {
         return generate_code(&codegen_python, m);
-    } else if(!strcmp(language,"c")) {
+    } else if(!strcmp(language,"c") || !strcmp(language,"c++")) {
         return generate_code(&codegen_c, m);
-    } else if(!strcmp(language,"c++")) {
-        return generate_code(&codegen_c, m);
-    } else if(!strcmp(language,"ruby")) {
+    } else if(!strcmp(language,"ruby") || !strcmp(language,"rb")) {
         return generate_code(&codegen_ruby, m);
-    } else if(!strcmp(language,"javascript")) {
-        return generate_code(&codegen_js, m);
-    } else if(!strcmp(language,"js")) {
+    } else if(!strcmp(language,"javascript") || !strcmp(language,"js")) {
         return generate_code(&codegen_js, m);
     } else {
         return generate_code(codegen_default, m);

@@ -389,7 +389,7 @@ void ruby_write_node_brackets(node_t*n, state_t*s)
 void ruby_write_header(model_t*model, state_t*s)
 {
     strf(s, "def predict(");
-    if(s->model->sig) {
+    if(s->model->sig->has_column_names) {
         int t;
         node_t*root = (node_t*)model->code;
         for(t=0;t<model->sig->num_inputs;t++) {

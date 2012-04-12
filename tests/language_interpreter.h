@@ -14,6 +14,7 @@ typedef struct _language_interpreter {
 
 language_interpreter_t* javascript_interpreter_new();
 language_interpreter_t* python_interpreter_new();
+language_interpreter_t* ruby_interpreter_new();
 
 char* row_to_function_call(row_t*row, char*buffer, bool add_brackets);
 

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <signal.h>
 #include "../mrscake.h"
 #include "../model_select.h"
 #include "language_interpreter.h"
@@ -64,6 +65,9 @@ int main(int argn, char*argv[])
     if(argn > 1 && !strcmp(argv[1], "js")) {
         language_interpreter_t*lang = javascript_interpreter_new();
         test_language(lang);
+    } else if (argn > 1 && !strcmp(argv[1], "rb")) {
+        language_interpreter_t*ruby = ruby_interpreter_new();
+        test_language(ruby);
     } else {
         language_interpreter_t*python = python_interpreter_new();
         test_language(python);

@@ -15,7 +15,9 @@ static int py_reference_count = 0;
 static bool init_py(py_internal_t*py)
 {
     if(py_reference_count==0) {
+        sighandler_t old = signal(2, SIG_IGN);
         Py_Initialize();
+        signal(2, old);
     }
     py_reference_count++;
 
