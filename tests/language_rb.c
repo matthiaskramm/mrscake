@@ -29,16 +29,55 @@ static void rb_report_error()
     }
 }
 
-static bool define_function_rb(language_interpreter_t*li, const char*script)
+typedef struct _ruby_dfunc {
+    language_interpreter_t*li;
+    const char*script;
+    bool fail;
+} ruby_dfunc_t;
+
+static VALUE define_function_internal(VALUE _dfunc)
 {
+    fprintf(stderr, "define_function_internal\n");fflush(stderr);
+
+    ruby_dfunc_t*dfunc = (ruby_dfunc_t*)_dfunc;
+    language_interpreter_t*li = dfunc->li;
     rb_internal_t*rb = (rb_internal_t*)li->internal;
-    VALUE ret = rb_eval_string(script);
-    rb_report_error();
-    return true;
+
+    VALUE ret = rb_eval_string(dfunc->script);
+
+    return Qtrue;
 }
 
-static int call_function_rb(language_interpreter_t*li, row_t*row)
+static VALUE define_function_exception(VALUE _dfunc)
 {
+    fprintf(stderr, "define_function_exception\n");fflush(stderr);
+    ruby_dfunc_t*dfunc = (ruby_dfunc_t*)_dfunc;
+    dfunc->fail = true;
+    return Qfalse;
+}
+
+static bool define_function_rb(language_interpreter_t*li, const char*script)
+{
+    ruby_dfunc_t dfunc;
+    dfunc.li = li;
+    dfunc.script = script;
+    dfunc.fail = false;
+    VALUE ret = rb_rescue(define_function_internal, (VALUE)&dfunc, define_function_exception, (VALUE)&dfunc);
+    return !dfunc.fail;
+}
+
+typedef struct _ruby_fcall {
+    language_interpreter_t*li;
+    row_t*row;
+    bool fail;
+} ruby_fcall_t;
+
+static VALUE call_function_internal(VALUE _fcall)
+{
+    ruby_fcall_t*fcall = (ruby_fcall_t*)_fcall;
+    language_interpreter_t*li = fcall->li;
+    row_t*row = fcall->row;
+
     rb_internal_t*rb = (rb_internal_t*)li->internal;
 
     volatile VALUE array = rb_ary_new2(row->num_inputs);
@@ -50,10 +89,29 @@ static int call_function_rb(language_interpreter_t*li, row_t*row)
 
     volatile ID fname = rb_intern("predict");
     volatile VALUE object = rb_eval_string("Object");
-    VALUE ret = rb_funcall(object, fname, 1, array);
+    return rb_funcall(object, fname, 1, array);
+}
+
+static VALUE call_function_exception(VALUE _fcall)
+{
+    ruby_fcall_t*fcall = (ruby_fcall_t*)_fcall;
+    fcall->fail = true;
+}
+
+static int call_function_rb(language_interpreter_t*li, row_t*row)
+{
+    ruby_fcall_t fcall;
+    fcall.li = li;
+    fcall.row = row;
+    fcall.fail = false;
+
+    VALUE ret = rb_rescue(call_function_internal, (VALUE)&fcall, call_function_exception, (VALUE)&fcall);
+
+    if(fcall.fail) {
+        return -1;
+    }
 
     int result = NUM2INT(ret);
-    rb_report_error();
     return result;
 }
 

@@ -33,27 +33,43 @@ void test_language(language_interpreter_t*lang)
         model_t*model = model_train_specific_model(data1, model_name);
         bool fail_generate = model == NULL;
         bool fail_predict = false;
+        bool fail_define_function = false;
+        bool fail_call_function = false;
+        int count_total = 0;
+        int count_good = 0;
         if(model) {
             char*code = model_generate_code(model, lang->name);
-            lang->define_function(lang, code);
-
-            example_t*e;
-            for(e = tdata1->first_example; e; e = e->next) {
-                row_t*r = example_to_row(e, 0);
-                variable_t v = model_predict(model, r);
-                int c = lang->call_function(lang, r);
-                if(v.category != c) {
-                    fail_predict = true;
-                    break;
+            bool success = lang->define_function(lang, code);
+            fail_define_function = !success;
+            if(success) {
+                example_t*e;
+                for(e = tdata1->first_example; e; e = e->next) {
+                    row_t*r = example_to_row(e, 0);
+                    variable_t v = model_predict(model, r);
+                    int c = lang->call_function(lang, r);
+                    if(c < 0) {
+                        fail_call_function = true;
+                        break;
+                    }
+                    if(v.category != c) {
+                        fail_predict = true;
+                    } else {
+                        count_good++;
+                    }
+                    count_total++;
                 }
             }
         }
         if(fail_generate) {
-            printf("[  ] %s %s\n", lang->name, model_name);
+            printf("[     ] %s %s\n", lang->name, model_name);
+        } else if(fail_define_function) {
+            printf("[EFUNC] %s %s\n", lang->name, model_name);
+        } else if(fail_call_function) {
+            printf("[ECALL] %s %s\n", lang->name, model_name);
         } else if(fail_predict) {
-            printf("[EE] %s %s\n", lang->name, model_name);
+            printf("[%02x/%02x] %s %s\n", count_good, count_total, lang->name, model_name);
         } else {
-            printf("[OK] %s %s\n", lang->name, model_name);
+            printf("[ OK! ] %s %s\n", lang->name, model_name);
         }
     }
     lang->destroy(lang);
