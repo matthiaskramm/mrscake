@@ -225,6 +225,32 @@ dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num)
     return newdata;
 }
 
+// ----------------------- remove text columns transform ----------------------
+
+dataset_t* remove_text_columns(dataset_t*old_dataset)
+{
+    int i;
+    int num = 0;
+    for(i=0;i<old_dataset->num_columns;i++) {
+        if(old_dataset->columns[i]->is_text) {
+            continue;
+        }
+        num++;
+    }
+
+    int*index = malloc(sizeof(int)*num);
+    int j = 0;
+    for(i=0;i<old_dataset->num_columns;i++) {
+        if(old_dataset->columns[i]->is_text) {
+            continue;
+        }
+        index[j++] = i;
+    }
+    dataset_t*new_dataset = pick_columns(old_dataset, index, num);
+    free(index);
+    return new_dataset;
+}
+
 // ----------------------------------------------------------------------------
 
 dataset_t* dataset_revert_one_transformation(dataset_t*dataset, node_t**code)

@@ -123,6 +123,7 @@ void trainingdata_destroy(trainingdata_t*trainingdata)
 column_t*column_new(int num_rows, bool is_categorical)
 {
     column_t*c = calloc(1, sizeof(column_t)+sizeof(c->entries[0])*num_rows);
+    c->is_text = false;
     c->is_categorical = is_categorical;
     return c;
 }
@@ -158,6 +159,11 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
     column_t*column = builder->column;
     builder->count++;
 
+    if(column->is_text) {
+        assert(e.type == CONSTANT_STRING);
+        column->entries[y].text = e.s;
+        return;
+    }
     if(!column->is_categorical) {
         assert(e.type == CONSTANT_FLOAT);
         column->entries[y].f = e.f;
@@ -331,36 +337,46 @@ signature_t* signature_from_columns(column_t**columns, int num_columns, bool has
     return sig;
 }
 
-dataset_t* trainingdata_sanitize(trainingdata_t*dataset)
+dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
 {
     dataset_t*s = calloc(1,sizeof(dataset_t));
 
-    if(!trainingdata_check_format(dataset))
+    if(!trainingdata_check_format(trainingdata))
         return 0;
 
-    dict_t*column_names = extract_column_names(dataset);
+    dict_t*column_names = extract_column_names(trainingdata);
 
     int num_examples = 0;
-    example_t** examples = example_list_to_array(dataset, &num_examples,
+    example_t** examples = example_list_to_array(trainingdata, &num_examples,
                                       DATASET_SHUFFLE | DATASET_EVEN_OUT_CLASS_COUNT
                                       );
 
-    s->num_columns = dataset->first_example->num_inputs;
+    example_t*first_row = trainingdata->first_example;
+    s->num_columns = first_row->num_inputs;
     s->num_rows = num_examples;
     s->columns = malloc(sizeof(column_t)*s->num_columns);
-    example_t*first_row = dataset->first_example;
 
-    /* copy columns from the old to the new dataset, mapping categories
+    /* copy columns from the old to the new trainingdata, mapping categories
        to numbers. */
     int x,y;
     columnbuilder_t**builders = malloc(sizeof(columnbuilder_t*)*s->num_columns);
     for(x=0;x<s->num_columns;x++) {
         columntype_t ltype = first_row->inputs[x].type;
-        bool is_categorical = ltype!=CONTINUOUS;
-        s->columns[x] = column_new(s->num_rows, is_categorical);
+        switch(ltype) {
+            case CONTINUOUS:
+                s->columns[x] = column_new(s->num_rows, false);
+            break;
+            case CATEGORICAL:
+                s->columns[x] = column_new(s->num_rows, true);
+            break;
+            case TEXT:
+                s->columns[x] = column_new(s->num_rows, false);
+                s->columns[x]->is_text = true;
+            break;
+        } 
         builders[x] = columnbuilder_new(s->columns[x]);
     }
-    example_t*example = dataset->first_example;
+    example_t*example = trainingdata->first_example;
     for(y=0;y<num_examples;y++) {
         example_t*example = examples[y];
         for(x=0;x<s->num_columns;x++) {

@@ -51,16 +51,18 @@ typedef struct _dataset {
 } dataset_t;
 
 struct _column {
+    const char*name;
+    bool is_text;
     bool is_categorical;
 
     int num_classes;
     constant_t*classes;
     int* class_occurence_count;
-    const char*name;
 
     union {
         float f;
         category_t c;
+        const char* text;
     } entries[0];
 };
 

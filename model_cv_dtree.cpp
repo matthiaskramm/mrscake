@@ -24,6 +24,7 @@
 #include "dataset.h"
 #include "easy_ast.h"
 #include "model_select.h"
+#include "transform.h"
 
 //#define VERIFY 1
 
@@ -354,6 +355,8 @@ static int get_max_trees(dtree_model_factory_t*factory, dataset_t*d)
 
 static node_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
 {
+    d = remove_text_columns(d);
+
     CvMLDataFromExamples data(d);
 
     CodeGeneratingDTree dtree(d);
@@ -363,11 +366,15 @@ static node_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
 #ifdef VERIFY
     verify(dataset, m, &dtree);
 #endif
-    return  dtree.get_program();
+    node_t*code = dtree.get_program();
+    d = dataset_revert_one_transformation(d, &code);
+    return code;
 }
 
 static node_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
+    d = remove_text_columns(d);
+
     CvMLDataFromExamples data(d);
     CodeGeneratingRTrees rtrees(d);
     int max_trees = get_max_trees(factory, d);
@@ -376,11 +383,15 @@ static node_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
     CvRTParams params(16, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
     rtrees.train(&data, params);
 
-    return rtrees.get_program();
+    node_t*code = rtrees.get_program();
+    d = dataset_revert_one_transformation(d, &code);
+    return code;
 }
 
 static node_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
+    d = remove_text_columns(d);
+
     if(d->num_columns == 1 && !d->columns[0]->is_categorical) {
         /* OpenCV has a bug in their special case code for a 
            single ordered predictor (see ertrees.cpp:1827) */
@@ -394,19 +405,25 @@ static node_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
     CvRTParams params(16, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
     ertrees.train(&data, params);
 
-    return ertrees.get_program();
+    node_t*code = ertrees.get_program();
+    d = dataset_revert_one_transformation(d, &code);
+    return code;
 }
 
 static node_t*gbtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
+    d = remove_text_columns(d);
+
     CvMLDataFromExamples data(d);
     CodeGeneratingGBTrees gbtrees(d);
 
     CvGBTreesParams params;
     params.loss_function_type = CvGBTrees::DEVIANCE_LOSS; // classification, not regression
     gbtrees.train(&data, params);
-
-    return gbtrees.get_program();
+   
+    node_t*code = gbtrees.get_program();
+    d = dataset_revert_one_transformation(d, &code);
+    return code;
 }
 
 static dtree_model_factory_t dtree_model_factory = {

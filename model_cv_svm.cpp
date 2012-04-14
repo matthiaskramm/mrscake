@@ -215,6 +215,7 @@ class CodeGeneratingSVM: public CvSVM
 
 static node_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
 {
+    d = remove_text_columns(d);
     d = expand_categorical_columns(d);
     
     assert(!dataset_has_categorical_columns(d));
@@ -258,6 +259,7 @@ static node_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
     cvReleaseMat(&input);
     cvReleaseMat(&response);
     
+    d = dataset_revert_one_transformation(d, &code);
     d = dataset_revert_one_transformation(d, &code);
     return code;
 }

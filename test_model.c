@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include "mrscake.h"
 #include "model_select.h"
+#include "settings.h"
 
 #define HEIGHT 256
 #define WIDTH 16
