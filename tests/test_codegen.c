@@ -22,22 +22,38 @@ trainingdata_t* trainingdata1(int width, int height)
     return data;
 }
 
-void test_language(language_interpreter_t*lang, int test_num)
+trainingdata_t* trainingdata2(int width, int height)
 {
-    trainingdata_t*tdata1 = trainingdata1(16, 256);
-    dataset_t*data1 = trainingdata_sanitize(tdata1);
+    trainingdata_t* data = trainingdata_new();
 
+    int t;
+    for(t=0;t<height;t++) {
+        example_t*e = example_new(width);
+        int s;
+        for(s=0;s<width;s++) {
+            e->inputs[s] = variable_new_continuous(lrand48()&255);
+        }
+        e->inputs[2] = variable_new_continuous(((t%2)+1)*100+(lrand48()&15));
+        e->inputs[3] = variable_new_continuous((((t/2)%2)+1)*100+(lrand48()&15));
+        e->desired_response = variable_new_categorical(t&3);
+        trainingdata_add_example(data, e);
+    }
+    return data;
+}
+
+int test_language_and_dataset(language_interpreter_t*lang, trainingdata_t*tdata, int test_num, int count)
+{
+    dataset_t*data = trainingdata_sanitize(tdata);
     bool verbose = test_num>0;
 
     const char*const*model_names = mrscake_get_model_names();
-    int count = 0;
     while(*model_names) {
         const char*model_name = *model_names++;
         count++;
         if(test_num > 0 && count != test_num) {
             continue;
         }
-        model_t*model = model_train_specific_model(data1, model_name);
+        model_t*model = model_train_specific_model(data, model_name);
         bool fail_generate = model == NULL;
         bool fail_predict = false;
         bool fail_define_function = false;
@@ -60,7 +76,7 @@ void test_language(language_interpreter_t*lang, int test_num)
             fail_define_function = !success;
             if(success) {
                 example_t*e;
-                for(e = tdata1->first_example; e; e = e->next) {
+                for(e = tdata->first_example; e; e = e->next) {
                     row_t*r = example_to_row(e, 0);
                     if(verbose) {
                         printf("debug output (ast):\n");
@@ -105,8 +121,17 @@ void test_language(language_interpreter_t*lang, int test_num)
             printf("%5d [  OK!  ] %s %s\n", count, lang->name, model_name);
         }
     }
-    lang->destroy(lang);
-    dataset_destroy(data1);
+    dataset_destroy(data);
+    return count;
+}
+
+void test_language(language_interpreter_t*lang, int test_num)
+{
+    trainingdata_t*tdata1 = trainingdata1(16, 256);
+    trainingdata_t*tdata2 = trainingdata2(10, 128);
+    int count = 0;
+    count = test_language_and_dataset(lang, tdata2, test_num, count);
+    count = test_language_and_dataset(lang, tdata1, test_num, count);
 }
 
 int main(int argn, char*argv[])
@@ -138,4 +163,5 @@ int main(int argn, char*argv[])
     }
 
     test_language(lang, test_number);
+    lang->destroy(lang);
 }
