@@ -62,7 +62,13 @@ void test_language(language_interpreter_t*lang, int test_num)
                 example_t*e;
                 for(e = tdata1->first_example; e; e = e->next) {
                     row_t*r = example_to_row(e, 0);
+                    if(verbose) {
+                        printf("debug output (ast):\n");
+                    }
                     variable_t v = model_predict(model, r);
+                    if(verbose) {
+                        printf("debug output (%s):\n", lang->name);
+                    }
                     int c = lang->call_function(lang, r);
                     if(c < 0) {
                         fail_call_function = true;
@@ -70,11 +76,16 @@ void test_language(language_interpreter_t*lang, int test_num)
                     }
                     if(v.category != c) {
                         if(verbose) {
+                            printf("-------------------------------------------------------------\n");
+                            printf("%s\n", row_to_function_call(r, malloc(16384), true));
                             row_print(r);
                             printf("ast: %d\n", v.category);
                             printf("%s: %d\n", lang->name, c);
+                            variable_t v = model_predict(model, r);
                         }
                         fail_predict = true;
+                        if(test_num > 0)
+                            break;
                     } else {
                         count_good++;
                     }

@@ -247,7 +247,7 @@ void constant_print(constant_t*v)
     int t;
     switch(v->type) {
         case CONSTANT_FLOAT:
-            printf("%.2f", v->f);
+            printf("%f", v->f);
         break;
         case CONSTANT_INT:
             printf("%d", v->i);

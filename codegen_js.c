@@ -193,9 +193,9 @@ void js_write_node_nop(node_t*n, state_t*s)
 }
 void js_write_node_debug_print(node_t*n, state_t*s)
 {
-    strf(s, "trace(");
+    strf(s, "trace(\"\" + (");
     write_node(s, n->child[0]);
-    strf(s, ");\n");
+    strf(s, "));\n");
 }
 void js_write_constant(constant_t*c, state_t*s)
 {
@@ -378,7 +378,7 @@ void js_write_node_set_array_at_pos(node_t*n, state_t*s)
 void js_write_node_sort_float_array_asc(node_t*n, state_t*s)
 {
     write_node(s, n->child[0]);
-    strf(s, ".sort();\n");
+    strf(s, ".sort(function(a,b) {return a-b;});\n");
 }
 void js_write_node_for_local_from_n_to_m(node_t*n, state_t*s)
 {

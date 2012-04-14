@@ -28,26 +28,23 @@ static void error_callback(JSContext *cx, const char *message, JSErrorReport *re
 
     js_internal_t*js = JS_GetContextPrivate(cx);
     if(js->li->verbosity > 0) {
-        fprintf(stderr, "%s:%u:%s\n",
+        printf("%s:%u:%s\n",
             report->filename ? report->filename : "<no filename>",
             (unsigned int) report->lineno, message);
     }
 }
 
-JSBool myjs_system(JSContext *cx, uintN argc, jsval *vp)
+JSBool myjs_trace(JSContext *cx, uintN argc, jsval *vp)
 {
     JSString* str;
-    if (!JS_ConvertArguments(cx, argc, JS_ARGV(cx, vp), "s", &str))
-        return JS_FALSE;
-
-    char*cmd = JS_EncodeString(cx, str);
-    int rc = system(cmd);
-    JS_free(cx, cmd);
-    if (rc != 0) {
-        // throw an exception
-        JS_ReportError(cx, "Command failed with exit code %d", rc);
+    jsval*value = JS_ARGV(cx, vp);
+    if (!JS_ConvertArguments(cx, argc, value, "S", &str)) {
         return JS_FALSE;
     }
+    char*cstr = JS_EncodeString(cx, str);
+    printf("%s\n", cstr);
+    JS_free(cx, cstr);
+
     JS_SET_RVAL(cx, vp, JSVAL_VOID);
     return JS_TRUE;
 }
@@ -63,7 +60,7 @@ JSBool myjs_sqr(JSContext *cx, uintN argc, jsval *vp)
 }
 
 static JSFunctionSpec myjs_global_functions[] = {
-    JS_FS("system", myjs_system, 1, 0),
+    JS_FS("trace", myjs_trace, 1, 0),
     JS_FS("sqr", myjs_sqr, 1, 0),
     JS_FS_END
 };
