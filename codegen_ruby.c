@@ -191,7 +191,7 @@ void ruby_write_constant(constant_t*c, state_t*s)
     int t;
     switch(c->type) {
         case CONSTANT_FLOAT:
-            strf(s, "%f", c->f);
+            strf(s, "%g", c->f);
             break;
         case CONSTANT_INT:
         case CONSTANT_CATEGORY:
@@ -314,7 +314,7 @@ static void ruby_write_node_arg_min_or_max(node_t*n, state_t*s, char*min_or_max)
         if(t) strf(s, ",");
         write_node(s, n->child[t]);
     }
-    strf(s, "].each_with_index.map.%s[1]", min_or_max);
+    strf(s, "].each_with_index.map.%s)[1]", min_or_max);
 }
 void ruby_write_node_arg_max(node_t*n, state_t*s)
 {
@@ -371,7 +371,7 @@ void ruby_write_node_for_local_from_n_to_m(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ").upto((");
     write_node(s, n->child[1]);
-    strf(s, ")-1) do:\n");
+    strf(s, ")-1) do\n");
     indent(s);write_node(s, n->child[2]);dedent(s);
     strf(s, "\nend");
 }
