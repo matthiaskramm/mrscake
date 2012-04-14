@@ -96,9 +96,9 @@ void test_language(language_interpreter_t*lang, int test_num)
         if(fail_generate) {
             printf("%5d [       ] %s %s\n", count, lang->name, model_name);
         } else if(fail_define_function) {
-            printf("%5d [FUNCERR] %s %s\n", count, lang->name, model_name);
+            printf("%5d [ERR DEF] %s %s\n", count, lang->name, model_name);
         } else if(fail_call_function) {
-            printf("%5d [CALLERR] %s %s\n", count, lang->name, model_name);
+            printf("%5d [ERR RUN] %s %s\n", count, lang->name, model_name);
         } else if(fail_predict) {
             printf("%5d [%3d/%3d] %s %s\n", count, count_good, count_total, lang->name, model_name);
         } else {

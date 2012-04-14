@@ -37,8 +37,6 @@ typedef struct _ruby_dfunc {
 
 static VALUE define_function_internal(VALUE _dfunc)
 {
-    fprintf(stderr, "define_function_internal\n");fflush(stderr);
-
     ruby_dfunc_t*dfunc = (ruby_dfunc_t*)_dfunc;
     language_interpreter_t*li = dfunc->li;
     rb_internal_t*rb = (rb_internal_t*)li->internal;
@@ -50,7 +48,6 @@ static VALUE define_function_internal(VALUE _dfunc)
 
 static VALUE define_function_exception(VALUE _dfunc)
 {
-    fprintf(stderr, "define_function_exception\n");fflush(stderr);
     ruby_dfunc_t*dfunc = (ruby_dfunc_t*)_dfunc;
     dfunc->fail = true;
     return Qfalse;
@@ -95,6 +92,8 @@ static VALUE call_function_internal(VALUE _fcall)
 static VALUE call_function_exception(VALUE _fcall)
 {
     ruby_fcall_t*fcall = (ruby_fcall_t*)_fcall;
+    if(fcall->li->verbosity > 0)
+        rb_report_error();
     fcall->fail = true;
 }
 

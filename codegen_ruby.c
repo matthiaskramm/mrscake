@@ -314,7 +314,7 @@ static void ruby_write_node_arg_min_or_max(node_t*n, state_t*s, char*min_or_max)
         if(t) strf(s, ",");
         write_node(s, n->child[t]);
     }
-    strf(s, "].each.inject([]) {|i,n| [i,[n,i[1]+1]].%s})[1]", min_or_max);
+    strf(s, "].each_with_index.map.%s[1]", min_or_max);
 }
 void ruby_write_node_arg_max(node_t*n, state_t*s)
 {
@@ -358,7 +358,7 @@ void ruby_write_node_array_arg_max_i(node_t*n, state_t*s)
 {
     strf(s, "(");
     write_node(s, n->child[0]);
-    strf(s, ".each.inject([]) {|i,n| [i,[n,i[1]+1]].max})[1]");
+    strf(s, ".each_with_index.map.max)[1]");
 }
 void ruby_write_node_sort_float_array_asc(node_t*n, state_t*s)
 {
