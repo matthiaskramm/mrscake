@@ -7,6 +7,7 @@
 typedef struct _language_interpreter {
     void*internal;
     const char*name;
+    int verbosity;
     bool (*define_function)(struct _language_interpreter*li, const char*script);
     int (*call_function)(struct _language_interpreter*li, row_t*row);
     void (*destroy)(struct _language_interpreter*li);

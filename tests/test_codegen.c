@@ -22,14 +22,21 @@ trainingdata_t* trainingdata1(int width, int height)
     return data;
 }
 
-void test_language(language_interpreter_t*lang)
+void test_language(language_interpreter_t*lang, int test_num)
 {
     trainingdata_t*tdata1 = trainingdata1(16, 256);
     dataset_t*data1 = trainingdata_sanitize(tdata1);
 
+    bool verbose = test_num>0;
+
     const char*const*model_names = mrscake_get_model_names();
+    int count = 0;
     while(*model_names) {
         const char*model_name = *model_names++;
+        count++;
+        if(test_num > 0 && count != test_num) {
+            continue;
+        }
         model_t*model = model_train_specific_model(data1, model_name);
         bool fail_generate = model == NULL;
         bool fail_predict = false;
@@ -38,7 +45,17 @@ void test_language(language_interpreter_t*lang)
         int count_total = 0;
         int count_good = 0;
         if(model) {
+            if(verbose) {
+                printf("-------------------------------------------------------------\n");
+                model_print(model);
+            }
             char*code = model_generate_code(model, lang->name);
+            if(verbose) {
+                printf("-------------------------------------------------------------\n");
+                printf("%s\n", code);
+                printf("-------------------------------------------------------------\n");
+            }
+
             bool success = lang->define_function(lang, code);
             fail_define_function = !success;
             if(success) {
@@ -52,6 +69,11 @@ void test_language(language_interpreter_t*lang)
                         break;
                     }
                     if(v.category != c) {
+                        if(verbose) {
+                            row_print(r);
+                            printf("ast: %d\n", v.category);
+                            printf("%s: %d\n", lang->name, c);
+                        }
                         fail_predict = true;
                     } else {
                         count_good++;
@@ -61,15 +83,15 @@ void test_language(language_interpreter_t*lang)
             }
         }
         if(fail_generate) {
-            printf("[     ] %s %s\n", lang->name, model_name);
+            printf("%5d [       ] %s %s\n", count, lang->name, model_name);
         } else if(fail_define_function) {
-            printf("[EFUNC] %s %s\n", lang->name, model_name);
+            printf("%5d [FUNCERR] %s %s\n", count, lang->name, model_name);
         } else if(fail_call_function) {
-            printf("[ECALL] %s %s\n", lang->name, model_name);
+            printf("%5d [CALLERR] %s %s\n", count, lang->name, model_name);
         } else if(fail_predict) {
-            printf("[%02x/%02x] %s %s\n", count_good, count_total, lang->name, model_name);
+            printf("%5d [%3d/%3d] %s %s\n", count, count_good, count_total, lang->name, model_name);
         } else {
-            printf("[ OK! ] %s %s\n", lang->name, model_name);
+            printf("%5d [  OK!  ] %s %s\n", count, lang->name, model_name);
         }
     }
     lang->destroy(lang);
@@ -78,14 +100,31 @@ void test_language(language_interpreter_t*lang)
 
 int main(int argn, char*argv[])
 {
-    if(argn > 1 && !strcmp(argv[1], "js")) {
-        language_interpreter_t*lang = javascript_interpreter_new();
-        test_language(lang);
-    } else if (argn > 1 && !strcmp(argv[1], "rb")) {
-        language_interpreter_t*ruby = ruby_interpreter_new();
-        test_language(ruby);
-    } else {
-        language_interpreter_t*python = python_interpreter_new();
-        test_language(python);
+    char*language = "py";
+    int test_number = -1;
+
+    if(argn > 1) {
+        language= argv[1];
     }
+    if(argn > 2) {
+        test_number = atoi(argv[2]);
+    }
+    language_interpreter_t*lang;
+
+    if(!strcmp(language, "js")) {
+        lang = javascript_interpreter_new();
+    } else if(!strcmp(language, "py")) {
+        lang = python_interpreter_new();
+    } else if(!strcmp(language, "rb")) {
+        lang = ruby_interpreter_new();
+    } else {
+        fprintf(stderr, "No such language: %s\n", language);
+        exit(1);
+    }
+
+    if(test_number > 0) {
+        lang->verbosity = 1;
+    }
+
+    test_language(lang, test_number);
 }

@@ -10,10 +10,10 @@
 #include "jsapi.h"
 
 typedef struct _js_internal {
+    language_interpreter_t*li;
     JSRuntime *rt;
     JSContext *cx;
     JSObject *global;
-    char*error;
     char*buffer;
 } js_internal_t;
 
@@ -27,11 +27,10 @@ static JSClass global_class = {
 static void error_callback(JSContext *cx, const char *message, JSErrorReport *report) {
 
     js_internal_t*js = JS_GetContextPrivate(cx);
-    /*fprintf(stderr, "%s:%u:%s\n",
+    if(js->li->verbosity > 0) {
+        fprintf(stderr, "%s:%u:%s\n",
             report->filename ? report->filename : "<no filename>",
-            (unsigned int) report->lineno, message);*/
-    if(!js->error) {
-        js->error = strdup(message);
+            (unsigned int) report->lineno, message);
     }
 }
 
@@ -105,9 +104,6 @@ static bool define_function_js(language_interpreter_t*li, const char*script)
     jsval rval;
     JSBool ok;
     ok = JS_EvaluateScript(js->cx, js->global, script, strlen(script), "__main__", 1, &rval);
-    if(js->error)  {
-        free(js->error);js->error=0;
-    }
     return ok;
 }
 
@@ -125,9 +121,6 @@ static int call_function_js(language_interpreter_t*li, row_t*row)
         ok = JS_ValueToInt32(js->cx, rval, &d);
         if(ok)
             i = d;
-    }
-    if(js->error)  {
-        free(js->error);js->error=0;
     }
     return i;
 }
@@ -152,6 +145,7 @@ language_interpreter_t* javascript_interpreter_new()
     li->destroy = destroy_js;
     li->internal = calloc(1, sizeof(js_internal_t));
     js_internal_t*js = (js_internal_t*)li->internal;
+    js->li = li;
     init_js(js);
     return li;
 }
