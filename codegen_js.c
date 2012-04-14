@@ -202,7 +202,7 @@ void js_write_constant(constant_t*c, state_t*s)
     int t;
     switch(c->type) {
         case CONSTANT_FLOAT:
-            strf(s, "%f", c->f);
+            strf(s, "%g", c->f);
             break;
         case CONSTANT_INT:
         case CONSTANT_CATEGORY:
@@ -409,7 +409,7 @@ static void js_write_function_arg_max(state_t*s, char*suffix, char*type)
 "    var i;\n"
 "    var max = 0;\n"
 "    for(i=1;i<array.length;i++) {\n"
-"        if(array[i] > array[max]) {\n"
+"        if(array[i] >= array[max]) {\n"
 "            max = i;\n"
 "        }\n"
 "    }\n"
@@ -424,7 +424,7 @@ static void js_write_function_arg_min(state_t*s, char*suffix, char*type)
 "    var i;\n"
 "    var min = 0;\n"
 "    for(i=1;i<array.length;i++) {\n"
-"        if(array[i] > array[min]) {\n"
+"        if(array[i] < array[min]) {\n"
 "            min = i;\n"
 "        }\n"
 "    }\n"
