@@ -45,8 +45,8 @@ int main(int argn, char*argv[])
         char text[256];
         sprintf(text, "%s %s %s %s %s %s %s %s bravo charlie",
                 (t&128)?"theta":"",
-                (t&64)?"eta":"",
-                (t&32)?"zeta":"",
+                (t&64)?"gamma":"",
+                (t&32)?"beta":"",
                 (t&16)?"epsilon":"",
                 (t&8)?"delta":"",
                 (t&4)?"gamma":"",

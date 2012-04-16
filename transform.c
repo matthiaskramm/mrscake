@@ -24,6 +24,7 @@
 #include "transform.h"
 #include "easy_ast.h"
 #include "util.h"
+#include "text.h"
 
 // ----------------------- expand columns transform ----------------------------
 
@@ -249,6 +250,24 @@ dataset_t* remove_text_columns(dataset_t*old_dataset)
     dataset_t*new_dataset = pick_columns(old_dataset, index, num);
     free(index);
     return new_dataset;
+}
+
+// ----------------------- baysiate text columns transform ----------------------
+
+dataset_t* baysiate_text_columns(dataset_t*old_dataset)
+{
+    int i;
+    int num = 0;
+    for(i=0;i<old_dataset->num_columns;i++) {
+        if(old_dataset->columns[i]->type == TEXT) {
+            textcolumn_t*t = textcolumn_from_column(old_dataset->columns[i], old_dataset->num_rows);
+            textcolumn_print(t);
+            textcolumn_baysiate(t, old_dataset->desired_response, (category_t)0);
+            exit(0);
+        }
+    }
+
+    return 0;
 }
 
 // ----------------------------------------------------------------------------

@@ -355,7 +355,7 @@ static int get_max_trees(dtree_model_factory_t*factory, dataset_t*d)
 
 static node_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
 {
-    d = remove_text_columns(d);
+    d = baysiate_text_columns(d);
 
     CvMLDataFromExamples data(d);
 
