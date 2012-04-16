@@ -38,6 +38,19 @@ const char*register_string(const char*s)
     }
     return stored_string;
 }
+const char*register_string_n(const char*s, int count)
+{
+    int l = strlen(s);
+    if(l <= count)
+        return register_string(s);
+
+    char*n = malloc(count+1);
+    memcpy(n, s, count);
+    n[count] = 0;
+    const char*r = register_string(n);
+    free(n);
+    return r;
+}
 const char*register_and_free_string(char*s)
 {
     const char*r = register_string(s);

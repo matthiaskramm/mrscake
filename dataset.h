@@ -50,10 +50,10 @@ typedef struct _dataset {
     transform_t* transform;
 } dataset_t;
 
+
 struct _column {
     const char*name;
-    bool is_text;
-    bool is_categorical;
+    columntype_t type;
 
     int num_classes;
     constant_t*classes;
@@ -83,7 +83,7 @@ struct _transform
     dataset_t*original;
 };
 
-column_t*column_new(int num_rows, bool is_categorical);
+column_t*column_new(int num_rows, columntype_t columntype);
 
 model_t* model_new(dataset_t*dataset);
 example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags);

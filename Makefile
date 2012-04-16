@@ -37,7 +37,7 @@ endif
 MODELS=model_cv_dtree.$(O) model_cv_ann.$(O) model_cv_svm.$(O) model_cv_linear.$(O) model_perceptron.$(O) model_knearest.$(O)
 VAR_SELECTORS=varselect_cv_dtree.$(O)
 CODE_GENERATORS=codegen_python.$(O) codegen_ruby.$(O) codegen_js.$(O) codegen_c.$(O)
-OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.$(O) constant.$(O) ast.$(O) model.$(O) serialize.$(O) io.$(O) list.$(O) model_select.$(O) dict.$(O) dataset.$(O) environment.$(O) codegen.$(O) ast_transforms.$(O) stringpool.$(O) net.$(O) settings.$(O) job.$(O) var_selection.$(O) transform.$(O) mrscake.$(O) util.$(O)
+OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.$(O) constant.$(O) ast.$(O) model.$(O) serialize.$(O) io.$(O) list.$(O) model_select.$(O) dict.$(O) dataset.$(O) text.$(O) environment.$(O) codegen.$(O) ast_transforms.$(O) stringpool.$(O) net.$(O) settings.$(O) job.$(O) var_selection.$(O) transform.$(O) mrscake.$(O) util.$(O)
 CV_OBJECTS=lib/alloc.$(O) lib/ann_mlp.$(O) lib/arithm.$(O) lib/array.$(O) lib/boost.$(O) lib/cnn.$(O) lib/convert.$(O) lib/copy.$(O) lib/data.$(O) \
 	lib/datastructs.$(O) lib/ertrees.$(O) lib/estimate.$(O) lib/gbt.$(O) lib/inner_functions.$(O) lib/knearest.$(O) lib/mathfuncs.$(O) lib/matmul.$(O) \
 	lib/matrix.$(O) lib/missing.$(O) lib/persistence.$(O) lib/precomp.$(O) lib/rand.$(O) lib/rtrees.$(O) lib/stat.$(O) lib/svm.$(O) lib/system.$(O) lib/tables.$(O) \
@@ -79,6 +79,9 @@ environment.$(O): environment.c environment.h mrscake.h
 	$(CC) -c $< -o $@
 
 dataset.$(O): dataset.c dataset.h mrscake.h
+	$(CC) -c $< -o $@
+
+text.$(O): text.c text.h dataset.h mrscake.h
 	$(CC) -c $< -o $@
 
 transform.$(O): transform.c transform.h mrscake.h

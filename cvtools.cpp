@@ -67,7 +67,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
     int i,j;
 
     for(j=0;j<input_columns;j++) {
-        if(dataset->columns[j]->is_categorical) {
+        if(dataset->columns[j]->type == CATEGORICAL) {
             this->change_var_type(j, CV_VAR_CATEGORICAL);
         }
     }
@@ -76,7 +76,7 @@ CvMLDataFromExamples::CvMLDataFromExamples(dataset_t*dataset)
         float* ddata = values->data.fl + total_columns*i;
         for(j=0;j<input_columns;j++) {
             column_t*c = dataset->columns[j];
-            ddata[j] = c->is_categorical?
+            ddata[j] = (c->type == CATEGORICAL)?
                     c->entries[i].c :
                     c->entries[i].f;
         }
@@ -151,7 +151,7 @@ int set_column_in_matrix(column_t*column, CvMat*mat, int xpos, int rows)
 {
     int y;
     int x = 0;
-    if(!column->is_categorical) {
+    if(column->type != CATEGORICAL) {
         for(y=0;y<rows;y++) {
             float*e = (float*)(CV_MAT_ELEM_PTR(*mat, y, xpos+x));
             *e =  column->entries[y].f;
@@ -179,7 +179,7 @@ int count_multiclass_columns(dataset_t*d)
     int x;
     int width = 0;
     for(x=0;x<d->num_columns;x++) {
-        if(!d->columns[x]->is_categorical) {
+        if(d->columns[x]->type != CATEGORICAL) {
             width++;
         } else {
             width += d->columns[x]->num_classes;

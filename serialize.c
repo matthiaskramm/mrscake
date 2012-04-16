@@ -511,9 +511,9 @@ void trainingdata_save(trainingdata_t*d, const char*filename)
 void column_write(column_t*c, int num_rows, writer_t*w)
 {
     write_string(w, c->name);
-    write_uint8(w, c->is_categorical);
+    write_uint8(w, c->type);
     int y;
-    if(c->is_categorical) {
+    if(c->type == CATEGORICAL) {
         write_compressed_uint(w, c->num_classes);
         int t;
         for(t=0;t<c->num_classes;t++) {
@@ -523,17 +523,23 @@ void column_write(column_t*c, int num_rows, writer_t*w)
         for(y=0;y<num_rows;y++) {
             write_compressed_uint(w, c->entries[y].c);
         }
-    } else {
+    } else if(c->type == CONTINUOUS) {
         for(y=0;y<num_rows;y++) {
             write_float(w, c->entries[y].f);
         }
+    } else if(c->type == CATEGORICAL) {
+        for(y=0;y<num_rows;y++) {
+            write_string(w, c->entries[y].text);
+        }
+    } else {
+        assert(0);
     }
 }
 column_t* column_read(int num_rows, reader_t*r)
 {
     char*name = read_string(r);
-    char is_categorical = read_uint8(r);
-    column_t* c = column_new(num_rows, is_categorical);
+    uint8_t column_type = read_uint8(r);
+    column_t* c = column_new(num_rows, column_type);
     if(*name) {
         c->name = register_string(name);
     } else {
@@ -541,7 +547,7 @@ column_t* column_read(int num_rows, reader_t*r)
     }
     free(name);
     int y;
-    if(c->is_categorical) {
+    if(c->type == CATEGORICAL) {
         c->num_classes = read_compressed_uint(r);
         c->classes = malloc(sizeof(c->classes[0])*c->num_classes);
         c->class_occurence_count = malloc(sizeof(c->class_occurence_count[0])*c->num_classes);
@@ -552,6 +558,10 @@ column_t* column_read(int num_rows, reader_t*r)
         }
         for(y=0;y<num_rows;y++) {
             c->entries[y].c = read_compressed_uint(r);
+        }
+    } else if(c->type == CONTINUOUS) {
+        for(y=0;y<num_rows;y++) {
+            c->entries[y].text = read_string(r);
         }
     } else {
         for(y=0;y<num_rows;y++) {

@@ -26,6 +26,7 @@ extern "C" {
 #endif
 
 const char*register_string(const char*s);
+const char*register_string_n(const char*s, int count);
 const char*register_and_free_string(char*s);
 
 #ifdef __cplusplus

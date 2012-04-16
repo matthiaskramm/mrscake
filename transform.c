@@ -49,7 +49,7 @@ static node_t* expand_revert_in_code(dataset_t*dataset, node_t* node)
         int x = transform->ecolumns[i].source_column;
         int cls = transform->ecolumns[i].source_class;
 
-        if(orig_dataset->columns[x]->is_categorical) {
+        if(orig_dataset->columns[x]->type == CATEGORICAL) {
             START_CODE(program);
                 BOOL_TO_FLOAT
                     EQUALS
@@ -86,7 +86,7 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
     int pos=0;
     int x;
     for(x=0;x<dataset->num_columns;x++) {
-        if(!dataset->columns[x]->is_categorical) {
+        if(dataset->columns[x]->type != CATEGORICAL) {
             ecolumns[pos].source_column = x;
             ecolumns[pos].source_class = 0;
             ecolumns[pos].from_category = false;
@@ -122,7 +122,7 @@ static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_da
         column_t* source_column = orig_dataset->columns[x];
 
         int y;
-        if(orig_dataset->columns[x]->is_categorical) {
+        if(orig_dataset->columns[x]->type == CATEGORICAL) {
             assert(e->from_category);
             column_t*c = column_new(dataset->num_rows, false);
             for(y=0;y<dataset->num_rows;y++) {
@@ -232,7 +232,7 @@ dataset_t* remove_text_columns(dataset_t*old_dataset)
     int i;
     int num = 0;
     for(i=0;i<old_dataset->num_columns;i++) {
-        if(old_dataset->columns[i]->is_text) {
+        if(old_dataset->columns[i]->type == TEXT) {
             continue;
         }
         num++;
@@ -241,7 +241,7 @@ dataset_t* remove_text_columns(dataset_t*old_dataset)
     int*index = malloc(sizeof(int)*num);
     int j = 0;
     for(i=0;i<old_dataset->num_columns;i++) {
-        if(old_dataset->columns[i]->is_text) {
+        if(old_dataset->columns[i]->type == TEXT) {
             continue;
         }
         index[j++] = i;

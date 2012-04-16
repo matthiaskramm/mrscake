@@ -71,7 +71,7 @@ array_t*parse_bitfield(CvDTreeTrainData* data, dataset_t*dataset, int column, in
     }
     array_t* a = array_new(count);
     count = 0;
-    assert(dataset->columns[column]->is_categorical);
+    assert(dataset->columns[column]->type == CATEGORICAL);
     for(s=0;s<num_categories;s++) {
         if(CV_DTREE_CAT_DIR(s,subset)<0) {
             int c = map_category_back(data, ci, s);
@@ -87,7 +87,7 @@ static void walk_dtree_node(CvDTreeTrainData* data, int pruned_tree_idx, dataset
     node_t**current_program = 0;
 
     if(node->Tn <= pruned_tree_idx || !node->left) {
-        assert(dataset->desired_response->is_categorical);
+        assert(dataset->desired_response->type == CATEGORICAL);
         category_t c = (int)floor(node->value+FLT_EPSILON);
         if(resolve_classes) {
             if(c<0 || c>=dataset->desired_response->num_classes) {
@@ -392,7 +392,7 @@ static node_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
     d = remove_text_columns(d);
 
-    if(d->num_columns == 1 && !d->columns[0]->is_categorical) {
+    if(d->num_columns == 1 && d->columns[0]->type != CATEGORICAL) {
         /* OpenCV has a bug in their special case code for a 
            single ordered predictor (see ertrees.cpp:1827) */
         return 0;

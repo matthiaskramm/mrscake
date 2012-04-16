@@ -30,7 +30,7 @@
 
 int main(int argn, char*argv[])
 {
-    config_parse_remote_servers("servers.txt");
+    //config_parse_remote_servers("servers.txt");
 
     trainingdata_t* data = trainingdata_new();
 
@@ -41,7 +41,21 @@ int main(int argn, char*argv[])
         for(s=0;s<WIDTH;s++) {
             e->inputs[s] = variable_new_continuous(lrand48()&255);
         }
+
+        char text[256];
+        sprintf(text, "%s %s %s %s %s %s %s %s bravo charlie",
+                (t&128)?"theta":"",
+                (t&64)?"eta":"",
+                (t&32)?"zeta":"",
+                (t&16)?"epsilon":"",
+                (t&8)?"delta":"",
+                (t&4)?"gamma":"",
+                (t&2)?"beta":"",
+                (t&1)?"alpha":"");
+
+        e->inputs[0] = variable_new_text(text);
         e->inputs[2] = variable_new_continuous(((t%2)+1)*100+(lrand48()&15));
+
         //e->inputs[3] = variable_new_categorical(t&3);
         e->desired_response = variable_new_categorical(t&1);
         trainingdata_add_example(data, e);

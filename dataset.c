@@ -120,11 +120,10 @@ void trainingdata_destroy(trainingdata_t*trainingdata)
     free(trainingdata);
 }
 
-column_t*column_new(int num_rows, bool is_categorical)
+column_t*column_new(int num_rows, columntype_t column_type)
 {
     column_t*c = calloc(1, sizeof(column_t)+sizeof(c->entries[0])*num_rows);
-    c->is_text = false;
-    c->is_categorical = is_categorical;
+    c->type = column_type;
     return c;
 }
 void column_destroy(column_t*c)
@@ -159,12 +158,12 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
     column_t*column = builder->column;
     builder->count++;
 
-    if(column->is_text) {
+    if(column->type == TEXT) {
         assert(e.type == CONSTANT_STRING);
         column->entries[y].text = e.s;
         return;
     }
-    if(!column->is_categorical) {
+    if(column->type == CONTINUOUS) {
         assert(e.type == CONSTANT_FLOAT);
         column->entries[y].f = e.f;
         return;
@@ -261,7 +260,7 @@ example_t**example_list_to_array(trainingdata_t*d, int*_num_examples, int flags)
         /* build a column out of the response column, thus making
            the column build process count the classes for us */
         int num_columns = d->first_example->num_inputs;
-        column_t*c = column_new(d->num_examples, true);
+        column_t*c = column_new(d->num_examples, CATEGORICAL);
         columnbuilder_t*b = columnbuilder_new(c);
         int y;
         example_t*i = d->first_example;
@@ -323,7 +322,7 @@ signature_t* signature_from_columns(column_t**columns, int num_columns, bool has
     int t;
     for(t=0;t<num_columns;t++) {
         sig->column_types[t] = CONTINUOUS;
-        if(columns[t]->is_categorical) {
+        if(columns[t]->type == CATEGORICAL) {
             if(columns[t]->classes[0].type==CONSTANT_STRING) {
                 sig->column_types[t] = TEXT;
             } else {
@@ -362,18 +361,7 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
     columnbuilder_t**builders = malloc(sizeof(columnbuilder_t*)*s->num_columns);
     for(x=0;x<s->num_columns;x++) {
         columntype_t ltype = first_row->inputs[x].type;
-        switch(ltype) {
-            case CONTINUOUS:
-                s->columns[x] = column_new(s->num_rows, false);
-            break;
-            case CATEGORICAL:
-                s->columns[x] = column_new(s->num_rows, true);
-            break;
-            case TEXT:
-                s->columns[x] = column_new(s->num_rows, false);
-                s->columns[x]->is_text = true;
-            break;
-        } 
+        s->columns[x] = column_new(s->num_rows, ltype);
         builders[x] = columnbuilder_new(s->columns[x]);
     }
     example_t*example = trainingdata->first_example;
@@ -397,7 +385,7 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
     free(builders);
 
     /* copy response column to the new dataset */
-    s->desired_response = column_new(s->num_rows, true);
+    s->desired_response = column_new(s->num_rows, CATEGORICAL);
     columnbuilder_t*builder = columnbuilder_new(s->desired_response);
     for(y=0;y<num_examples;y++) {
         example_t*example = examples[y];
@@ -442,7 +430,7 @@ void dataset_print(dataset_t*s)
     for(y=0;y<s->num_rows;y++) {
         for(x=0;x<s->num_columns;x++) {
             column_t*column = s->columns[x];
-            if(column->is_categorical) {
+            if(column->type == CATEGORICAL) {
                 constant_t c = column->classes[column->entries[y].c];
                 printf("%d(", column->entries[y].c);
                 constant_print(&c);
@@ -463,7 +451,7 @@ bool dataset_has_categorical_columns(dataset_t*s)
     int x;
     for(x=0;x<s->num_columns;x++) {
         column_t*column = s->columns[x];
-        if(column->is_categorical)
+        if(column->type == CATEGORICAL)
             return true;
     }
     return false;
@@ -494,7 +482,7 @@ int dataset_count_expanded_columns(dataset_t*s)
     int x;
     int num = 0;
     for(x=0;x<s->num_columns;x++) {
-        num += s->columns[x]->is_categorical ? s->columns[x]->num_classes : 1;
+        num += (s->columns[x]->type == CATEGORICAL) ? s->columns[x]->num_classes : 1;
     }
     return num;
 }
@@ -516,7 +504,7 @@ void dataset_fill_row(dataset_t*s, row_t*row, int y)
     }
     for(x=0;x<s->num_columns;x++) {
         column_t*c = s->columns[x];
-        if(c->is_categorical) {
+        if(c->type == CATEGORICAL) {
             row->inputs[x] = constant_to_variable(&c->classes[c->entries[y].c]);
         } else {
             row->inputs[x] = variable_new_continuous(c->entries[y].f);
