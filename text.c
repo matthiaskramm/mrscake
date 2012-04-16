@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include "text.h"
 #include "stringpool.h"
 
@@ -109,18 +110,26 @@ typedef struct _word_score {
     float score;
 } word_score_t;
 
-int compare_word_score(const void*_score1, const void*_score2)
+int compare_abs_word_score(const void*_score1, const void*_score2)
 {
     const word_score_t*score1 = _score1;
     const word_score_t*score2 = _score2;
-    if(score1->score > score2->score)
+    if(fabs(score1->score) > fabs(score2->score))
         return -1;
-    if(score1->score < score2->score)
+    if(fabs(score1->score) < fabs(score2->score))
         return 1;
     return 0;
 }
 
-column_t* textcolumn_baysiate(textcolumn_t*t, column_t*desired_response, category_t category)
+float get_score(textcolumn_t*t, word_count_t*cnt, sentence_t*sentence)
+{
+    float tf = cnt->count / (float)sentence->num_word_counts;
+    float idf = logf((float)t->num_rows / (float)cnt->word->occurences);
+    float tf_idf = tf * idf;
+    return tf_idf;
+}
+
+column_t* textcolumn_expand(textcolumn_t*t, column_t*desired_response, category_t category, int max_words)
 {
     word_score_t*word_score = calloc(t->num_words, sizeof(word_score_t));
     int i;
@@ -135,17 +144,40 @@ column_t* textcolumn_baysiate(textcolumn_t*t, column_t*desired_response, categor
         int i;
         sentence_t*sentence = &t->entries[y];
         for(i=0;i<sentence->num_word_counts;i++) {
-            word_count_t*occ = sentence->word_counts[i];
-            float tf = occ->count / (float)sentence->num_word_counts;
-            float idf = occ->word->occurences / (float)t->num_rows;
-            float tf_idf = tf / idf;
-            word_score[occ->word->index].score += sign * tf_idf;
+            word_count_t*cnt = sentence->word_counts[i];
+            word_score[cnt->word->index].score += sign * get_score(t, cnt, sentence);
         }
     }
+    if(max_words > t->num_words)
+        max_words = t->num_words;
 
-    qsort(word_score, t->num_words, sizeof(word_score_t), compare_word_score);
-    for(i=0;i<t->num_words;i++) {
+    qsort(word_score, t->num_words, sizeof(word_score_t), compare_abs_word_score);
+    dict_t* word_scores = dict_new(&ptr_type);
+    for(i=0;i<max_words;i++) {
         int j = word_score[i].index;
-        printf("%s %f\n", t->words[j]->str, word_score[i].score);
+        dict_put(word_scores, t->words[j], &word_score[i]);
     }
+    int word_count = i;
+
+    column_t*column = column_new(t->num_rows, CONTINUOUS);
+    for(y=0;y<t->num_rows;y++)
+    {
+        sentence_t*sentence = &t->entries[y];
+        float value = 0.0f;
+        for(i=0;i<sentence->num_word_counts;i++) {
+            word_count_t*cnt = sentence->word_counts[i];
+            word_score_t*score = dict_lookup(word_scores, cnt->word);
+            if(score) {
+                value += get_score(t, cnt, sentence) * score->score;
+            }
+
+        }
+        column->entries[y].f = value;
+    }
+
+    dict_destroy(word_scores);
+    free(word_score);
+
+    return column;
 }
+

@@ -26,7 +26,7 @@
 #include "settings.h"
 
 #define HEIGHT 256
-#define WIDTH 16
+#define WIDTH 4
 
 int main(int argn, char*argv[])
 {

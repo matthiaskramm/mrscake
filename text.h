@@ -27,8 +27,12 @@ typedef struct _textcolumn {
     sentence_t* entries;
 } textcolumn_t;
 
+typedef struct _word_column {
+    word_t*word;
+} word_column_t;
+
 textcolumn_t* textcolumn_from_column(column_t*column, int num_rows);
 void textcolumn_print(textcolumn_t*t);
-column_t* textcolumn_baysiate(textcolumn_t*t, column_t*desired_response, category_t category);
+column_t* textcolumn_expand(textcolumn_t*t, column_t*desired_response, category_t category, int max_words);
 
 #endif

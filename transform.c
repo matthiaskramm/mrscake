@@ -252,22 +252,72 @@ dataset_t* remove_text_columns(dataset_t*old_dataset)
     return new_dataset;
 }
 
-// ----------------------- baysiate text columns transform ----------------------
+// ----------------------- expand text columns transform ----------------------
 
-dataset_t* baysiate_text_columns(dataset_t*old_dataset)
+typedef struct _expanded_text_column {
+    int source_column;
+    int source_class;
+    bool from_text;
+} expanded_text_column_t;
+
+typedef struct _transform_expand_text {
+    transform_t head;
+    int num;
+    expanded_column_t* ecolumns;
+} transform_expand_text_t;
+
+static node_t* expand_text_revert_in_code(dataset_t*dataset, node_t*node)
 {
+    return node;
+}
+
+static void expand_text_destroy(dataset_t*dataset)
+{
+    transform_expand_text_t* transform = (transform_expand_text_t*)dataset->transform;
+    free(dataset->columns);
+    free(dataset);
+    free(transform);
+}
+
+dataset_t* expand_text_columns(dataset_t*old_dataset)
+{
+    transform_expand_text_t*transform = calloc(1, sizeof(transform_expand_t));
+    transform->head.revert_in_code = expand_text_revert_in_code;
+    transform->head.destroy = expand_text_destroy;
+    transform->head.original = old_dataset;
+
     int i;
-    int num = 0;
+    int num_new_columns = 0;
     for(i=0;i<old_dataset->num_columns;i++) {
         if(old_dataset->columns[i]->type == TEXT) {
-            textcolumn_t*t = textcolumn_from_column(old_dataset->columns[i], old_dataset->num_rows);
-            textcolumn_print(t);
-            textcolumn_baysiate(t, old_dataset->desired_response, (category_t)0);
-            exit(0);
+            num_new_columns += old_dataset->desired_response->num_classes;
+        } else {
+            num_new_columns++;
         }
     }
 
-    return 0;
+    dataset_t* dataset = memdup(old_dataset, sizeof(dataset_t));
+    dataset->transform = (transform_t*)transform;
+    dataset->num_columns = num_new_columns;
+    dataset->columns = (column_t**)malloc(sizeof(column_t*)*dataset->num_columns);
+    dataset->sig = 0;
+
+    int pos = 0;
+    for(i=0;i<old_dataset->num_columns;i++) {
+        if(old_dataset->columns[i]->type == TEXT) {
+            textcolumn_t*t = textcolumn_from_column(old_dataset->columns[i], old_dataset->num_rows);
+            int c;
+            for(c=0;c<old_dataset->desired_response->num_classes;c++) {
+                dataset->columns[pos++] = textcolumn_expand(t, old_dataset->desired_response, (category_t)c, 4);
+            }
+        } else {
+            dataset->columns[pos++] = old_dataset->columns[i];
+        }
+    }
+    assert(pos == dataset->num_columns);
+
+    dataset_print(dataset);
+    return dataset;
 }
 
 // ----------------------------------------------------------------------------

@@ -264,6 +264,7 @@ confusion_matrix_t* confusion_matrix_new(dataset_t*d)
     confusion_matrix_t*m = (confusion_matrix_t*)malloc(sizeof(confusion_matrix_t));
     m->dataset = d;
     m->n = d->desired_response->num_classes;
+    assert(m->n > 0);
     m->entries = malloc(sizeof(m->entries[0])*m->n);
     int i;
     for(i=0;i<m->n;i++) {
