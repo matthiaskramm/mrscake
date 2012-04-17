@@ -198,7 +198,7 @@ void python_write_constant(constant_t*c, state_t*s)
             if((fabs(c->f) - (int)fabs(c->f)) == 0.0)
                 strf(s, "%.1f", c->f);
             else
-                strf(s, "%f", c->f);
+                strf(s, "%g", c->f);
             break;
         case CONSTANT_INT:
         case CONSTANT_CATEGORY:

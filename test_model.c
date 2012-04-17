@@ -30,8 +30,6 @@
 
 int main(int argn, char*argv[])
 {
-    //config_parse_remote_servers("servers.txt");
-
     trainingdata_t* data = trainingdata_new();
 
     int t;

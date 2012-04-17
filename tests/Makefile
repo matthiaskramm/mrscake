@@ -27,3 +27,8 @@ language_rb.o: language_rb.c language_interpreter.h
 
 test_codegen: test_codegen.o language_js.o language_py.o language_rb.o language_interpreter.o ../mrscake.a
 	$(CC) test_codegen.o language_js.o language_py.o language_rb.o language_interpreter.o ../mrscake.a $(LIBS) -o $@ 
+
+clean:
+	rm -f *.o test_codegen
+
+.PHONY: all clean

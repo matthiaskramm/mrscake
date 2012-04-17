@@ -34,7 +34,9 @@ static bool define_function_py(language_interpreter_t*li, const char*script)
     py_internal_t*py = (py_internal_t*)li->internal;
     PyObject* ret = PyRun_String(script, Py_file_input, py->globals, py->globals);
     if(ret == NULL) {
-        PyErr_Print();
+        if(li->verbosity>0) {
+            PyErr_Print();
+        }
         PyErr_Clear();
     }
     return ret!=NULL;
@@ -47,7 +49,9 @@ static int call_function_py(language_interpreter_t*li, row_t*row)
     char*script = row_to_function_call(row, py->buffer, true);
     PyObject* ret = PyRun_String(script, Py_eval_input, py->globals, py->globals);
     if(ret == NULL) {
-        PyErr_Print();
+        if(li->verbosity>0) {
+            PyErr_Print();
+        }
         PyErr_Clear();
         return -1;
     } else {

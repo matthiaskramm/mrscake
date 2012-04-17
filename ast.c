@@ -437,7 +437,7 @@ constant_t node_arg_max_eval(node_t*n, environment_t* env)
     int t;
     for(t=1;t<n->num_children;t++) {
         float c = AS_FLOAT(EVAL_CHILD(t));
-        if(c>max) {
+        if(c>=max) {
             max = c;
             index = t;
         }
@@ -462,7 +462,7 @@ constant_t node_arg_max_i_eval(node_t*n, environment_t* env)
     int t;
     for(t=1;t<n->num_children;t++) {
         int c = AS_INT(EVAL_CHILD(t));
-        if(c>max) {
+        if(c>=max) {
             max = c;
             index = t;
         }
@@ -615,7 +615,7 @@ constant_t node_array_arg_max_i_eval(node_t*n, environment_t* env)
     int t;
     for(t=1;t<array->size;t++) {
         int c = AS_INT(array->entries[t]);
-        if(c>max) {
+        if(c>=max) {
             max = c;
             index = t;
         }
@@ -1336,8 +1336,8 @@ bool node_is_array(node_t*n)
 
 void node_print(node_t*n)
 {
-    printf("------------ code -------------\n");
+    printf("----------------------------------- code --------------------------------------\n");
     node_print2(n,"","",stdout);
-    printf("-------------------------------\n");
+    printf("-------------------------------------------------------------------------------\n");
 }
 
