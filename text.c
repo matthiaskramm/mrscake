@@ -58,6 +58,7 @@ textcolumn_t* textcolumn_from_column(column_t*column, int num_rows)
             word_count++;
         }
 
+        sentence->string_size = strlen(text);
         sentence->num_words = word_count;
         sentence->num_word_counts = occurences->num;
         sentence->word_counts = calloc(sentence->num_word_counts, sizeof(word_count_t*));
@@ -73,6 +74,7 @@ textcolumn_t* textcolumn_from_column(column_t*column, int num_rows)
     textcolumn->words = calloc(textcolumn->num_words, sizeof(word_t*));
     int i = 0;
     DICT_ITERATE_ITEMS(words, char*, str, word_t*, word) {
+        word->idf = logf((float)num_rows / (float)word->occurences);
         textcolumn->words[word->index] = word;
     }
     return textcolumn;
@@ -105,11 +107,6 @@ void textcolumn_print(textcolumn_t*t)
     }
 }
 
-typedef struct _word_score {
-    int index;
-    float score;
-} word_score_t;
-
 int compare_abs_word_score(const void*_score1, const void*_score2)
 {
     const word_score_t*score1 = _score1;
@@ -121,20 +118,16 @@ int compare_abs_word_score(const void*_score1, const void*_score2)
     return 0;
 }
 
-float get_score(textcolumn_t*t, word_count_t*cnt, sentence_t*sentence)
-{
-    float tf = cnt->count / (float)sentence->num_word_counts;
-    float idf = logf((float)t->num_rows / (float)cnt->word->occurences);
-    float tf_idf = tf * idf;
-    return tf_idf;
-}
 
-column_t* textcolumn_expand(textcolumn_t*t, column_t*desired_response, category_t category, int max_words)
+relevant_words_t* textcolumn_get_relevant_words(textcolumn_t*t, column_t*desired_response, category_t category, int max_words)
 {
-    word_score_t*word_score = calloc(t->num_words, sizeof(word_score_t));
+    relevant_words_t*r = calloc(1, sizeof(relevant_words_t));
+    r->textcolumn = t;
+
+    r->word_score = calloc(t->num_words, sizeof(word_score_t));
     int i;
     for(i=0;i<t->num_words;i++) {
-        word_score[i].index = i;
+        r->word_score[i].index = i;
     }
 
     int y;
@@ -145,39 +138,42 @@ column_t* textcolumn_expand(textcolumn_t*t, column_t*desired_response, category_
         sentence_t*sentence = &t->entries[y];
         for(i=0;i<sentence->num_word_counts;i++) {
             word_count_t*cnt = sentence->word_counts[i];
-            word_score[cnt->word->index].score += sign * get_score(t, cnt, sentence);
+            float tf = cnt->count / (float)sentence->string_size;
+            r->word_score[cnt->word->index].score += sign * tf * cnt->word->idf;
         }
     }
     if(max_words > t->num_words)
         max_words = t->num_words;
 
-    qsort(word_score, t->num_words, sizeof(word_score_t), compare_abs_word_score);
-    dict_t* word_scores = dict_new(&ptr_type);
+    qsort(r->word_score, t->num_words, sizeof(word_score_t), compare_abs_word_score);
+    r->word_score_dict = dict_new(&ptr_type);
     for(i=0;i<max_words;i++) {
-        int j = word_score[i].index;
-        dict_put(word_scores, t->words[j], &word_score[i]);
+        int j = r->word_score[i].index;
+        dict_put(r->word_score_dict, t->words[j], &r->word_score[i]);
     }
-    int word_count = i;
+    r->num = max_words;
+    return r;
+}
 
-    column_t*column = column_new(t->num_rows, CONTINUOUS);
+column_t*textcolumn_expand(relevant_words_t*r, column_t*desired_response, category_t category)
+{
+    textcolumn_t*t = r->textcolumn;
+    column_t*column = column_new(r->textcolumn->num_rows, CONTINUOUS);
+    int y;
     for(y=0;y<t->num_rows;y++)
     {
         sentence_t*sentence = &t->entries[y];
         float value = 0.0f;
+        int i;
         for(i=0;i<sentence->num_word_counts;i++) {
             word_count_t*cnt = sentence->word_counts[i];
-            word_score_t*score = dict_lookup(word_scores, cnt->word);
+            word_score_t*score = dict_lookup(r->word_score_dict, cnt->word);
             if(score) {
-                value += get_score(t, cnt, sentence) * score->score;
+                value += cnt->count * cnt->word->idf * score->score / sentence->string_size;
             }
 
         }
         column->entries[y].f = value;
     }
-
-    dict_destroy(word_scores);
-    free(word_score);
-
     return column;
 }
-

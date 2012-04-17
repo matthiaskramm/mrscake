@@ -54,7 +54,7 @@ int main(int argn, char*argv[])
                 (t&1)?"alpha":"");
 
         e->inputs[0] = variable_new_text(text);
-        e->inputs[2] = variable_new_continuous(((t%2)+1)*100+(lrand48()&15));
+        //e->inputs[2] = variable_new_continuous(((t%2)+1)*100+(lrand48()&15));
 
         //e->inputs[3] = variable_new_categorical(t&3);
         e->desired_response = variable_new_categorical(t&1);

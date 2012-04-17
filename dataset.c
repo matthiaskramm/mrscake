@@ -506,6 +506,8 @@ void dataset_fill_row(dataset_t*s, row_t*row, int y)
         column_t*c = s->columns[x];
         if(c->type == CATEGORICAL) {
             row->inputs[x] = constant_to_variable(&c->classes[c->entries[y].c]);
+        } else if(c->type == TEXT) {
+            row->inputs[x] = variable_new_text(c->entries[y].text);
         } else {
             row->inputs[x] = variable_new_continuous(c->entries[y].f);
         }

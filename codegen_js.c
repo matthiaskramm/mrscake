@@ -191,6 +191,14 @@ void js_write_node_nop(node_t*n, state_t*s)
 {
     strf(s, "");
 }
+void js_write_node_term_frequency(node_t*n, state_t*s)
+{
+    strf(s, "term_frequency(");
+    write_node(s, n->child[0]);
+    strf(s, ",");
+    write_node(s, n->child[1]);
+    strf(s, ")");
+}
 void js_write_node_debug_print(node_t*n, state_t*s)
 {
     strf(s, "trace(");

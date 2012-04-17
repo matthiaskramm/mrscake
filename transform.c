@@ -159,6 +159,7 @@ dataset_t* expand_categorical_columns(dataset_t*old_dataset)
     transform->head.revert_in_code = expand_revert_in_code;
     transform->head.destroy = expand_destroy;
     transform->head.original = old_dataset;
+    transform->head.name = "expand_categorical_columns";
 
     transform->num = dataset_count_expanded_columns(old_dataset);
     transform->ecolumns = expanded_columns(old_dataset);
@@ -213,6 +214,7 @@ dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num)
     transform->head.revert_in_code = pick_columns_revert_in_code;
     transform->head.destroy = pick_columns_destroy;
     transform->head.original = old_dataset;
+    transform->head.name = "pick_columns";
     newdata->transform = (transform_t*)transform;
 
     transform->original_column = (int*)memdup(index, sizeof(int)*num);
@@ -257,18 +259,54 @@ dataset_t* remove_text_columns(dataset_t*old_dataset)
 typedef struct _expanded_text_column {
     int source_column;
     int source_class;
-    bool from_text;
+    relevant_words_t* from_text;
 } expanded_text_column_t;
 
 typedef struct _transform_expand_text {
     transform_t head;
     int num;
-    expanded_column_t* ecolumns;
+    expanded_text_column_t* ecolumns;
 } transform_expand_text_t;
 
 static node_t* expand_text_revert_in_code(dataset_t*dataset, node_t*node)
 {
+    transform_expand_text_t* transform = (transform_expand_text_t*)dataset->transform;
+    dataset_t*orig_dataset = dataset->transform->original;
+   
+    if(node->type == &node_param) {
+        int i = node->value.i;
+        int x = transform->ecolumns[i].source_column;
+        START_CODE(new_node);
+        if(transform->ecolumns[i].from_text) {
+            relevant_words_t*r = transform->ecolumns[i].from_text;
+            textcolumn_t*t = r->textcolumn;
+            ADD
+                int i;
+                for(i=0;i<r->num;i++) {
+                    word_t*word = t->words[r->word_score[i].index];
+                    float score = r->word_score[i].score;
+                    MUL
+                        TERM_FREQUENCY
+                            PARAM(x);
+                            STRING_CONSTANT(word->str);
+                        END;
+                        FLOAT_CONSTANT(score*word->idf);
+                    END;
+                }
+            END;
+        } else {
+            PARAM(x);
+        }
+        END_CODE;
+        node_destroy(node);
+        return new_node;
+    }
+    int i;
+    for(i=0;i<node->num_children;i++) {
+        node_set_child(node, i, expand_text_revert_in_code(dataset, node->child[i]));
+    }
     return node;
+
 }
 
 static void expand_text_destroy(dataset_t*dataset)
@@ -285,6 +323,7 @@ dataset_t* expand_text_columns(dataset_t*old_dataset)
     transform->head.revert_in_code = expand_text_revert_in_code;
     transform->head.destroy = expand_text_destroy;
     transform->head.original = old_dataset;
+    transform->head.name = "expand_text_columns";
 
     int i;
     int num_new_columns = 0;
@@ -301,6 +340,7 @@ dataset_t* expand_text_columns(dataset_t*old_dataset)
     dataset->num_columns = num_new_columns;
     dataset->columns = (column_t**)malloc(sizeof(column_t*)*dataset->num_columns);
     dataset->sig = 0;
+    transform->ecolumns = calloc(num_new_columns, sizeof(expanded_column_t));
 
     int pos = 0;
     for(i=0;i<old_dataset->num_columns;i++) {
@@ -308,15 +348,22 @@ dataset_t* expand_text_columns(dataset_t*old_dataset)
             textcolumn_t*t = textcolumn_from_column(old_dataset->columns[i], old_dataset->num_rows);
             int c;
             for(c=0;c<old_dataset->desired_response->num_classes;c++) {
-                dataset->columns[pos++] = textcolumn_expand(t, old_dataset->desired_response, (category_t)c, 4);
+                relevant_words_t*r = textcolumn_get_relevant_words(t, old_dataset->desired_response, (category_t)c, 4);
+                dataset->columns[pos] = textcolumn_expand(r, old_dataset->desired_response, (category_t)c);
+                transform->ecolumns[pos].source_column = i;
+                transform->ecolumns[pos].source_class = c;
+                transform->ecolumns[pos].from_text = r;
+                pos++;
             }
         } else {
-            dataset->columns[pos++] = old_dataset->columns[i];
+            dataset->columns[pos] = old_dataset->columns[i];
+            transform->ecolumns[pos].source_column = i;
+            transform->ecolumns[pos].from_text = 0;
+            pos++;
         }
     }
     assert(pos == dataset->num_columns);
 
-    dataset_print(dataset);
     return dataset;
 }
 

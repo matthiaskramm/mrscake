@@ -180,6 +180,14 @@ void ruby_write_node_param(node_t*n, state_t*s)
 void ruby_write_node_nop(node_t*n, state_t*s)
 {
 }
+void ruby_write_node_term_frequency(node_t*n, state_t*s)
+{
+    strf(s, "term_frequency(");
+    write_node(s, n->child[0]);
+    strf(s, ",");
+    write_node(s, n->child[1]);
+    strf(s, ")");
+}
 void ruby_write_node_debug_print(node_t*n, state_t*s)
 {
     strf(s, "print (");

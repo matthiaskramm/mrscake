@@ -157,6 +157,7 @@ constant_type_t node_type(node_t*n, model_t*m)
             return CONSTANT_BOOL;
         case opcode_node_bool_to_float:
         case opcode_node_float:
+        case opcode_node_term_frequency:
             return CONSTANT_FLOAT;
         case opcode_node_category:
             return CONSTANT_CATEGORY;

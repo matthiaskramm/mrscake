@@ -182,6 +182,14 @@ void python_write_node_debug_print(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ")\n");
 }
+void python_write_node_term_frequency(node_t*n, state_t*s)
+{
+    strf(s, "term_frequency(");
+    write_node(s, n->child[0]);
+    strf(s, ",");
+    write_node(s, n->child[1]);
+    strf(s, ")");
+}
 void python_write_constant(constant_t*c, state_t*s)
 {
     int t;

@@ -199,6 +199,14 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
     job_t*job;
     for(job=jobs->first;job;job=job->next) {
         if(job->code) {
+            {
+                model_t*m = job_to_model(job);
+                confusion_matrix_t* cm = code_get_confusion_matrix(m->code, job->data);
+                confusion_matrix_print(cm);
+                confusion_matrix_destroy(cm);
+                printf("%s\n", model_generate_code(m, "python"));
+            }
+
             if(!best_job || job->score < best_job->score) {
                 if(best_job) {
                     node_destroy(best_job->code);
@@ -239,7 +247,7 @@ model_t* model_select(dataset_t*data)
     //model_errors_old(best_model, data);
     printf("# Using %s.\n", best_model->name);
     printf("# Confusion matrix:\n");
-    confusion_matrix_t* cm = model_get_confusion_matrix(best_model, data);
+    confusion_matrix_t* cm = code_get_confusion_matrix(best_model->code, data);
     confusion_matrix_print(cm);
     confusion_matrix_destroy(cm);
 #endif

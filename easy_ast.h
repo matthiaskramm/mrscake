@@ -118,6 +118,8 @@
 
 #define SORT_FLOAT_ARRAY_ASC NODE_BEGIN(&node_sort_float_array_asc)
 
+#define TERM_FREQUENCY NODE_BEGIN(&node_term_frequency)
+
 #define INC_ARRAY_AT_POS NODE_BEGIN(&node_inc_array_at_pos)
 #define SET_ARRAY_AT_POS NODE_BEGIN(&node_set_array_at_pos)
 #define ARRAY_ARG_MAX_I NODE_BEGIN(&node_array_arg_max_i)

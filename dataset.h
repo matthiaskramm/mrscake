@@ -77,6 +77,7 @@ bool dataset_has_categorical_columns(dataset_t*data);
 typedef node_t* (transform_reverse_function_t)(dataset_t*, node_t* code);
 struct _transform
 {
+    char*name;
     /* make code target the original dataset */
     node_t* (*revert_in_code)(dataset_t*, node_t* code);
     void (*destroy)(dataset_t*);

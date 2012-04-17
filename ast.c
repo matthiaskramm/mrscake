@@ -929,6 +929,7 @@ constant_t node_debug_print_eval(node_t*n, environment_t* env)
     constant_t c = EVAL_CHILD(0);
     constant_print(&c);
     printf("\n");
+    return missing_constant();
 }
 nodetype_t node_debug_print =
 {
@@ -937,6 +938,39 @@ flags:NODE_FLAG_HAS_CHILDREN,
 eval: node_debug_print_eval,
 min_args:1,
 max_args:1,
+};
+
+// ---------------------- word_frequency ----------------------------------
+
+constant_t node_term_frequency_eval(node_t*n, environment_t* env)
+{
+    const char*s1 = AS_STRING(EVAL_CHILD(0));
+    const char*s2 = AS_STRING(EVAL_CHILD(1));
+    const char*p = s1;
+    int frequency = 0;
+    while(*p) {
+        while(*p && strchr(" \t\r\n\f", *p)) {
+            p++;
+        }
+        if(!*p)
+            break;
+        const char*word_start = p;
+        while(*p && !strchr(" \t\r\n\f", *p)) {
+            p++;
+        }
+        const char*word_end = p;
+        if(!strncmp(s2, word_start, word_end-word_start))
+            frequency++;
+    }
+    return float_constant(frequency / (float)strlen(s1));
+}
+nodetype_t node_term_frequency =
+{
+name:"term_frequency",
+flags:NODE_FLAG_HAS_CHILDREN,
+eval: node_term_frequency_eval,
+min_args:2,
+max_args:2,
 };
 
 // ---------------------- category i (return i) -------------------------
