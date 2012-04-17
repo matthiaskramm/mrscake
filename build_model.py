@@ -178,14 +178,6 @@ else:
     for inputs,output in examples:
         dataset.add(inputs, output=output)
 
-for model_name in mrscake.model_names():
-    try:
-        model = dataset.get_model(model_name)
-        print model.generate_code("python")
-    except:
-        pass
-sys.exit(0)
-
 output_filename = "test.model"
 if opts.model:
     model = dataset.get_model(opts.model)
