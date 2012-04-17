@@ -149,9 +149,11 @@ relevant_words_t* textcolumn_get_relevant_words(textcolumn_t*t, column_t*desired
     r->word_score_dict = dict_new(&ptr_type);
     for(i=0;i<max_words;i++) {
         int j = r->word_score[i].index;
+        if(fabs(r->word_score[i].score) < fabs(r->word_score[0].score * 0.1))
+            break;
         dict_put(r->word_score_dict, t->words[j], &r->word_score[i]);
     }
-    r->num = max_words;
+    r->num = i;
     return r;
 }
 
