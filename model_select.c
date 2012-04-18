@@ -124,7 +124,7 @@ model_factory_t* model_factory_get_by_name(const char*name)
     return 0;
 }
 
-static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
+static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_name)
 {
     /* TODO:
        We should pass required transformations (like variable subsetting)
@@ -135,7 +135,7 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
     int t;
     int s;
     int i;
-//#define SUBSET_VARIABLES
+#define SUBSET_VARIABLES
 #ifdef SUBSET_VARIABLES
     for(i=1;i<order->num;i++) {
         dataset_t*newdata = pick_columns(data, order->order, i);
@@ -143,6 +143,8 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
             model_collection_t*collection = &collections[s];
             for(t=0;t<*collection->num_models;t++) {
                 model_factory_t*factory = collection->models[t];
+                if(model_name && strcmp(factory->name, model_name))
+                    continue;
                 job_t* job = job_new();
                 job->factory = factory;
                 job->code = NULL;
@@ -157,6 +159,8 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data)
         model_collection_t*collection = &collections[s];
         for(t=0;t<*collection->num_models;t++) {
             model_factory_t*factory = collection->models[t];
+            if(model_name && strcmp(factory->name, model_name))
+                continue;
             job_t* job = job_new();
             job->factory = factory;
             job->code = NULL;
@@ -227,7 +231,7 @@ model_t* model_select(dataset_t*data)
 
     varorder_t*order = dtree_var_order(data);
 
-    jobqueue_t*jobs = generate_jobs(order, data);
+    jobqueue_t*jobs = generate_jobs(order, data, NULL);
     jobqueue_process(jobs);
     jobqueue_revert_dataset_transformations(jobs);
     model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
@@ -235,6 +239,7 @@ model_t* model_select(dataset_t*data)
         return 0;
     }
 
+#define DEBUG
 #ifdef DEBUG
     //model_errors_old(best_model, data);
     printf("# Using %s.\n", best_model->name);
@@ -247,6 +252,20 @@ model_t* model_select(dataset_t*data)
 }
 
 model_t* model_train_specific_model(dataset_t*data, const char*name)
+{
+    varorder_t*order = dtree_var_order(data);
+
+    jobqueue_t*jobs = generate_jobs(order, data, name);
+    config_verbosity = 0;
+    jobqueue_process(jobs);
+    config_verbosity = 1;
+    jobqueue_revert_dataset_transformations(jobs);
+
+    model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
+    return best_model;
+}
+
+model_t* model_train_specific_model_fast(dataset_t*data, const char*name)
 {
     job_t job;
     memset(&job, 0, sizeof(job_t));
@@ -403,7 +422,7 @@ int code_score(node_t*code, dataset_t*data)
         return INT_MAX;
     int size = code_size(code);
     int errors = code_errors(code, data);
-    return size + errors * sizeof(uint32_t);
+    return size + errors * 100;
 }
 
 

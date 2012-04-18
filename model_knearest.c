@@ -33,7 +33,7 @@ typedef struct _knearest_model_factory {
 
 static node_t*knearest_train(knearest_model_factory_t*factory, dataset_t*d)
 {
-    d = remove_text_columns(d);
+    d = expand_text_columns(d);
     d = expand_categorical_columns(d);
 
     int * class_count = d->desired_response->class_occurence_count;

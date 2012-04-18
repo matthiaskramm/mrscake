@@ -165,9 +165,9 @@ class CodeGeneratingLinearSVM: public CvSVM
 
 static node_t*svm_train(svm_model_factory_t*factory, dataset_t*d)
 {
-    d = remove_text_columns(d);
+    d = expand_text_columns(d);
     d = expand_categorical_columns(d);
-    
+   
     assert(!dataset_has_categorical_columns(d));
 
     int num_rows = training_set_size(d->num_rows);

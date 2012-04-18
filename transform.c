@@ -125,7 +125,7 @@ static dataset_t* expand_dataset(transform_expand_t*transform, dataset_t*orig_da
         int y;
         if(orig_dataset->columns[x]->type == CATEGORICAL) {
             assert(e->from_category);
-            column_t*c = column_new(dataset->num_rows, false);
+            column_t*c = column_new(dataset->num_rows, CONTINUOUS);
             for(y=0;y<dataset->num_rows;y++) {
                 c->entries[y].f = (source_column->entries[y].c==cls) ? 1.0 : 0.0;
             }

@@ -289,7 +289,7 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingANN*ann)
 
 static node_t*ann_train(ann_model_factory_t*factory, dataset_t*d)
 {
-    d = remove_text_columns(d);
+    d = expand_text_columns(d);
     d = expand_categorical_columns(d);
 
     assert(!dataset_has_categorical_columns(d));

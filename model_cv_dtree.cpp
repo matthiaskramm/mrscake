@@ -373,7 +373,7 @@ static node_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
 
 static node_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
-    d = remove_text_columns(d);
+    d = expand_text_columns(d);
 
     CvMLDataFromExamples data(d);
     CodeGeneratingRTrees rtrees(d);
@@ -390,7 +390,7 @@ static node_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 
 static node_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
-    d = remove_text_columns(d);
+    d = expand_text_columns(d);
 
     if(d->num_columns == 1 && d->columns[0]->type != CATEGORICAL) {
         /* OpenCV has a bug in their special case code for a 
@@ -412,7 +412,7 @@ static node_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
 
 static node_t*gbtrees_train(dtree_model_factory_t*factory, dataset_t*d)
 {
-    d = remove_text_columns(d);
+    d = expand_text_columns(d);
 
     CvMLDataFromExamples data(d);
     CodeGeneratingGBTrees gbtrees(d);

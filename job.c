@@ -90,11 +90,13 @@ static void process_jobs(jobqueue_t*jobs)
     job_t*job;
     int count = 0;
     for(job=jobs->first;job;job=job->next) {
-        printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
+        if(config_verbosity > 0)
+            printf("\rJob %d / %d", count, jobs->num);fflush(stdout);
         job_process(job);
         count++;
     }
-    printf("\n");
+    if(config_verbosity > 0)
+        printf("\n");
 }
 
 static void process_jobs_remotely(jobqueue_t*jobs)

@@ -106,7 +106,7 @@ static void perceptron_destroy(perceptron_t*p)
 
 static node_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
 {
-    d = remove_text_columns(d);
+    d = expand_text_columns(d);
     d = expand_categorical_columns(d);
     
     assert(!dataset_has_categorical_columns(d));

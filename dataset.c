@@ -209,12 +209,42 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
     column->class_occurence_count[pos]++;
     column->entries[y].c = pos;
 }
+
 void columnbuilder_destroy(columnbuilder_t*builder)
 {
     dict_destroy(builder->string2pos);
     dict_destroy(builder->int2pos);
     free(builder);
 }
+
+static bool is_text_column_with_no_whitespace(column_t*column, int num_rows)
+{
+    if(column->type != TEXT)
+        return false;
+    int y;
+    for(y=0;y<num_rows;y++) {
+        const char*p = column->entries[y].text;
+        while(*p) {
+            if(strchr(" \n\t\r\f", *p))
+                return false;
+            p++;
+        }
+    }
+    return true;
+}
+
+static column_t* convert_to_category_column(column_t*column, int num_rows)
+{
+    column_t*c = column_new(num_rows, CATEGORICAL);
+    columnbuilder_t*b = columnbuilder_new(c);
+    int y;
+    for(y=0;y<num_rows;y++) {
+        columnbuilder_add(b,y,string_constant(column->entries[y].text));
+    }
+    columnbuilder_destroy(b);
+    return c;
+}
+
 
 dict_t*extract_column_names(trainingdata_t*dataset)
 {
@@ -321,14 +351,7 @@ signature_t* signature_from_columns(column_t**columns, int num_columns, bool has
     sig->column_names = calloc(num_columns, sizeof(sig->column_names[0]));
     int t;
     for(t=0;t<num_columns;t++) {
-        sig->column_types[t] = CONTINUOUS;
-        if(columns[t]->type == CATEGORICAL) {
-            if(columns[t]->classes[0].type==CONSTANT_STRING) {
-                sig->column_types[t] = TEXT;
-            } else {
-                sig->column_types[t] = CATEGORICAL;
-            }
-        }
+        sig->column_types[t] = columns[t]->type;
         sig->column_names[t] = columns[t]->name;
     }
     sig->has_column_names = has_column_names;
@@ -384,6 +407,14 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
     }
     free(builders);
 
+    for(x=0;x<s->num_columns;x++) {
+        if(is_text_column_with_no_whitespace(s->columns[x], num_examples)) {
+            column_t*old_column = s->columns[x];
+            s->columns[x] = convert_to_category_column(old_column, num_examples);
+            column_destroy(old_column);
+        }
+    }
+
     /* copy response column to the new dataset */
     s->desired_response = column_new(s->num_rows, CATEGORICAL);
     columnbuilder_t*builder = columnbuilder_new(s->desired_response);
@@ -410,6 +441,7 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
         }
     }
     s->sig = signature_from_columns(s->columns, s->num_columns, has_column_names);
+
     return s;
 }
 void dataset_print(dataset_t*s)
@@ -435,6 +467,8 @@ void dataset_print(dataset_t*s)
                 printf("%d(", column->entries[y].c);
                 constant_print(&c);
                 printf(")\t");
+            } else if(column->type == TEXT) {
+                printf("%s\t", column->entries[y].text);
             } else {
                 printf("%.2f\t", column->entries[y].f);
             }

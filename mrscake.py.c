@@ -356,7 +356,7 @@ static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* 
     } else {
         model = trainingdata_train_specific_model(self->data, name);
         if(!model)
-            return PY_ERROR("unknown model %s", name);
+            return PY_ERROR("Couldn't train model %s", name);
     }
 
     if(!model)
