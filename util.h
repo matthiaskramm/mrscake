@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 void*memdup(const void*ptr, size_t size);
+char*escape_string(const char*str);
 
 #ifdef __cplusplus
 }

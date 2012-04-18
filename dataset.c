@@ -26,6 +26,7 @@
 #include "mrscake.h"
 #include "dataset.h"
 #include "dict.h"
+#include "util.h"
 #include "easy_ast.h"
 #include "stringpool.h"
 
@@ -464,11 +465,13 @@ void dataset_print(dataset_t*s)
             column_t*column = s->columns[x];
             if(column->type == CATEGORICAL) {
                 constant_t c = column->classes[column->entries[y].c];
-                printf("%d(", column->entries[y].c);
+                printf("C%d(", column->entries[y].c);
                 constant_print(&c);
                 printf(")\t");
             } else if(column->type == TEXT) {
-                printf("%s\t", column->entries[y].text);
+                char*text = escape_string(column->entries[y].text);
+                printf("\"%s\"\t", text);
+                free(text);
             } else {
                 printf("%.2f\t", column->entries[y].f);
             }
