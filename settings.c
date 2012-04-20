@@ -36,7 +36,7 @@ int config_remote_worker_timeout = 60;
 
 static int remote_server_size = 0;
 
-void config_add_remote_server(char*host, int port)
+void config_add_remote_server(const char*host, int port)
 {
     if(!remote_server_size) {
         remote_server_size = 32;
@@ -51,7 +51,7 @@ void config_add_remote_server(char*host, int port)
     config_do_remote_processing = true;
 }
 
-void config_parse_remote_servers(char*filename)
+void config_parse_remote_servers(const char*filename)
 {
     FILE*fi = fopen(filename, "rb");
     if(!fi) {
@@ -84,7 +84,7 @@ void config_parse_remote_servers(char*filename)
                     port = atoi(colon+1);
                 } else {
                     server = line;
-                    port = 3075;
+                    port = MRSCAKE_DEFAULT_PORT;
                 }
                 config_add_remote_server(server, port);
                 printf("%s %d\n", server, port);

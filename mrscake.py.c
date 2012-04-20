@@ -484,10 +484,10 @@ static PyObject* mrscake_add_server(PyObject* module, PyObject* args, PyObject* 
     return PY_NONE;
 }
 
-PyDoc_STRVAR(mrscake_setparameter_doc, \
-"setparameter(key,value)\n\n"
+PyDoc_STRVAR(mrscake_set_parameter_doc, \
+"set_parameter(key,value)\n\n"
 );
-static PyObject* mrscake_setparameter(PyObject* module, PyObject* args, PyObject* kwargs)
+static PyObject* mrscake_set_parameter(PyObject* module, PyObject* args, PyObject* kwargs)
 {
     static char *kwlist[] = {"key", "value", NULL};
     char*key=0,*value=0;
@@ -524,7 +524,7 @@ static PyObject* mrscake_model_names(PyObject* module, PyObject* args, PyObject*
 static PyMethodDef mrscake_methods[] =
 {
     {"add_server", (PyCFunction)mrscake_add_server, M_FLAGS, mrscake_add_server_doc},
-    {"setparameter", (PyCFunction)mrscake_setparameter, M_FLAGS, mrscake_setparameter_doc},
+    {"set_parameter", (PyCFunction)mrscake_set_parameter, M_FLAGS, mrscake_set_parameter_doc},
     {"model_names", (PyCFunction)mrscake_model_names, M_FLAGS, mrscake_model_names_doc},
 
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},

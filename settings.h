@@ -39,6 +39,8 @@ extern int config_model_timeout;
 extern bool config_do_remote_processing;
 extern int config_number_of_remote_workers;
 
-void config_parse_remote_servers(char*filename);
-void config_add_remote_server(char*host, int port);
+#define MRSCAKE_DEFAULT_PORT 3075
+
+void config_parse_remote_servers(const char*filename);
+void config_add_remote_server(const char*host, int port);
 #endif
