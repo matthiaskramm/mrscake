@@ -280,20 +280,26 @@ static node_t* expand_text_revert_in_code(dataset_t*dataset, node_t*node)
         if(transform->ecolumns[i].from_text) {
             relevant_words_t*r = transform->ecolumns[i].from_text;
             textcolumn_t*t = r->textcolumn;
-            ADD
-                int i;
-                for(i=0;i<r->num;i++) {
-                    word_t*word = t->words[r->word_score[i].index];
-                    float score = r->word_score[i].score;
-                    MUL
-                        TERM_FREQUENCY
-                            PARAM(x);
-                            STRING_CONSTANT(word->str);
-                        END;
-                        FLOAT_CONSTANT(score*word->idf);
-                    END;
-                }
-            END;
+	    if(r->num<=0) {
+		// FIXME: this should never happen.
+		FLOAT_CONSTANT(0.0);
+	    } else {
+	        fprintf(stderr, ">>%d<<\n", r->num);
+		ADD
+		    int i;
+		    for(i=0;i<r->num;i++) {
+			word_t*word = t->words[r->word_score[i].index];
+			float score = r->word_score[i].score;
+			MUL
+			    TERM_FREQUENCY
+				PARAM(x);
+				STRING_CONSTANT(word->str);
+			    END;
+			    FLOAT_CONSTANT(score*word->idf);
+			END;
+		    }
+		END;
+	    }
         } else {
             PARAM(x);
         }
