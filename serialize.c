@@ -125,7 +125,11 @@ bool node_read_internal_data(node_t*node, reader_t*reader)
     } else if(type==&node_string) {
         char*s = read_string(reader);
         node->value = string_constant(s);
-    } else if(type==&node_constant || type==&node_setlocal || type==&node_getlocal || type==&node_inclocal) {
+    } else if(type==&node_constant || 
+	      type==&node_setlocal || 
+	      type==&node_getlocal || 
+	      type==&node_inclocal ||
+	      type==&node_for_local_from_n_to_m) {
         node->value = constant_read(reader);
         if(!node->value.type)
             return false;

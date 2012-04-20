@@ -24,6 +24,7 @@
 #include <st.h>
 #include "mrscake.h"
 #include "stringpool.h"
+#include "settings.h"
 
 static VALUE mrscake;
 static VALUE DataSet, Model;
@@ -258,10 +259,27 @@ static VALUE rb_model_allocate(VALUE cls)
 
 // --------------------------------------------------------------------------
 
+static VALUE rb_add_server(int argc, VALUE* argv, VALUE cls)
+{
+    VALUE _server;
+    VALUE _port;
+    int count = rb_scan_args(argc, argv, "11", &_server, &_port);
+    if(NIL_P(_port)){
+        _port = INT2FIX(MRSCAKE_DEFAULT_PORT);
+    }
+    const char*server = StringValuePtr(_server);
+    int port = FIX2INT(_port);
+    config_add_remote_server(server, port);
+    return Qnil;
+}
+
+// --------------------------------------------------------------------------
+
 void Init_mrscake()
 {
     mrscake = rb_define_module("MrsCake");
 
+    rb_define_module_function(mrscake, "add_server", rb_add_server, -1);
     rb_define_module_function(mrscake, "load_model", rb_load_model, 1);
     rb_define_module_function(mrscake, "load_data", rb_load_dataset, 1);
 
