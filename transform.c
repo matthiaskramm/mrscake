@@ -345,7 +345,7 @@ dataset_t* expand_text_columns(dataset_t*old_dataset)
     dataset->num_columns = num_new_columns;
     dataset->columns = (column_t**)malloc(sizeof(column_t*)*dataset->num_columns);
     dataset->sig = 0;
-    transform->ecolumns = calloc(num_new_columns, sizeof(expanded_column_t));
+    transform->ecolumns = calloc(num_new_columns, sizeof(expanded_text_column_t));
 
     int pos = 0;
     for(i=0;i<old_dataset->num_columns;i++) {
