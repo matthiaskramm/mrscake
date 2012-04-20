@@ -334,7 +334,10 @@ dataset_t* expand_text_columns(dataset_t*old_dataset)
     int num_new_columns = 0;
     for(i=0;i<old_dataset->num_columns;i++) {
         if(old_dataset->columns[i]->type == TEXT) {
-            num_new_columns += old_dataset->desired_response->num_classes;
+            int n = old_dataset->desired_response->num_classes;
+            if(n==2)
+		n = 1;
+            num_new_columns += n;
         } else {
             num_new_columns++;
         }
@@ -352,7 +355,10 @@ dataset_t* expand_text_columns(dataset_t*old_dataset)
         if(old_dataset->columns[i]->type == TEXT) {
             textcolumn_t*t = textcolumn_from_column(old_dataset->columns[i], old_dataset->num_rows);
             int c;
-            for(c=0;c<old_dataset->desired_response->num_classes;c++) {
+            int n = old_dataset->desired_response->num_classes;
+            if(n==2)
+		n = 1;
+            for(c=0;c<n;c++) {
                 relevant_words_t*r = textcolumn_get_relevant_words(t, old_dataset->desired_response, (category_t)c, 4);
                 dataset->columns[pos] = textcolumn_expand(r, old_dataset->desired_response, (category_t)c);
                 transform->ecolumns[pos].source_column = i;
