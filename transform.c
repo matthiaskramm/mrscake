@@ -284,7 +284,6 @@ static node_t* expand_text_revert_in_code(dataset_t*dataset, node_t*node)
 		// FIXME: this should never happen.
 		FLOAT_CONSTANT(0.0);
 	    } else {
-	        fprintf(stderr, ">>%d<<\n", r->num);
 		ADD
 		    int i;
 		    for(i=0;i<r->num;i++) {
