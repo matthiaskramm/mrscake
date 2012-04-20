@@ -273,6 +273,23 @@ static VALUE rb_add_server(int argc, VALUE* argv, VALUE cls)
     return Qnil;
 }
 
+static VALUE rb_model_names(VALUE cls)
+{
+    const char*const*model_names = mrscake_get_model_names();
+    int count = 0;
+    const char*const*m = model_names;
+    while(*m++) {
+        count++;
+    }
+
+    volatile VALUE list = rb_ary_new2(count);
+    int i;
+    for(i=0;i<count;i++) {
+	rb_ary_store(list, i, rb_str_new2(model_names[i]));
+    }
+    return list;
+}
+
 // --------------------------------------------------------------------------
 
 void Init_mrscake()
@@ -282,6 +299,7 @@ void Init_mrscake()
     rb_define_module_function(mrscake, "add_server", rb_add_server, -1);
     rb_define_module_function(mrscake, "load_model", rb_load_model, 1);
     rb_define_module_function(mrscake, "load_data", rb_load_dataset, 1);
+    rb_define_module_function(mrscake, "model_names", rb_model_names, 0);
 
     DataSet = rb_define_class_under(mrscake, "DataSet", rb_cObject);
     rb_define_alloc_func(DataSet, rb_dataset_allocate);
