@@ -41,7 +41,7 @@ void job_train_and_score(job_t*job)
     }
 }
 
-//#define FORK_FOR_TRAINING
+#define FORK_FOR_TRAINING
 void job_process(job_t*job)
 {
 #ifndef FORK_FOR_TRAINING
