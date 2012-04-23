@@ -172,11 +172,11 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
 
     int pos = 0;
     if(e.type == CONSTANT_STRING) {
-        pos = PTR_TO_INT(dict_lookup(builder->string2pos, e.s)) - 1;
+        pos = dict_lookup_int(builder->string2pos, e.s) - 1;
     } else if(e.type == CONSTANT_INT) {
-        pos = PTR_TO_INT(dict_lookup(builder->int2pos, INT_TO_PTR(e.i))) - 1;
+        pos = dict_lookup_int(builder->int2pos, INT_TO_PTR(e.i)) - 1;
     } else if(e.type == CONSTANT_CATEGORY) {
-        pos = PTR_TO_INT(dict_lookup(builder->int2pos, INT_TO_PTR(e.c))) - 1;
+        pos = dict_lookup_int(builder->int2pos, INT_TO_PTR(e.c)) - 1;
     } else {
         fprintf(stderr, "Bad constant type %d in column\n", e.type);
         assert(0);
@@ -198,11 +198,11 @@ void columnbuilder_add(columnbuilder_t*builder, int y, constant_t e)
         assert(pos < alloc_size);
 
         if(e.type == CONSTANT_STRING) {
-            dict_put(builder->string2pos, e.s, INT_TO_PTR(pos + 1));
+            dict_put_int(builder->string2pos, e.s, pos + 1);
         } else if(e.type == CONSTANT_INT) {
-            dict_put(builder->int2pos, INT_TO_PTR(e.i), INT_TO_PTR(pos + 1));
+            dict_put_int(builder->int2pos, INT_TO_PTR(e.i), pos + 1);
         } else if(e.type == CONSTANT_CATEGORY) {
-            dict_put(builder->int2pos, INT_TO_PTR(e.c), INT_TO_PTR(pos + 1));
+            dict_put_int(builder->int2pos, INT_TO_PTR(e.c), pos + 1);
         }
         column->classes[pos] = e;
         column->class_occurence_count[pos] = 0;
@@ -261,7 +261,7 @@ dict_t*extract_column_names(trainingdata_t*dataset)
             for(x=0;x<e->num_inputs;x++) {
                 const char*name = e->input_names[x];
                 if(!dict_lookup(d, name)) {
-                    dict_put(d, name, INT_TO_PTR(pos));
+                    dict_put_int(d, name, pos);
                     pos++;
                 }
             }
@@ -394,7 +394,7 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
         for(x=0;x<s->num_columns;x++) {
             int col = x;
             if(example->input_names) {
-                col = PTR_TO_INT(dict_lookup(column_names,example->input_names[x]))-1;
+                col = dict_lookup_int(column_names,example->input_names[x])-1;
             }
             variable_t*var = &example->inputs[x];
             columnbuilder_add(builders[col],y,variable_to_constant(var));

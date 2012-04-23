@@ -190,7 +190,7 @@ void signature_print(signature_t*sig)
 
 void model_print(model_t*m)
 {
-    printf("------------ params -----------\n");
+    printf("---------------------------------- params -------------------------------------\n");
     signature_print(m->sig);
     node_print((node_t*)m->code);
 }
