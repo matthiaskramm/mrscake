@@ -39,19 +39,19 @@ array_t* array_new(int size)
 }
 void array_fill(array_t*a, constant_t c)
 {
-    int t;
-    for(t=0;t<a->size;t++) {
-        a->entries[t] = c;
+    int i;
+    for(i=0;i<a->size;i++) {
+        a->entries[i] = c;
     }
 }
 array_t* array_create(int size, ...)
 {
     va_list arglist;
     va_start(arglist, size);
-    int t;
+    int i;
     array_t*array = array_new(size);
-    for(t=0;t<size;t++) {
-        array->entries[t] = category_constant(va_arg(arglist,category_t));
+    for(i=0;i<size;i++) {
+        array->entries[i] = category_constant(va_arg(arglist,category_t));
     }
     va_end(arglist);
     return array;
@@ -112,7 +112,7 @@ unsigned int constant_hash(const constant_t*o)
         case CONSTANT_BOOL:
             return hash_block(&o->b, sizeof(o->b));
         case CONSTANT_STRING:
-            return hash_block(&o->s, strlen(o->s));
+            return hash_block(o->s, strlen(o->s));
         case CONSTANT_MISSING:
             return 0;
         default:
@@ -193,9 +193,9 @@ constant_t int_constant(int i)
 }
 bool array_is_homogeneous(array_t*a)
 {
-    int t;
-    for(t=0;t<a->size;t++) {
-        if(a->entries[0].type != a->entries[t].type)
+    int i;
+    for(i=0;i<a->size;i++) {
+        if(a->entries[0].type != a->entries[i].type)
             return false;
     }
     return true;
@@ -242,9 +242,9 @@ constant_t string_constant(const char*s)
     v.s = register_string(s);
     return v;
 }
-void constant_print(constant_t*v)
+void constant_print(const constant_t*v)
 {
-    int t;
+    int i;
     switch(v->type) {
         case CONSTANT_FLOAT:
             printf("%f", v->f);
@@ -271,10 +271,10 @@ void constant_print(constant_t*v)
         case CONSTANT_STRING_ARRAY:
             printf("[");
             array_t*a = AS_MIXED_ARRAY(*v);
-            for(t=0;t<a->size;t++) {
-                if(t>0)
+            for(i=0;i<a->size;i++) {
+                if(i>0)
                     printf(",");
-                constant_print(&a->entries[t]);
+                constant_print(&a->entries[i]);
             }
             printf("]");
         break;
