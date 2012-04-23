@@ -65,12 +65,15 @@ dict_t*dict_new(type_t*type);
 void dict_init(dict_t*dict, int size);
 void dict_init2(dict_t*dict, type_t*type, int size);
 dictentry_t*dict_put(dict_t*h, const void*key, void* data);
-void dict_put2(dict_t*h, const char*s, void*data);
+dictentry_t*dict_put_int(dict_t*h, const void*key, int value);
 int dict_count(dict_t*h);
 void dict_dump(dict_t*h, FILE*fi, const char*prefix);
 dictentry_t* dict_get_slot(dict_t*h, const void*key);
 char dict_contains(dict_t*h, const void*s);
+
 void* dict_lookup(dict_t*h, const void*s);
+int dict_lookup_int(dict_t*h, const void*s);
+
 char dict_del(dict_t*h, const void*s);
 char dict_del2(dict_t*h, const void*key, void*data);
 dict_t*dict_clone(dict_t*);
