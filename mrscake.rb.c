@@ -50,6 +50,8 @@ variable_t value_to_variable(VALUE v)
 {
     if(TYPE(v) == T_SYMBOL) {
         return variable_new_text(rb_id2name(SYM2ID(v)));
+    } else if(TYPE(v) == T_STRING) {
+        return variable_new_text(StringValuePtr(v));
     } else if(TYPE(v) == T_FLOAT) {
         return variable_new_continuous(NUM2DBL(v));
     } else if(TYPE(v) == T_FIXNUM) {
@@ -73,6 +75,9 @@ static int hash_fill(VALUE key, VALUE value, VALUE arg)
     } else if(TYPE(key) == T_STRING) {
         name = StringValuePtr(key);
     }
+    if(TYPE(value) == T_SYMBOL) {
+        rb_raise(rb_eArgError, "please use strings instead of symbols");
+    }
     example_t*e = (example_t*)arg;
     e->inputs[e->num_inputs] = value_to_variable(value);
     e->input_names[e->num_inputs] = register_string(name);
@@ -88,6 +93,9 @@ static example_t*value_to_example(VALUE input)
         e = example_new(len);
         for(t=0;t<len;t++) {
             VALUE item = RARRAY(input)->ptr[t];
+            if(TYPE(item) == T_SYMBOL) {
+                rb_raise(rb_eArgError, "please use strings instead of symbols (array at pos %d)", t+1);
+            }
             e->inputs[t] = value_to_variable(item);
             if(e->inputs[t].type == MISSING) {
                 rb_raise(rb_eArgError, "bad element in array at pos %d", t+1);

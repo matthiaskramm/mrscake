@@ -76,7 +76,7 @@ void write_escaped_string(state_t*s, const char*p)
                 write_uint8(s->writer, '"');
                 break;
             default:
-                if(*p>0x20 && *p<0x7f) {
+                if(*p>=0x20 && *p<0x7f) {
                     write_uint8(s->writer, *p);
                 } else {
                     write_uint8(s->writer, '\\');
