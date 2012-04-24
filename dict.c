@@ -258,10 +258,9 @@ dictentry_t* dict_put(dict_t*h, const void*key, void* data)
     h->num++;
     return e;
 }
-void dict_put2(dict_t*h, const char*s, void*data) 
+dictentry_t* dict_put_int(dict_t*h, const void*s, int value)
 {
-    assert(h->key_type == &charptr_type);
-    dict_put(h, s, data);
+    return dict_put(h, s, INT_TO_PTR(value));
 }
 void dict_dump(dict_t*h, FILE*fi, const char*prefix)
 {
@@ -270,9 +269,9 @@ void dict_dump(dict_t*h, FILE*fi, const char*prefix)
         dictentry_t*e = h->slots[t];
         while(e) {
             if(h->key_type!=&charptr_type) {
-                fprintf(fi, "%s%p=%p\n", prefix, e->key, e->data);
+                fprintf(fi, "%s [hash %08x] %p=%p\n", prefix, e->hash % h->hashsize, e->key, e->data);
             } else {
-                fprintf(fi, "%s%s=%p\n", prefix, (char*)e->key, e->data);
+                fprintf(fi, "%s [hash %08x] %s=%p\n", prefix, e->hash % h->hashsize, (char*)e->key, e->data);
             }
             e = e->next;
         }
@@ -342,6 +341,12 @@ void* dict_lookup(dict_t*h, const void*key)
         return e->data;
     return 0;
 }
+
+int dict_lookup_int(dict_t*h, const void*s)
+{
+    return PTR_TO_INT(dict_lookup(h, s));
+}
+
 char dict_contains(dict_t*h, const void*key)
 {
     dictentry_t*e = dict_do_lookup(h, key);

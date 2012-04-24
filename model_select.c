@@ -337,6 +337,9 @@ confusion_matrix_t* code_get_confusion_matrix(node_t*code, dataset_t*s)
         dataset_fill_row(s, row, y);
         constant_t prediction = node_eval(code, env);
         constant_t* desired = &s->desired_response->classes[s->desired_response->entries[y].c];
+        if(!dict_contains(d, desired) || !dict_contains(d, &prediction)) {
+            continue;
+        }
         int column = PTR_TO_INT(dict_lookup(d, desired));
         int row = PTR_TO_INT(dict_lookup(d, &prediction));
         matrix->entries[row][column]++;

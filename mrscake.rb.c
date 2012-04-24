@@ -119,12 +119,19 @@ static VALUE rb_dataset_add(VALUE cls, VALUE input, VALUE response)
     trainingdata_add_example(dataset->trainingdata, e);
     return cls;
 }
-static VALUE rb_dataset_get_model(VALUE cls)
+static VALUE rb_dataset_get_model(int argc, VALUE* argv, VALUE cls)
 {
     Get_DataSet(dataset,cls);
     VALUE model_value = rb_model_allocate(Model);
     Get_Model(model, model_value);
-    model->model = trainingdata_train(dataset->trainingdata);
+
+    volatile VALUE model_name;
+    int count = rb_scan_args(argc, argv, "01", &model_name);
+    if(NIL_P(model_name)){
+        model->model = trainingdata_train(dataset->trainingdata);
+    } else {
+        model->model = trainingdata_train_specific_model(dataset->trainingdata, RSTRING_PTR(model_name));
+    }
     if(!model->model)
         rb_raise(rb_eArgError, "bad (empty?) data");
     return model_value;
@@ -273,6 +280,23 @@ static VALUE rb_add_server(int argc, VALUE* argv, VALUE cls)
     return Qnil;
 }
 
+static VALUE rb_model_names(VALUE cls)
+{
+    const char*const*model_names = mrscake_get_model_names();
+    int count = 0;
+    const char*const*m = model_names;
+    while(*m++) {
+        count++;
+    }
+
+    volatile VALUE list = rb_ary_new2(count);
+    int i;
+    for(i=0;i<count;i++) {
+	rb_ary_store(list, i, rb_str_new2(model_names[i]));
+    }
+    return list;
+}
+
 // --------------------------------------------------------------------------
 
 void Init_mrscake()
@@ -282,12 +306,13 @@ void Init_mrscake()
     rb_define_module_function(mrscake, "add_server", rb_add_server, -1);
     rb_define_module_function(mrscake, "load_model", rb_load_model, 1);
     rb_define_module_function(mrscake, "load_data", rb_load_dataset, 1);
+    rb_define_module_function(mrscake, "model_names", rb_model_names, 0);
 
     DataSet = rb_define_class_under(mrscake, "DataSet", rb_cObject);
     rb_define_alloc_func(DataSet, rb_dataset_allocate);
     rb_define_method(DataSet, "add", rb_dataset_add, 2);
-    rb_define_method(DataSet, "get_model", rb_dataset_get_model, 0);
-    rb_define_method(DataSet, "train", rb_dataset_get_model, 0);
+    rb_define_method(DataSet, "get_model", rb_dataset_get_model, -1);
+    rb_define_method(DataSet, "train", rb_dataset_get_model, -1);
     rb_define_method(DataSet, "print", rb_dataset_print, 0);
     rb_define_method(DataSet, "save", rb_dataset_save, 1);
 
