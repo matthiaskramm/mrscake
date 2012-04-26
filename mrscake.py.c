@@ -46,6 +46,7 @@ static state_t global_state = {0};
 
 static PyTypeObject ModelClass;
 static PyTypeObject DataSetClass;
+static PyTypeObject CategoryClass;
 
 DECLARE_LIST(example);
 
@@ -58,6 +59,11 @@ typedef struct {
     PyObject_HEAD
     model_t*model;
 } ModelObject;
+
+typedef struct {
+    PyObject_HEAD
+    char*name;
+} CategoryObject;
 
 static char* strf(char*format, ...)
 {
@@ -111,6 +117,7 @@ PyObject*forward_getattr(PyObject*self, char *a)
 
 #define PY_ERROR(s,args...) (PyErr_SetString(PyExc_Exception, strf(s, ## args)),(void*)NULL)
 #define PY_NONE Py_BuildValue("s", 0)
+#define PY_CHECK_TYPE(o,c) ((o) && (o)->ob_type == (c))
 
 //--------------------helper functions --------------------------------
 int add_item(example_t*e, int pos, PyObject*item)
@@ -121,6 +128,9 @@ int add_item(example_t*e, int pos, PyObject*item)
         e->inputs[pos] = variable_new_continuous(PyFloat_AS_DOUBLE(item));
     } else if(PyString_Check(item)) {
         e->inputs[pos] = variable_new_text(PyString_AsString(item));
+    } else if(PY_CHECK_TYPE(item, &CategoryClass)) {
+        //FIXME
+        //e->inputs[pos] = variable_new_categorical(((CategoryObject*)item)->name);
     } else {
         PY_ERROR("bad object %s in list", item->ob_type->tp_name);
         return 0;
@@ -242,7 +252,7 @@ static PyObject* py_model_generate_code(PyObject* _self, PyObject* args, PyObjec
     ModelObject* self = (ModelObject*)_self;
     char*language = 0;
     static char *kwlist[] = {"language", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwlist, &language))
+    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwlist, &language))
         return NULL;
     char*code = model_generate_code(self->model, language);
     return PyString_FromString(code);
@@ -255,7 +265,7 @@ static PyObject* py_model_load(PyObject* module, PyObject* args, PyObject* kwarg
 {
     char*filename = 0;
     static char *kwlist[] = {"filename", NULL};
-    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
         return NULL;
     ModelObject*self = PyObject_New(ModelObject, &ModelClass);
     self->model = model_load(filename);
@@ -309,7 +319,7 @@ static PyObject* py_dataset_add(PyObject * _self, PyObject* args, PyObject* kwar
     DataSetObject*self = (DataSetObject*)_self;
     static char *kwlist[] = {"input","output",NULL};
     PyObject*input=0,*output=0;
-    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "OO", kwlist, &input, &output))
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO", kwlist, &input, &output))
         return NULL;
 
     if(!PyList_Check(input) && !PyDict_Check(input)) // && !PyTuple_Check(input))
@@ -374,7 +384,7 @@ static PyObject* py_dataset_save(PyObject*_self, PyObject* args, PyObject* kwarg
     DataSetObject*self = (DataSetObject*)_self;
     static char *kwlist[] = {"filename", NULL};
     const char*filename = 0;
-    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
         return NULL;
     trainingdata_save(self->data, filename);
     return PY_NONE;
@@ -387,7 +397,7 @@ static PyObject* py_dataset_load(PyObject* module, PyObject* args, PyObject* kwa
 {
     char*filename = 0;
     static char *kwlist[] = {"filename", NULL};
-    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &filename))
         return NULL;
     DataSetObject*self = PyObject_New(DataSetObject, &DataSetClass);
     self->data = trainingdata_load(filename);
@@ -415,6 +425,48 @@ static PyMethodDef dataset_methods[] =
     {"train", (PyCFunction)py_dataset_get_model, METH_KEYWORDS, dataset_get_model_doc},
     {"get_model", (PyCFunction)py_dataset_get_model, METH_KEYWORDS, dataset_get_model_doc},
     {"save", (PyCFunction)py_dataset_save, METH_KEYWORDS, dataset_save_doc},
+    {0,0,0,0}
+};
+
+//---------------------------------------------------------------------
+static void category_dealloc(PyObject* _self) {
+    CategoryObject* self = (CategoryObject*)_self;
+    free(self->name);
+    PyObject_Del(self);
+}
+static PyObject* category_getattr(PyObject * _self, char* a)
+{
+    CategoryObject*self = (CategoryObject*)_self;
+    if(!strcmp(a, "name")) {
+        return pystring_fromstring(self->name);
+    }
+    return forward_getattr(_self, a);
+}
+static int category_setattr(PyObject * self, char* a, PyObject * o) {
+    return -1;
+}
+static int py_category_print(PyObject * _self, FILE *fi, int flags)
+{
+    CategoryObject*self = (CategoryObject*)_self;
+    return 0;
+}
+PyDoc_STRVAR(category_new_doc, \
+"C(obj)\n\n"
+"Build a category.\n"
+);
+static PyObject* py_category_new(PyObject* module, PyObject* args, PyObject* kwargs)
+{
+    static char *kwlist[] = {"obj", NULL};
+    char*name = NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwlist, &name))
+        return NULL;
+    CategoryObject*self = PyObject_New(CategoryObject, &CategoryClass);
+    self->name = strdup(name);
+    return (PyObject*)self;
+}
+static PyMethodDef category_methods[] =
+{
+    /* category functions */
     {0,0,0,0}
 };
 
@@ -465,6 +517,24 @@ static PyTypeObject ModelClass =
     tp_setattr: model_setattr,
     tp_doc: model_doc,
     tp_methods: model_methods
+};
+PyDoc_STRVAR(category_doc,
+"A Category is a wrapper for ordinary Python objects that forces\n"
+"them to be treated as discrete categories, as opposed to continuous\n"
+"values (for ints and floats) or text (for strings.)\n"
+);
+static PyTypeObject CategoryClass =
+{
+    PYTHON23_HEAD_INIT
+    tp_name: "predict.C",
+    tp_basicsize: sizeof(CategoryObject),
+    tp_itemsize: 0,
+    tp_dealloc: category_dealloc,
+    tp_print: py_category_print,
+    tp_getattr: category_getattr,
+    tp_setattr: category_setattr,
+    tp_doc: category_doc,
+    tp_methods: category_methods
 };
 
 //=====================================================================
@@ -532,6 +602,7 @@ static PyMethodDef mrscake_methods[] =
 
     {"DataSet", (PyCFunction)py_dataset_new, M_FLAGS, dataset_new_doc},
     {"Model", (PyCFunction)py_model_new, M_FLAGS, model_new_doc},
+    {"C", (PyCFunction)py_category_new, M_FLAGS, category_new_doc},
 
     /* sentinel */
     {0, 0, 0, 0}
@@ -568,6 +639,7 @@ PyObject * PyInit_mrscake(void)
     PyObject*module = Py_InitModule3("mrscake", mrscake_methods, mrscake_doc);
     ModelClass.ob_type = &PyType_Type;
     DataSetClass.ob_type = &PyType_Type;
+    CategoryClass.ob_type = &PyType_Type;
 #endif
 
     state_t* state = STATE(module);
@@ -576,6 +648,7 @@ PyObject * PyInit_mrscake(void)
     //PyObject*module_dict = PyModule_GetDict(module);
     //PyDict_SetItemString(module_dict, "DataSet", (PyObject*)&DataSetClass);
     //PyDict_SetItemString(module_dict, "Model", (PyObject*)&ModelClass);
+    //PyDict_SetItemString(module_dict, "C", (PyObject*)&CategoryClass);
     return module;
 }
 #ifndef PYTHON3
