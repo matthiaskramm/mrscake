@@ -5,6 +5,8 @@
 #include "text.h"
 #include "stringpool.h"
 
+#define CUTOFF_FRACTION 0.1
+
 textcolumn_t* textcolumn_from_column(column_t*column, int num_rows)
 {
     assert(column->type == TEXT);
@@ -118,7 +120,6 @@ int compare_abs_word_score(const void*_score1, const void*_score2)
     return 0;
 }
 
-
 relevant_words_t* textcolumn_get_relevant_words(textcolumn_t*t, column_t*desired_response, category_t category, int max_words)
 {
     relevant_words_t*r = calloc(1, sizeof(relevant_words_t));
@@ -149,7 +150,7 @@ relevant_words_t* textcolumn_get_relevant_words(textcolumn_t*t, column_t*desired
     r->word_score_dict = dict_new(&ptr_type);
     for(i=0;i<max_words;i++) {
         int j = r->word_score[i].index;
-        if(fabs(r->word_score[i].score) < fabs(r->word_score[0].score * 0.1))
+        if(fabs(r->word_score[i].score) < fabs(r->word_score[0].score * CUTOFF_FRACTION))
             break;
         dict_put(r->word_score_dict, t->words[j], &r->word_score[i]);
     }
