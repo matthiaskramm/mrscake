@@ -77,10 +77,9 @@ void job_process(job_t*job)
         job->code = node_read(r);
         r->dealloc(r);
         close(read_fd); // close read
+
+        kill(pid, SIGKILL);
         ret = waitpid(pid, NULL, WNOHANG);
-        if(ret < 0) {
-            kill(pid, SIGKILL);
-        }
     }
 #endif
 }
