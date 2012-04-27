@@ -262,6 +262,15 @@ model_t* model_train_specific_model(dataset_t*data, const char*name)
     jobqueue_revert_dataset_transformations(jobs);
 
     model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
+
+#ifdef DEBUG
+    //model_errors_old(best_model, data);
+    printf("# Using %s.\n", best_model->name);
+    printf("# Confusion matrix:\n");
+    confusion_matrix_t* cm = code_get_confusion_matrix(best_model->code, data);
+    confusion_matrix_print(cm);
+    confusion_matrix_destroy(cm);
+#endif
     return best_model;
 }
 
@@ -425,7 +434,7 @@ int code_score(node_t*code, dataset_t*data)
         return INT_MAX;
     int size = code_size(code);
     int errors = code_errors(code, data);
-    return size + errors * 100;
+    return size + errors * 4;
 }
 
 
