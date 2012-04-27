@@ -2,9 +2,9 @@
    AST transformations and queries
 
    Part of the data prediction package.
-   
-   Copyright (c) 2011 Matthias Kramm <kramm@quiss.org> 
- 
+
+   Copyright (c) 2011,2012 Matthias Kramm <kramm@quiss.org>
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -33,11 +33,11 @@ bool node_has_consumer_parent(node_t*n)
         n = n->parent;
         if(!n)
             break;
-        if(n->type == &node_return) 
-            break;
-        if(n->type == &node_setlocal) 
+        if(n->type == &node_return)
             return true;
-        if(n->type == &node_inc_array_at_pos) 
+        if(n->type == &node_setlocal)
+            return true;
+        if(n->type == &node_inc_array_at_pos)
             return true;
         if(n->type == &node_block) {
             if(n->child[n->num_children-1] != child)
@@ -60,9 +60,9 @@ int node_highest_local(node_t*node)
        node->type == &node_for_local_from_n_to_m) {
         max = node->value.i+1;
     }
-    int t;
-    for(t=0;t<node->num_children;t++) {
-        int l = node_highest_local(node->child[t]);
+    int i;
+    for(i=0;i<node->num_children;i++) {
+        int l = node_highest_local(node->child[i]);
         if(l>max)
             max = l;
     }
@@ -73,13 +73,13 @@ node_t* node_find_setlocal(node_t*node, int num)
     /* Search for the first setlocal() that assigns something
        to this variable.
        We assume the AST is in SSA form */
-    int t;
+    int i;
     if(node->type == &node_setlocal &&
        node->value.i == num) {
         return node;
     }
-    for(t=0;t<node->num_children;t++) {
-        node_t*c = node_find_setlocal(node->child[t], num);
+    for(i=0;i<node->num_children;i++) {
+        node_t*c = node_find_setlocal(node->child[i], num);
         if(c)
             return c;
     }
@@ -99,15 +99,14 @@ static void fill_locals(node_t*node, model_t*m, constant_type_t*types)
     if(node->type == &node_setlocal) {
         types[node->value.i] = node_type(node->child[0], m);
     }
-    int t;
-    for(t=0;t<node->num_children;t++) {
-        fill_locals(node->child[t], m, types);
+    int i;
+    for(i=0;i<node->num_children;i++) {
+        fill_locals(node->child[i], m, types);
     }
 }
 constant_type_t*node_local_types(node_t*node, model_t*m, int* num_locals)
 {
     int num = *num_locals = node_highest_local(node);
-    int t;
     constant_type_t*types = (constant_type_t*)malloc(sizeof(constant_type_t)*num);
     memset(types, -1, sizeof(constant_type_t)*num);
     fill_locals(node, m, types);
@@ -307,7 +306,7 @@ node_t* node_add_return(node_t*n)
     }
     return n;
 }
-node_t* node_do_cascade_returns(node_t*n) 
+node_t* node_do_cascade_returns(node_t*n)
 {
     switch(node_get_opcode(n)) {
         case opcode_node_block:
@@ -361,6 +360,7 @@ int node_precedence(node_t*n)
         case opcode_node_div:
             return 6;
         case opcode_node_sort_float_array_asc:
+        case opcode_node_term_frequency:
             return 7;
         case opcode_node_neg: // -x
         case opcode_node_sqr: // x ** 2
@@ -382,11 +382,11 @@ bool lower_precedence(node_t*n1, node_t*n2)
 {
     return node_precedence(n1) < node_precedence(n2);
 }
-node_t* node_insert_brackets(node_t*n) 
+node_t* node_insert_brackets(node_t*n)
 {
-    int t;
-    for(t=0;t<n->num_children;t++) {
-        node_set_child(n, t, node_insert_brackets(n->child[t]));
+    int i;
+    for(i=0;i<n->num_children;i++) {
+        node_set_child(n, i, node_insert_brackets(n->child[i]));
     }
     if(n->parent) {
         if(lower_precedence(n, n->parent)) {
@@ -400,8 +400,8 @@ node_t* node_insert_brackets(node_t*n)
 node_t* node_clean_arrays(node_t*n)
 {
     /* arrays are not stored in the enviroment- hence their data is not reset
-       in between function invocations. The arrays are allocated once and 
-       their pointer is stored in the node that "creates" them 
+       in between function invocations. The arrays are allocated once and
+       their pointer is stored in the node that "creates" them
        (in truth it doesn't create them- corresponding eval only fills them
         with zeros since they're already there)
        For code generation, we need them to be initialized properly, hence
@@ -432,9 +432,9 @@ bool node_has_child(node_t*node, nodetype_t*type)
 {
     if(node->type == type)
         return true;
-    int t;
-    for(t=0;t<node->num_children;t++) {
-        bool b = node_has_child(node->child[t], type);
+    int i;
+    for(i=0;i<node->num_children;i++) {
+        bool b = node_has_child(node->child[i], type);
         if(b)
             return true;
     }
@@ -460,9 +460,9 @@ bool node_equals_node(node_t*n1, node_t*n2)
         }
     }
     if(n1->type->flags&NODE_FLAG_HAS_CHILDREN) {
-        int t;
-        for(t=0;t<n1->num_children;t++) {
-            if(!node_equals_node(n1->child[t], n2->child[t]))
+        int i;
+        for(i=0;i<n1->num_children;i++) {
+            if(!node_equals_node(n1->child[i], n2->child[i]))
                 return false;
         }
     }
@@ -470,17 +470,17 @@ bool node_equals_node(node_t*n1, node_t*n2)
 }
 node_t* node_optimize2(node_t*n, bool*again)
 {
-    int t,num;
+    int i,num;
     switch(node_get_opcode(n)) {
         case opcode_node_block:
-            for(t=0;t<n->num_children;t++) {
-                if(n->child[t]->type == &node_nop) {
-                    node_remove_child(n, t--);
+            for(i=0;i<n->num_children;i++) {
+                if(n->child[i]->type == &node_nop) {
+                    node_remove_child(n, i--);
                 }
             }
             break;
         case opcode_node_in:
-            /* convert 
+            /* convert
                     a in [x]
                to
                     a == x
@@ -496,7 +496,7 @@ node_t* node_optimize2(node_t*n, bool*again)
             }
             break;
         case opcode_node_mul:
-            /* convert 
+            /* convert
                     a * 1.0
                or
                     1.0 * a
@@ -517,7 +517,7 @@ node_t* node_optimize2(node_t*n, bool*again)
                 node_destroy_self(n);
                 return new_node;
             }
-            /* convert 
+            /* convert
                     a * 0.0
                or
                     0.0 * a
@@ -540,7 +540,7 @@ node_t* node_optimize2(node_t*n, bool*again)
             }
             break;
         case opcode_node_sub:
-            /* convert 
+            /* convert
                     a - 0.0
                to
                     a
@@ -553,7 +553,7 @@ node_t* node_optimize2(node_t*n, bool*again)
             }
             break;
         case opcode_node_div:
-            /* convert 
+            /* convert
                     a / 1.0
                to
                     a
@@ -566,16 +566,16 @@ node_t* node_optimize2(node_t*n, bool*again)
             }
             break;
         case opcode_node_add:
-            /* convert 
+            /* convert
                     a + 0.0
                to
                     a
              */
             num = 0;
-            for(t=0;t<n->num_children;t++) {
-                node_set_child(n, num, n->child[t]);
-                if(n->child[t]->type != &node_float ||
-                   !float_is_zero(n->child[t]->value.f)) {
+            for(i=0;i<n->num_children;i++) {
+                node_set_child(n, num, n->child[i]);
+                if(n->child[i]->type != &node_float ||
+                   !float_is_zero(n->child[i]->value.f)) {
                     num++;
                 }
             }
@@ -590,8 +590,8 @@ node_t* node_optimize2(node_t*n, bool*again)
             }
             break;
         case opcode_node_if:
-            /* convert 
-                    if 
+            /* convert
+                    if
                         c
                     then
                         a
@@ -607,7 +607,7 @@ node_t* node_optimize2(node_t*n, bool*again)
             }
             break;
         case opcode_node_setlocal:
-            /* convert 
+            /* convert
                     setlocal i
                         getlocal i
                to
@@ -623,8 +623,8 @@ node_t* node_optimize2(node_t*n, bool*again)
             }
             break;
     }
-    for(t=0;t<n->num_children;t++) {
-        node_set_child(n, t, node_optimize2(n->child[t], again));
+    for(i=0;i<n->num_children;i++) {
+        node_set_child(n, i, node_optimize2(n->child[i], again));
     }
     return n;
 }

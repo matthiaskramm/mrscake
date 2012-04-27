@@ -30,6 +30,18 @@
 extern "C" {
 #endif
 
+typedef struct _column_array
+{
+    column_t**column;
+    int num_columns;
+} column_array_t;
+
+typedef struct _column_transform
+{
+    char*name;
+    column_array_t* (*transform)(dataset_t*dataset, int column, code_t**param_code);
+} column_transform;
+
 /* transformations */
 dataset_t* expand_categorical_columns(dataset_t*old_dataset);
 dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num);
