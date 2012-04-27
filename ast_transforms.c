@@ -361,6 +361,7 @@ int node_precedence(node_t*n)
             return 6;
         case opcode_node_sort_float_array_asc:
         case opcode_node_term_frequency:
+        case opcode_node_bool_to_float:
             return 7;
         case opcode_node_neg: // -x
         case opcode_node_sqr: // x ** 2
