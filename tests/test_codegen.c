@@ -44,7 +44,6 @@ trainingdata_t* trainingdata2(int width, int height)
 int test_language_and_dataset(language_interpreter_t*lang, trainingdata_t*tdata, int test_num, int count)
 {
     dataset_t*data = trainingdata_sanitize(tdata);
-    bool verbose = test_num>0;
 
     const char*const*model_names = mrscake_get_model_names();
     while(*model_names) {
@@ -61,37 +60,34 @@ int test_language_and_dataset(language_interpreter_t*lang, trainingdata_t*tdata,
         int count_total = 0;
         int count_good = 0;
         if(model) {
-            if(verbose) {
+            if(test_num>0) {
                 printf("-------------------------------------------------------------\n");
                 model_print(model);
             }
             char*code = model_generate_code(model, lang->name);
-            if(verbose) {
+            if(test_num>0) {
                 printf("-------------------------------------------------------------\n");
                 printf("%s\n", code);
                 printf("-------------------------------------------------------------\n");
             }
 
+            if(test_num > 0)
+                lang->verbosity = 1;
             bool success = lang->define_function(lang, code);
+            lang->verbosity = 0;
             fail_define_function = !success;
             if(success) {
                 example_t*e;
                 for(e = tdata->first_example; e; e = e->next) {
                     row_t*r = example_to_row(e, 0);
-                    if(verbose) {
-                        printf("debug output (ast):\n");
-                    }
                     variable_t v = model_predict(model, r);
-                    if(verbose) {
-                        printf("debug output (%s):\n", lang->name);
-                    }
                     int c = lang->call_function(lang, r);
                     if(c < 0) {
                         fail_call_function = true;
                         break;
                     }
                     if(v.category != c) {
-                        if(verbose) {
+                        if(test_num>0) {
                             printf("-------------------------------------------------------------\n");
                             printf("%s\n", row_to_function_call(r, malloc(16384), true));
                             row_print(r);
@@ -100,8 +96,14 @@ int test_language_and_dataset(language_interpreter_t*lang, trainingdata_t*tdata,
                             variable_t v = model_predict(model, r);
                         }
                         fail_predict = true;
-                        if(test_num > 0)
+                        if(test_num > 0) {
+                            lang->verbosity = 1;
+                            printf("debug output (ast):\n");
+                            variable_t v = model_predict(model, r);
+                            printf("debug output (%s):\n", lang->name);
+                            int c = lang->call_function(lang, r);
                             break;
+                        }
                     } else {
                         count_good++;
                     }
@@ -156,10 +158,6 @@ int main(int argn, char*argv[])
     } else {
         fprintf(stderr, "No such language: %s\n", language);
         exit(1);
-    }
-
-    if(test_number > 0) {
-        lang->verbosity = 1;
     }
 
     test_language(lang, test_number);

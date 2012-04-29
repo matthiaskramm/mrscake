@@ -236,10 +236,10 @@ model_t* model_select(dataset_t*data)
     jobqueue_revert_dataset_transformations(jobs);
     model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
     if(!best_model) {
-        return 0;
+        return NULL;
     }
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
     //model_errors_old(best_model, data);
     printf("# Using %s.\n", best_model->name);
@@ -262,6 +262,17 @@ model_t* model_train_specific_model(dataset_t*data, const char*name)
     jobqueue_revert_dataset_transformations(jobs);
 
     model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
+    if(!best_model)
+        return NULL;
+
+#ifdef DEBUG
+    //model_errors_old(best_model, data);
+    printf("# Using %s.\n", best_model->name);
+    printf("# Confusion matrix:\n");
+    confusion_matrix_t* cm = code_get_confusion_matrix(best_model->code, data);
+    confusion_matrix_print(cm);
+    confusion_matrix_destroy(cm);
+#endif
     return best_model;
 }
 
