@@ -531,7 +531,7 @@ void column_write(column_t*c, int num_rows, writer_t*w)
         for(y=0;y<num_rows;y++) {
             write_float(w, c->entries[y].f);
         }
-    } else if(c->type == CATEGORICAL) {
+    } else if(c->type == TEXT) {
         for(y=0;y<num_rows;y++) {
             write_string(w, c->entries[y].text);
         }
@@ -543,6 +543,9 @@ column_t* column_read(int num_rows, reader_t*r)
 {
     char*name = read_string(r);
     uint8_t column_type = read_uint8(r);
+    if(r->error)
+        return NULL;
+
     column_t* c = column_new(num_rows, column_type);
     if(*name) {
         c->name = register_string(name);
@@ -558,6 +561,11 @@ column_t* column_read(int num_rows, reader_t*r)
         int t;
         for(t=0;t<c->num_classes;t++) {
             c->classes[t] = constant_read(r);
+            if(c->classes[t].type == 0) {
+                // read error
+                column_destroy(c);
+                return NULL;
+            }
             c->class_occurence_count[t] = read_compressed_uint(r);
         }
         for(y=0;y<num_rows;y++) {
@@ -565,12 +573,16 @@ column_t* column_read(int num_rows, reader_t*r)
         }
     } else if(c->type == CONTINUOUS) {
         for(y=0;y<num_rows;y++) {
-            c->entries[y].text = read_string(r);
+            c->entries[y].f = read_float(r);
         }
     } else {
         for(y=0;y<num_rows;y++) {
-            c->entries[y].f = read_float(r);
+            c->entries[y].text = read_string(r);
         }
+    }
+    if(r->error) {
+        column_destroy(c);
+        return NULL;
     }
     return c;
 }
@@ -590,20 +602,41 @@ dataset_t*dataset_read(reader_t*r)
     dataset_t*d = calloc(1, sizeof(dataset_t));
     d->num_columns = read_compressed_uint(r);
     d->num_rows = read_compressed_uint(r);
+    if(r->error)
+        return NULL;
     d->columns = malloc(sizeof(d->columns[0])*d->num_columns);
     int t;
     for(t=0;t<d->num_columns;t++) {
         d->columns[t] = column_read(d->num_rows, r);
+        if(!d->columns[t]) {
+            free(d->columns);
+            free(d);
+            return NULL;
+        }
     }
     d->desired_response = column_read(d->num_rows, r);
+    if(!d->desired_response) {
+        free(d->columns);
+        free(d);
+        return NULL;
+    }
     d->sig = signature_read(r);
+    d->hash = dataset_hash(d);
+    if(r->error) {
+        dataset_destroy(d);
+        return NULL;
+    }
     return d;
 }
-void dataset_save(dataset_t*d, const char*filename)
+
+int dataset_save(dataset_t*d, const char*filename)
 {
     writer_t *w = filewriter_new2(filename);
+    if(!w)
+        return -1;
     dataset_write(d, w);
     w->finish(w);
+    return 0;
 }
 dataset_t* dataset_load(const char*filename)
 {

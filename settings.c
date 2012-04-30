@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "settings.h"
+#include "util.h"
 
 int config_num_remote_servers = 0;
 remote_server_t*config_remote_servers = 0;
@@ -32,6 +33,8 @@ int config_model_timeout = 15;
 bool config_do_remote_processing = false;
 int config_number_of_remote_workers = 32;
 int config_verbosity = 1;
+char*config_dataset_cache_directory = "/tmp/mrscake";
+int config_num_seeded_hosts = 1;
 
 int config_remote_worker_timeout = 60;
 
@@ -49,6 +52,7 @@ void config_add_remote_server(const char*host, int port)
     remote_server_t*s = &config_remote_servers[config_num_remote_servers++];
     s->host = host;
     s->port = port;
+    s->name = allocprintf("%s:%d", host, port);
     config_do_remote_processing = true;
 }
 

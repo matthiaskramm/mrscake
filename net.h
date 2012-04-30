@@ -24,10 +24,23 @@
 
 #include <time.h>
 #include "dataset.h"
+#include "settings.h"
+
+typedef enum {REQUEST_SEND_DATASET,
+              REQUEST_RECV_DATASET,
+              REQUEST_TRAIN_MODEL} request_type_t;
+
+typedef enum {RESPONSE_OK,
+              RESPONSE_DATA_ERROR,
+              RESPONSE_DUPL_DATA,
+              RESPONSE_DATASET_UNKNOWN,
+              RESPONSE_FACTORY_UNKNOWN,
+              RESPONSE_READ_ERROR=-1} response_type_t;
 
 typedef struct _remote_job {
     int socket;
     time_t start_time;
+    response_type_t response;
 } remote_job_t;
 
 int connect_to_host(const char *host, int port);
@@ -37,6 +50,9 @@ bool remote_job_is_ready(remote_job_t*j);
 time_t remote_job_age(remote_job_t*j);
 node_t* remote_job_read_result(remote_job_t*j);
 void remote_job_cancel(remote_job_t*j);
+
+dataset_t* dataset_read_from_server(const char*host, int port, uint8_t*hash);
+remote_server_t** distribute_dataset(dataset_t*data, int*num_servers);
 
 int start_server(int port);
 #endif

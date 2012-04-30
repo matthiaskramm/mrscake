@@ -28,6 +28,9 @@ extern "C" {
 
 void*memdup(const void*ptr, size_t size);
 char*escape_string(const char*str);
+char* allocprintf(const char*format, ...);
+char* concat_paths(const char*base, const char*add);
+void mkdir_p(const char*path);
 
 #ifdef __cplusplus
 }

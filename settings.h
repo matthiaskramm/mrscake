@@ -27,6 +27,7 @@
 typedef struct remote_server {
     const char*host;
     int port;
+    const char*name;
 } remote_server_t;
 
 extern int config_num_remote_servers;
@@ -39,6 +40,8 @@ extern int config_model_timeout;
 extern bool config_do_remote_processing;
 extern int config_number_of_remote_workers;
 extern int config_verbosity;
+extern char*config_dataset_cache_directory;
+extern int config_num_seeded_hosts;
 
 #define MRSCAKE_DEFAULT_PORT 3075
 

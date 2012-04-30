@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/select.h>
 #ifdef HAVE_UNISTD_H
@@ -40,11 +41,16 @@
 #include <zlib.h>
 #define ZLIB_BUFFER_SIZE 16384
 #endif
+
+#ifdef HAVE_SHA1
+#include <openssl/sha.h>
+#endif
+
 #include "io.h"
 
 /* ---------------------------- null reader ------------------------------- */
 
-static int reader_nullread(reader_t*r, void* data, int len) 
+static int reader_nullread(reader_t*r, void* data, int len)
 {
     memset(data, 0, len);
     return len;
@@ -204,6 +210,8 @@ reader_t* filereader_new2(const char*filename)
             O_BINARY|
 #endif
             O_RDONLY);
+    if(fi < 0)
+        return NULL;
     reader_t*r = filereader_new(fi);
     r->type = READER_TYPE_FILE2;
     return r;
@@ -510,6 +518,10 @@ writer_t* filewriter_new2(const char*filename)
             O_BINARY|
 #endif
             O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if(fi<0) {
+        perror(filename);
+        return NULL;
+    }
     writer_t*w = filewriter_new(fi);
     ((filewrite_t*)w->internal)->free_handle = 1;
     return w;
@@ -540,6 +552,80 @@ writer_t* nullwriter_new()
     w->pos = 0;
     return w;
 }
+
+/* ---------------------------- sha1 writer ------------------------------- */
+
+typedef struct _sha1write
+{
+#ifdef HAVE_SHA1
+    SHA_CTX ctx;
+#endif
+    bool needs_free;
+} sha1write_t;
+
+static int writer_sha1_write(writer_t*w, void* data, int len) 
+{
+#ifdef HAVE_SHA1
+    sha1write_t*sha1 = (sha1write_t*)w->internal;
+    SHA1_Update(&sha1->ctx, data, len);
+    w->pos += len;
+    return len;
+#else
+    fprintf(stderr, "Error: compiled without crypto support");
+    exit(1);
+#endif
+}
+static void writer_sha1_finish(writer_t*w)
+{
+#ifdef HAVE_SHA1
+    sha1write_t*sha1 = (sha1write_t*)w->internal;
+    if(sha1->needs_free) {
+        uint8_t hash[HASH_SIZE];
+        SHA1_Final(hash, &sha1->ctx);
+        sha1->needs_free = false;
+    }
+    free(sha1);w->internal = NULL;
+    free(w);
+#else
+    fprintf(stderr, "Error: compiled without crypto support");
+    exit(1);
+#endif
+}
+uint8_t* writer_sha1_get(writer_t*w)
+{
+#ifdef HAVE_SHA1
+    sha1write_t*sha1 = (sha1write_t*)w->internal;
+    uint8_t* hash = malloc(HASH_SIZE);
+    SHA1_Final(hash, &sha1->ctx);
+    sha1->needs_free = false;
+    return hash;
+#else
+    fprintf(stderr, "Error: compiled without crypto support");
+    exit(1);
+#endif
+}
+writer_t* sha1writer_new()
+{
+#ifdef HAVE_SHA1
+    writer_t*w = (writer_t*)calloc(1, sizeof(writer_t));
+    sha1write_t*sha1 = (sha1write_t*)calloc(1, sizeof(sha1write_t));
+    SHA1_Init(&sha1->ctx);
+    sha1->needs_free = true;
+    w->internal = sha1;
+    w->write = writer_sha1_write;
+    w->flush = dummy_flush;
+    w->finish = writer_sha1_finish;
+    w->type = WRITER_TYPE_SHA1;
+    w->bitpos = 0;
+    w->mybyte = 0;
+    w->pos = 0;
+    return w;
+#else
+    fprintf(stderr, "Error: compiled without crypto support");
+    exit(1);
+#endif
+}
+
 /* ---------------------------- zlibinflate reader -------------------------- */
 
 typedef struct _zlibinflate
@@ -612,7 +698,7 @@ static int reader_zlibinflate(reader_t*reader, void* data, int len)
 }
 static int reader_zlibseek(reader_t*reader, int pos)
 {
-    fprintf(stderr, "Erro: seeking not supported for zlib streams");
+    fprintf(stderr, "Error: seeking not supported for zlib streams");
     return -1;
 }
 static void reader_zlibinflate_dealloc(reader_t*reader)
@@ -706,7 +792,7 @@ static int writer_zlibdeflate_write(writer_t*writer, void* data, int len)
     }
     return len;
 #else
-    fprintf(stderr, "Error: swftools was compiled without zlib support");
+    fprintf(stderr, "Error: Compiled without zlib support");
     exit(1);
 #endif
 }
@@ -741,7 +827,7 @@ void writer_zlibdeflate_flush(writer_t*writer)
     }
     return;
 #else
-    fprintf(stderr, "Error: swftools was compiled without zlib support");
+    fprintf(stderr, "Error: Compiled without zlib support");
     exit(1);
 #endif
 }
@@ -782,7 +868,7 @@ static void writer_zlibdeflate_finish(writer_t*writer)
     free(writer);
     //output->finish(output); 
 #else
-    fprintf(stderr, "Error: swftools was compiled without zlib support");
+    fprintf(stderr, "Error: Compiled without zlib support");
     exit(1);
 #endif
 }
@@ -881,7 +967,6 @@ uint8_t read_uint8(reader_t*r)
     uint8_t b = 0;
     int ret = r->read(r, &b, 1);
     if(ret<1) {
-        fprintf(stderr, "io.c:read_uint8: Couldn't read uint8 (%d)\n", ret);
         return 0;
     }
     return b;
@@ -891,7 +976,6 @@ int8_t read_int8(reader_t*r)
     int8_t b = 0;
     int ret = r->read(r, &b, 1);
     if(ret<1) {
-        fprintf(stderr, "io.c:read_uint8: Couldn't read uint8 (%d)\n", ret);
         return 0;
     }
     return b;
@@ -901,11 +985,11 @@ uint16_t read_uint16(reader_t*r)
     uint8_t b1=0,b2=0;
     int ret = r->read(r, &b1, 1);
     if(ret<1) {
-        fprintf(stderr, "io.c:read_uint16: Couldn't read byte (%d)\n", ret);
+        return 0;
     }
     ret = r->read(r, &b2, 1);
     if(ret<1) {
-        fprintf(stderr, "io.c:read_uint16: Couldn't read byte (%d)\n", ret);
+        return 0;
     }
     return b1|b2<<8;
 }
@@ -913,13 +997,13 @@ uint32_t read_uint32(reader_t*r)
 {
     uint8_t b1=0,b2=0,b3=0,b4=0;
     if(r->read(r, &b1, 1)<1)
-        fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
+        return 0;
     if(r->read(r, &b2, 1)<1)
-        fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
+        return 0;
     if(r->read(r, &b3, 1)<1)
-        fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
+        return 0;
     if(r->read(r, &b4, 1)<1)
-        fprintf(stderr, "bitio.c:reader_readU32: Read over end of memory region\n");
+        return 0;
     return b1|b2<<8|b3<<16|b4<<24;
 }
 uint32_t read_compressed_uint(reader_t*r)

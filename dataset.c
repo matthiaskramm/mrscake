@@ -29,6 +29,7 @@
 #include "util.h"
 #include "easy_ast.h"
 #include "stringpool.h"
+#include "serialize.h"
 
 trainingdata_t* trainingdata_new()
 {
@@ -443,7 +444,16 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
     }
     s->sig = signature_from_columns(s->columns, s->num_columns, has_column_names);
 
+    s->hash = dataset_hash(s);
     return s;
+}
+uint8_t*dataset_hash(dataset_t*d)
+{
+    writer_t*w = sha1writer_new();
+    dataset_write(d, w);
+    uint8_t*result = writer_sha1_get(w);
+    w->finish(w);
+    return result;
 }
 void dataset_print(dataset_t*s)
 {
@@ -511,6 +521,9 @@ void dataset_destroy(dataset_t*s)
     }
     free(s->columns);
     column_destroy(s->desired_response);
+    if(s->hash) {
+        free(s->hash);
+    }
     free(s);
 }
 

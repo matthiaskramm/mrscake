@@ -106,7 +106,7 @@ static void process_jobs_remotely(jobqueue_t*jobs)
        will now only return an error, not halt the program */
     sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
 
-    /* Most of the total processing time is usually spent in this loop, as
+    /* Right now, most of the total processing time spent in this loop, as
        remote_job_start() will block until the next worker becomes available */
     job_t*job;
     int pos = 0;
@@ -122,8 +122,8 @@ static void process_jobs_remotely(jobqueue_t*jobs)
     while(open_jobs) {
         int pos = 0;
         for(job=jobs->first;job;job=job->next) {
-            if(r[pos]) {
-                if(!job->code && remote_job_is_ready(r[pos])) {
+            if(r[pos] && !job->code) {
+                if(remote_job_is_ready(r[pos])) {
                     job->code = remote_job_read_result(r[pos]);
                     if(job->code) {
                         printf("Finished: %s\n", job->factory->name);

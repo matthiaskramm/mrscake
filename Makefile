@@ -1,14 +1,7 @@
-A=a
-O=o
-CC=gcc -pg -g -fPIC -Wimplicit
-CXX=g++ -pg -g -fPIC -Wimplicit
-INSTALL=/usr/bin/install -c
-
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
-ifneq ($(IS_MACOS),)
-    # Mac defaults
-    LIBS=-lz -lpthread
+ifneq ($(IS_MACOS),) # Mac compile
+    LIBS=-lz -lpthread -lcrypto
     PYTHON_LIB?=-lpython2.6
     PYTHON_INCLUDE?=-I/usr/include/python2.6
     PYTHON_INSTALLDIR?=/usr/lib/python2.6/
@@ -20,9 +13,9 @@ ifneq ($(IS_MACOS),)
     SO_RUBY=bundle
 endif
 
-ifeq ($(IS_MACOS),)
-    # Linux defaults
-    LIBS=-lz -lpthread -lrt
+ifeq ($(IS_MACOS),) # Linux compile
+    CPPFLAGS=-DHAVE_SHA1
+    LIBS=-lz -lpthread -lcrypto -lrt
     PYTHON_LIB?=-lpython2.6
     PYTHON_INCLUDE?=-I/usr/include/python2.6
     PYTHON_INSTALLDIR?=/usr/lib/python2.6/site-packages/
@@ -34,10 +27,16 @@ ifeq ($(IS_MACOS),)
     SO_RUBY=rb.so
 endif
 
+A=a
+O=o
+CC=gcc $(CPPFLAGS) $(CFLAGS) -pg -g -fPIC -Wimplicit
+CXX=g++ $(CPPFLAGS) $(CXXFLAGS) -pg -g -fPIC -Wimplicit
+INSTALL=/usr/bin/install -c
+
 MODELS=model_cv_dtree.$(O) model_cv_ann.$(O) model_cv_svm.$(O) model_cv_linear.$(O) model_perceptron.$(O) model_knearest.$(O)
 VAR_SELECTORS=varselect_cv_dtree.$(O)
 CODE_GENERATORS=codegen_python.$(O) codegen_ruby.$(O) codegen_js.$(O) codegen_c.$(O)
-OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.$(O) constant.$(O) ast.$(O) model.$(O) serialize.$(O) io.$(O) list.$(O) model_select.$(O) dict.$(O) dataset.$(O) text.$(O) environment.$(O) codegen.$(O) ast_transforms.$(O) stringpool.$(O) net.$(O) settings.$(O) job.$(O) var_selection.$(O) transform.$(O) mrscake.$(O) util.$(O)
+OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.$(O) constant.$(O) ast.$(O) model.$(O) serialize.$(O) io.$(O) list.$(O) model_select.$(O) dict.$(O) dataset.$(O) datacache.$(O) text.$(O) environment.$(O) codegen.$(O) ast_transforms.$(O) stringpool.$(O) net.$(O) settings.$(O) job.$(O) var_selection.$(O) transform.$(O) mrscake.$(O) util.$(O)
 CV_OBJECTS=lib/alloc.$(O) lib/ann_mlp.$(O) lib/arithm.$(O) lib/array.$(O) lib/boost.$(O) lib/cnn.$(O) lib/convert.$(O) lib/copy.$(O) lib/data.$(O) \
 	lib/datastructs.$(O) lib/ertrees.$(O) lib/estimate.$(O) lib/gbt.$(O) lib/inner_functions.$(O) lib/knearest.$(O) lib/mathfuncs.$(O) lib/matmul.$(O) \
 	lib/matrix.$(O) lib/missing.$(O) lib/persistence.$(O) lib/precomp.$(O) lib/rand.$(O) lib/rtrees.$(O) lib/stat.$(O) lib/svm.$(O) lib/system.$(O) lib/tables.$(O) \
