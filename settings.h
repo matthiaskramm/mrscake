@@ -44,6 +44,7 @@ extern int config_number_of_remote_workers;
 extern int config_verbosity;
 extern char*config_dataset_cache_directory;
 extern int config_num_seeded_hosts;
+extern bool config_subset_variables;
 
 #define MRSCAKE_DEFAULT_PORT 3075
 

@@ -35,6 +35,7 @@ int config_number_of_remote_workers = 32;
 int config_verbosity = 1;
 char*config_dataset_cache_directory = "/tmp/mrscake";
 int config_num_seeded_hosts = 1;
+bool config_subset_variables = true;
 
 int config_remote_worker_timeout = 60;
 

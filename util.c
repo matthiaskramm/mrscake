@@ -105,3 +105,9 @@ int imin(int x, int y)
 {
     return x<y?x:y;
 }
+
+bool str_starts_with(const char*str, const char*start)
+{
+    int l = strlen(start);
+    return strncmp(str, start, l) == 0;
+}

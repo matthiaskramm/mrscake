@@ -36,8 +36,13 @@ dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num);
 dataset_t* remove_text_columns(dataset_t*old_dataset);
 dataset_t* expand_text_columns(dataset_t*old_dataset);
 
+dataset_t* dataset_apply_named_transformation(dataset_t*old_dataset, const char*transform);
+dataset_t* dataset_apply_transformations(dataset_t*dataset, const char*transform);
 dataset_t* dataset_revert_one_transformation(dataset_t*dataset, node_t**code);
 dataset_t* dataset_revert_all_transformations(dataset_t*dataset, node_t**code);
+
+/* transformation name generators */
+char* pick_columns_transform(int*index, int num);
 
 #ifdef __cplusplus
 }

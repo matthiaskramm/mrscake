@@ -63,4 +63,6 @@ dataset_t* dataset_read_from_server(const char*host, int port, uint8_t*hash);
 server_array_t* distribute_dataset(dataset_t*data);
 
 int start_server(int port);
+
+void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array_t*servers);
 #endif

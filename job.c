@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "job.h"
@@ -34,7 +35,11 @@
 
 void job_train_and_score(job_t*job)
 {
-    node_t*code = job->factory->train(job->factory, job->data);
+    assert(!job->data->transform); // we're transforming previously untransformed data
+
+    dataset_t* dataset = dataset_apply_transformations(job->data, job->transforms);
+    node_t*code = job->factory->train(job->factory, dataset);
+    dataset = dataset_revert_all_transformations(dataset, &code);
     if(code) {
         job->code = code;
         job->score = code_score(job->code, job->data);
@@ -104,10 +109,10 @@ static void process_jobs_remotely(dataset_t*dataset, jobqueue_t*jobs)
     distribute_jobs_to_servers(dataset, jobs, servers);
 }
 
-void jobqueue_process(jobqueue_t*jobs)
+void jobqueue_process(dataset_t*data, jobqueue_t*jobs)
 {
     if(config_do_remote_processing) {
-        process_jobs_remotely(/*FIXME*/jobs->first->data, jobs);
+        process_jobs_remotely(data, jobs);
     } else {
         process_jobs(jobs);
     }
@@ -115,6 +120,8 @@ void jobqueue_process(jobqueue_t*jobs)
 
 void job_destroy(job_t*j)
 {
+    if(j->transforms)
+        free(j->transforms);
     free(j);
 }
 

@@ -20,7 +20,9 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
+#include <alloca.h>
 #include "transform.h"
 #include "easy_ast.h"
 #include "util.h"
@@ -218,7 +220,7 @@ dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num)
     newdata->transform = (transform_t*)transform;
 
     transform->original_column = (int*)memdup(index, sizeof(int)*num);
-   
+
     newdata->num_columns = num;
     newdata->columns = (column_t**)malloc(sizeof(column_t*)*num);
     int i;
@@ -386,7 +388,8 @@ dataset_t* dataset_revert_one_transformation(dataset_t*dataset, node_t**code)
         return dataset;
     transform_t*transform = dataset->transform;
     dataset_t*original = transform->original;
-    *code = transform->revert_in_code(dataset, *code);
+    if(*code)
+        *code = transform->revert_in_code(dataset, *code);
 
     //in the presence of variable selection, some transformations are shared
     //between models (see generate_jobs() in model_select.c)
@@ -404,4 +407,77 @@ dataset_t* dataset_revert_all_transformations(dataset_t*dataset, node_t**code)
         dataset = dataset_revert_one_transformation(dataset, code);
     }
     return dataset;
+}
+
+dataset_t* dataset_apply_named_transformation(dataset_t*old_dataset, const char*transform)
+{
+    if(str_starts_with(transform, "pick_columns")) {
+        char*end = strchr(transform, ')');
+        const char*params = transform+12;
+        assert(params[0]=='(' && end);
+        params++;
+        const char*c = params;
+        int count = 0;
+        while(*c) {
+            count++;
+            char*comma = strchr(c, ',');
+            if(!comma)
+                break;
+            c = comma+1;
+        }
+        c = params;
+        int*indexes = alloca(sizeof(int)*count);
+        count = 0;
+        while(c<end) {
+            char*comma = strchr(c, ',');
+            const char*e = comma?comma:end;
+            int nr = 0;
+            for(;c<e;c++) {
+                nr *= 10;
+                nr += (*c-'0');
+            }
+            c++;
+            indexes[count++] = nr;
+        }
+        return pick_columns(old_dataset, indexes, count);
+    } else if(str_starts_with(transform, "expand_categorical_columns")) {
+        return expand_categorical_columns(old_dataset);
+    } else if(str_starts_with(transform, "remove_text_columns")) {
+        return remove_text_columns(old_dataset);
+    } else if(str_starts_with(transform, "expand_text_columns")) {
+        return expand_text_columns(old_dataset);
+    }
+    return old_dataset;
+}
+
+dataset_t* dataset_apply_transformations(dataset_t*dataset, const char*transform)
+{
+    char*s = strdup(transform);
+    char*end = s+strlen(s);
+    char*p = s;
+    while(p<end) {
+        char*e = strchr(p, '|');
+        if(!e)
+            e = end;
+        *e = 0;
+        dataset = dataset_apply_named_transformation(dataset, p);
+        p = e+1;
+    }
+    free(s);
+    return dataset;
+}
+
+char* pick_columns_transform(int*index, int num)
+{
+    char*str = malloc(10*num + strlen("pick_columns()") + 1);
+    char*p = str;
+    int i;
+    p += sprintf(p, "pick_columns(");
+    for(i=0;i<num;i++) {
+        if(i)
+            p += sprintf(p, ",");
+        p += sprintf(p, "%d", index[i]);
+    }
+    p += sprintf(p, ")");
+    return str;
 }

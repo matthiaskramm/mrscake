@@ -30,6 +30,7 @@ extern "C" {
 
 typedef struct _job {
     dataset_t*data;
+    char* transforms;
     model_factory_t*factory;
     node_t*code;
 
@@ -48,7 +49,7 @@ typedef struct _jobqueue {
 jobqueue_t*jobqueue_new();
 void jobqueue_append(jobqueue_t*queue, job_t*job);
 void jobqueue_delete_job(jobqueue_t*queue, job_t*job);
-void jobqueue_process(jobqueue_t*);
+void jobqueue_process(dataset_t*data, jobqueue_t*jobs);
 void jobqueue_print(jobqueue_t*);
 jobqueue_t*jobqueue_destroy();
 void job_destroy(job_t*j);
