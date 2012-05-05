@@ -53,6 +53,16 @@ void remote_server_print(remote_server_t*server)
         printf(" [%s]", server->broken);
     printf("\n");
 }
+bool config_has_remote_servers()
+{
+    int i = 0;
+    for(i=0;i<config_num_remote_servers;i++) {
+        remote_server_t* r = &config_remote_servers[i];
+        if(!r->broken)
+            return true;
+    }
+    return false;
+}
 void config_print_remote_servers()
 {
     int i = 0;

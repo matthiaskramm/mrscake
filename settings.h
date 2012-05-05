@@ -51,6 +51,7 @@ void config_parse_remote_servers(const char*filename);
 void config_add_remote_server(const char*host, int port);
 
 void config_print_remote_servers();
+bool config_has_remote_servers();
 
 void remote_server_print(remote_server_t*server);
 void remote_server_is_broken(remote_server_t*server, const char*error);

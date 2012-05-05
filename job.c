@@ -98,58 +98,16 @@ static void process_jobs(jobqueue_t*jobs)
         printf("\n");
 }
 
-static void process_jobs_remotely(jobqueue_t*jobs)
+static void process_jobs_remotely(dataset_t*dataset, jobqueue_t*jobs)
 {
-    remote_job_t**r = malloc(sizeof(reader_t*)*jobs->num);
-
-    /* Ignore sigpipe events. Write calls to closed network sockets 
-       will now only return an error, not halt the program */
-    sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
-
-    /* Right now, most of the total processing time spent in this loop, as
-       remote_job_start() will block until the next worker becomes available */
-    job_t*job;
-    int pos = 0;
-    for(job=jobs->first;job;job=job->next) {
-        r[pos] = remote_job_start(job->factory->name, job->data);
-        job->code = 0;
-        pos++;
-    }
-
-    /* Wait for remaining servers and gather results */
-    int open_jobs = jobs->num;
-    printf("%d open jobs\n", open_jobs);
-    while(open_jobs) {
-        int pos = 0;
-        for(job=jobs->first;job;job=job->next) {
-            if(r[pos] && !job->code) {
-                if(remote_job_is_ready(r[pos])) {
-                    job->code = remote_job_read_result(r[pos]);
-                    if(job->code) {
-                        printf("Finished: %s\n", job->factory->name);
-                    } else {
-                        printf("Failed (bad data): %s\n", job->factory->name);
-                    }
-                    r[pos] = 0;
-                    open_jobs--;
-                } else if(remote_job_age(r[pos]) > config_model_timeout) {
-                    printf("Failed (timeout): %s\n", job->factory->name);
-                    remote_job_cancel(r[pos]);
-                    r[pos] = 0;
-                    open_jobs--;
-                }
-            }
-            pos++;
-        }
-    }
-    free(r);
-    signal(SIGPIPE, old_sigpipe);
+    server_array_t*servers = distribute_dataset(dataset);
+    distribute_jobs_to_servers(dataset, jobs, servers);
 }
 
 void jobqueue_process(jobqueue_t*jobs)
 {
     if(config_do_remote_processing) {
-        process_jobs_remotely(jobs);
+        process_jobs_remotely(/*FIXME*/jobs->first->data, jobs);
     } else {
         process_jobs(jobs);
     }

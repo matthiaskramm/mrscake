@@ -444,7 +444,16 @@ static int send_dataset_to_remote_server(remote_server_t*server, dataset_t*data,
     return resp;
 }
 
-remote_server_t** distribute_dataset(dataset_t*data, int*num_servers)
+void server_array_destroy(server_array_t*a)
+{
+    if(a) {
+        if(a->servers)
+            free(a->servers);
+        free(a);
+    }
+}
+
+server_array_t* distribute_dataset(dataset_t*data)
 {
     /* write returns an error, instead of raising a signal */
     sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
@@ -459,7 +468,6 @@ remote_server_t** distribute_dataset(dataset_t*data, int*num_servers)
     int num_errors = 0;
     int num_seeds = 0;
     int hosts_to_seed = imin(config_num_seeded_hosts, config_num_remote_servers);
-
     while(num_seeds < hosts_to_seed) {
         if(num_seeds + num_errors == config_num_remote_servers) {
             printf("error seeding %d/%d hosts: %d errors\n", hosts_to_seed-num_seeds, hosts_to_seed, num_errors);
@@ -517,8 +525,11 @@ remote_server_t** distribute_dataset(dataset_t*data, int*num_servers)
             break;
         }
     }
-    *num_servers = num_seeds;
-    return seeds;
+
+    server_array_t*server_array = calloc(sizeof(server_array_t),1);
+    server_array->servers = seeds;
+    server_array->num = num_seeds;
+    return server_array;
 error:
     signal(SIGPIPE, old_sigpipe);
     return NULL;
@@ -528,12 +539,15 @@ remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset)
 {
     int sock;
     while(1) {
-        if(!config_num_remote_servers) {
+        if(!config_has_remote_servers()) {
             fprintf(stderr, "No remote servers configured.\n");
             exit(1);
         }
         static int round_robin = 0;
         remote_server_t*s = &config_remote_servers[(round_robin++)%config_num_remote_servers];
+        if(s->broken)
+            continue;
+
         printf("Starting %s on %s\n", model_name, s->name);fflush(stdout);
         sock = connect_to_remote_server(s);
         if(sock>=0) {
@@ -592,3 +606,51 @@ time_t remote_job_age(remote_job_t*j)
 {
     return time(0) - j->start_time;
 }
+
+void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array_t*servers)
+{
+    remote_job_t**r = malloc(sizeof(reader_t*)*jobs->num);
+    /* Ignore sigpipe events. Write calls to closed network sockets 
+       will now only return an error, not halt the program */
+    sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
+
+    /* Right now, most of the total processing time spent in this loop, as
+       remote_job_start() will block until the next worker becomes available */
+    job_t*job;
+    int pos = 0;
+    for(job=jobs->first;job;job=job->next) {
+        r[pos] = remote_job_start(job->factory->name, job->data);
+        job->code = 0;
+        pos++;
+    }
+
+    /* Wait for remaining servers and gather results */
+    int open_jobs = jobs->num;
+    printf("%d open jobs\n", open_jobs);
+    while(open_jobs) {
+        int pos = 0;
+        for(job=jobs->first;job;job=job->next) {
+            if(r[pos] && !job->code) {
+                if(remote_job_is_ready(r[pos])) {
+                    job->code = remote_job_read_result(r[pos]);
+                    if(job->code) {
+                        printf("Finished: %s\n", job->factory->name);
+                    } else {
+                        printf("Failed (0x%02x): %s\n", r[pos]->response, job->factory->name);
+                    }
+                    r[pos] = 0;
+                    open_jobs--;
+                } else if(remote_job_age(r[pos]) > config_model_timeout) {
+                    printf("Failed (timeout): %s\n", job->factory->name);
+                    remote_job_cancel(r[pos]);
+                    r[pos] = 0;
+                    open_jobs--;
+                }
+            }
+            pos++;
+        }
+    }
+    free(r);
+    signal(SIGPIPE, old_sigpipe);
+}
+

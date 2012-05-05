@@ -15,7 +15,9 @@
 #include "net.h"
 #include "io.h"
 #include "settings.h"
+#include "job.h"
 #include "test_datasets.h"
+#include "var_selection.h"
 
 static pid_t ppid;
 static void signal_alarm(int signal)
@@ -137,6 +139,9 @@ static void add_broken_server(int port, failure_mode_t failure_mode)
     config_add_remote_server("127.0.0.1", port);
 }
 
+void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array_t*servers);
+jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_name);
+
 int main()
 {
     add_broken_server(8800, GARBAGE_DATA);
@@ -146,19 +151,18 @@ int main()
     add_server(8804);
     add_server(8805);
     add_broken_server(8806, LEAVE_HANGING);
-//    add_server(8802);
-//    add_server(8803);
 
     usleep(100);
 
     dataset_t*dataset = dataset1(2, 4);
     int num_servers = 0;
-    remote_server_t**servers = distribute_dataset(dataset, &num_servers);
+    server_array_t*servers = distribute_dataset(dataset);
     int i;
     usleep(100);
     int*ok = calloc(sizeof(int),num_servers);
-    for(i=0;i<num_servers;i++) {
-        dataset_t*d1 = dataset_read_from_server(servers[i]->host, servers[i]->port, dataset->hash);
+    for(i=0;i<servers->num;i++) {
+        dataset_t*d1 = dataset_read_from_server(servers->servers[i]->host, servers->servers[i]->port, dataset->hash);
+
         if(d1 && !memcmp(d1->hash, dataset->hash, HASH_SIZE)) {
             ok[i] = 1;
         }
@@ -172,14 +176,18 @@ int main()
     config_print_remote_servers();
     printf("\n");
     printf("* working hosts:\n");
-    for(i=0;i<num_servers;i++) {
+    for(i=0;i<servers->num;i++) {
         if(ok[i]) {
             printf(" OK ");
         } else {
             printf("ERR ");
         }
-        remote_server_print(servers[i]);
+        remote_server_print(servers->servers[i]);
     }
+
+    printf("---------------------------------------\n");
+    jobqueue_t*jobs = generate_jobs(NULL, dataset, NULL);
+    distribute_jobs_to_servers(dataset, jobs, servers);
 }
 
 

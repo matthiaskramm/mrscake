@@ -25,6 +25,7 @@
 #include <time.h>
 #include "dataset.h"
 #include "settings.h"
+#include "job.h"
 
 typedef enum {REQUEST_SEND_DATASET,
               REQUEST_RECV_DATASET,
@@ -43,6 +44,11 @@ typedef struct _remote_job {
     response_type_t response;
 } remote_job_t;
 
+typedef struct _server_array {
+    remote_server_t**servers;
+    int num;
+} server_array_t;
+
 int connect_to_host(const char *host, int port);
 node_t* process_job_remotely(const char*model_name, dataset_t*dataset);
 remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset);
@@ -51,8 +57,10 @@ time_t remote_job_age(remote_job_t*j);
 node_t* remote_job_read_result(remote_job_t*j);
 void remote_job_cancel(remote_job_t*j);
 
+void server_array_destroy(server_array_t*);
+
 dataset_t* dataset_read_from_server(const char*host, int port, uint8_t*hash);
-remote_server_t** distribute_dataset(dataset_t*data, int*num_servers);
+server_array_t* distribute_dataset(dataset_t*data);
 
 int start_server(int port);
 #endif
