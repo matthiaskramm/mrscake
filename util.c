@@ -100,3 +100,8 @@ void mkdir_p(const char*_path)
     }
     mkdir(path, 0700);
 }
+
+int imin(int x, int y)
+{
+    return x<y?x:y;
+}

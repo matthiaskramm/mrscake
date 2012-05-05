@@ -32,6 +32,8 @@ char* allocprintf(const char*format, ...);
 char* concat_paths(const char*base, const char*add);
 void mkdir_p(const char*path);
 
+int imin(int x, int y);
+
 #ifdef __cplusplus
 }
 #endif

@@ -39,6 +39,7 @@
 #include "serialize.h"
 #include "settings.h"
 #include "job.h"
+#include "util.h"
 
 typedef struct _worker {
     pid_t pid;
@@ -89,7 +90,7 @@ static void sigchild(int signal)
     }
 }
 
-static void make_request_train_model(writer_t*w, const char*model_name, dataset_t*dataset)
+static void make_request_TRAIN_MODEL(writer_t*w, const char*model_name, dataset_t*dataset)
 {
     write_uint8(w, REQUEST_TRAIN_MODEL);
     w->write(w, dataset->hash, HASH_SIZE);
@@ -97,7 +98,7 @@ static void make_request_train_model(writer_t*w, const char*model_name, dataset_
         return;
     write_string(w, model_name);
 }
-static void process_request_train_model(datacache_t*cache, reader_t*r, writer_t*w)
+static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*w)
 {
     uint8_t hash[HASH_SIZE];
     r->read(r, &hash, HASH_SIZE);
@@ -135,17 +136,16 @@ static void process_request_train_model(datacache_t*cache, reader_t*r, writer_t*
     node_write(code, w, SERIALIZE_DEFAULTS);
 }
 
-static dataset_t* make_request_send_dataset(reader_t*r, writer_t*w, uint8_t*hash)
+static dataset_t* make_request_SEND_DATASET(reader_t*r, writer_t*w, uint8_t*hash)
 {
     write_uint8(w, REQUEST_SEND_DATASET);
     w->write(w, hash, HASH_SIZE);
     uint8_t response = read_uint8(r);
     if(response!=RESPONSE_OK)
         return NULL;
-    printf("make request send dataset\n");
     return dataset_read(r);
 }
-static void process_request_send_dataset(datacache_t*datacache, reader_t*r, writer_t*w)
+static void process_request_SEND_DATASET(datacache_t*datacache, reader_t*r, writer_t*w)
 {
     uint8_t hash[HASH_SIZE];
     r->read(r, &hash, HASH_SIZE);
@@ -162,10 +162,9 @@ static void process_request_send_dataset(datacache_t*datacache, reader_t*r, writ
     printf("worker %d: sending out dataset %s\n", getpid(), hashstr);
     write_uint8(w, RESPONSE_OK);
     dataset_write(dataset, w);
-    printf("worker %d: dataset written\n", getpid());
 }
 
-static void make_request_recv_dataset(reader_t*r, writer_t*w, dataset_t*dataset, remote_server_t*other_server)
+static void make_request_RECV_DATASET(reader_t*r, writer_t*w, dataset_t*dataset, remote_server_t*other_server)
 {
     write_uint8(w, REQUEST_RECV_DATASET);
     w->write(w, dataset->hash, HASH_SIZE);
@@ -178,7 +177,7 @@ static void make_request_recv_dataset(reader_t*r, writer_t*w, dataset_t*dataset,
         dataset_write(dataset, w);
     }
 }
-static void process_request_recv_dataset(datacache_t*datacache, reader_t*r, writer_t*w)
+static void process_request_RECV_DATASET(datacache_t*datacache, reader_t*r, writer_t*w)
 {
     uint8_t hash[HASH_SIZE];
     r->read(r, &hash, HASH_SIZE);
@@ -189,6 +188,7 @@ static void process_request_recv_dataset(datacache_t*datacache, reader_t*r, writ
 
     dataset_t*dataset = datacache_find(datacache, hash);
     if(dataset!=NULL) {
+        w->write(w, dataset->hash, HASH_SIZE);
         write_uint8(w, RESPONSE_DUPL_DATA);
         return;
     }
@@ -203,15 +203,18 @@ static void process_request_recv_dataset(datacache_t*datacache, reader_t*r, writ
         dataset = dataset_read_from_server(host, port, hash);
     }
     if(!dataset) {
+        w->write(w, hash, HASH_SIZE);
         write_uint8(w, RESPONSE_DATA_ERROR);
         return;
     }
     if(memcmp(dataset->hash, hash, HASH_SIZE)) {
         printf("worker %d: dataset has bad hash\n", getpid());
+        w->write(w, hash, HASH_SIZE);
         write_uint8(w, RESPONSE_DATA_ERROR);
         return;
     }
     datacache_store(datacache, dataset);
+    w->write(w, dataset->hash, HASH_SIZE);
     write_uint8(w, RESPONSE_OK);
     printf("worker %d: dataset stored\n", getpid());
 }
@@ -225,7 +228,7 @@ dataset_t* dataset_read_from_server(const char*host, int port, uint8_t*hash)
     writer_t*w = filewriter_new(sock);
     reader_t*r = filereader_with_timeout_new(sock, config_remote_read_timeout);
 
-    dataset_t*dataset = make_request_send_dataset(r, w, hash);
+    dataset_t*dataset = make_request_SEND_DATASET(r, w, hash);
     if(r->error)
         dataset = NULL;
 
@@ -244,13 +247,13 @@ static void process_request(datacache_t*cache, int socket)
 
     switch(request_code) {
         case REQUEST_TRAIN_MODEL:
-            process_request_train_model(cache, r, w);
+            process_request_TRAIN_MODEL(cache, r, w);
         break;
         case REQUEST_RECV_DATASET:
-            process_request_recv_dataset(cache, r, w);
+            process_request_RECV_DATASET(cache, r, w);
         break;
         case REQUEST_SEND_DATASET:
-            process_request_send_dataset(cache, r, w);
+            process_request_SEND_DATASET(cache, r, w);
         break;
     }
     w->finish(w);
@@ -352,7 +355,6 @@ int start_server(int port)
         if(!pid) {
             sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
             process_request(server.datacache, newsock);
-            printf("worker %d: close\n", getpid());
             close(newsock);
             _exit(0);
         }
@@ -366,16 +368,17 @@ int start_server(int port)
     }
 }
 
-int connect_to_host(const char *host, int port)
+int connect_to_remote_server(remote_server_t*server)
 {
     int i, ret;
     char buf_ip[100];
     struct sockaddr_in sin;
 
-    struct hostent *he = gethostbyname(host);
+    struct hostent *he = gethostbyname(server->host);
     if(!he) {
         fprintf(stderr, "gethostbyname returned %d\n", h_errno);
-        herror(host);
+        herror(server->host);
+        remote_server_is_broken(server, hstrerror(h_errno));
         return -1;
     }
 
@@ -384,12 +387,13 @@ int connect_to_host(const char *host, int port)
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
-    sin.sin_port = htons(port);
+    sin.sin_port = htons(server->port);
     memcpy(&sin.sin_addr.s_addr, ip, 4);
 
     int sock = socket(AF_INET, SOCK_STREAM, 6);
     if(sock < 0) {
         perror("socket");
+        remote_server_is_broken(server, strerror(errno));
         return -1;
     }
 
@@ -397,40 +401,71 @@ int connect_to_host(const char *host, int port)
     ret = connect(sock, (struct sockaddr*)&sin, sizeof(struct sockaddr_in));
     if(ret < 0) {
         perror("connect");
+        remote_server_is_broken(server, strerror(errno));
         return -1;
     }
     return sock;
 }
 
-static int remote_server_recv_dataset(remote_server_t*server, dataset_t*data, remote_server_t*from_server)
+int connect_to_host(const char*host, int port)
 {
-    int sock = connect_to_host(server->host, server->port);
-    if(sock<0)
+    remote_server_t dummy;
+    dummy.host = host;
+    dummy.port = port;
+    dummy.broken = NULL;
+    return connect_to_remote_server(&dummy);
+}
+
+static int send_dataset_to_remote_server(remote_server_t*server, dataset_t*data, remote_server_t*from_server)
+{
+    int sock = connect_to_remote_server(server);
+    if(sock<0) {
         return RESPONSE_READ_ERROR;
+    }
     writer_t*w = filewriter_new(sock);
     reader_t*r = filereader_with_timeout_new(sock, config_remote_read_timeout);
-    make_request_recv_dataset(r, w, data, from_server);
+    make_request_RECV_DATASET(r, w, data, from_server);
+
+    char hash[HASH_SIZE];
+    r->read(r, hash, HASH_SIZE);
     int resp = read_uint8(r);
     if(r->error) {
+        remote_server_is_broken(server, "read error after RECV_DATASET");
         resp = RESPONSE_READ_ERROR;
+    } else if(memcmp(hash, data->hash, HASH_SIZE)) {
+        remote_server_is_broken(server, "bad data checksum after RECV_DATASET");
+        resp = RESPONSE_DATA_ERROR;
     }
+
     w->finish(w);
     r->dealloc(r);
     close(sock);
+
     return resp;
 }
 
 remote_server_t** distribute_dataset(dataset_t*data, int*num_servers)
 {
+    /* write returns an error, instead of raising a signal */
+    sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
+
     int*status = calloc(sizeof(int), config_num_remote_servers);
 
     remote_server_t**seeds = calloc(sizeof(remote_server_t), config_num_remote_servers);
-    int num_seeds = 0;
 
-    /* send dataset to "seeded" hosts */
+    /* send dataset to "seeded" nodes */
     printf("seeding %d/%d hosts...\n", config_num_seeded_hosts, config_num_remote_servers);
     int i;
-    for(i=0; i<config_num_seeded_hosts && i<config_num_remote_servers; i++) {
+    int num_errors = 0;
+    int num_seeds = 0;
+    int hosts_to_seed = imin(config_num_seeded_hosts, config_num_remote_servers);
+
+    while(num_seeds < hosts_to_seed) {
+        if(num_seeds + num_errors == config_num_remote_servers) {
+            printf("error seeding %d/%d hosts: %d errors\n", hosts_to_seed-num_seeds, hosts_to_seed, num_errors);
+            goto error;
+        }
+
         int seed_nr;
         while(1) {
             seed_nr = lrand48() % config_num_remote_servers;
@@ -438,23 +473,27 @@ remote_server_t** distribute_dataset(dataset_t*data, int*num_servers)
                 break;
         }
         remote_server_t*server = &config_remote_servers[seed_nr];
-        int resp = remote_server_recv_dataset(server, data, NULL);
+        printf("trying to seed host %s...\n", server->name);
+        int resp = send_dataset_to_remote_server(server, data, NULL);
         switch(resp) {
             case RESPONSE_DUPL_DATA:
             case RESPONSE_OK:
-                printf("%s: seeded host\n", server->name);
+                printf("seeded host %s\n", server->name);
                 status[seed_nr] = 1;
                 seeds[num_seeds++] = server;
             break;
+            default:
             case RESPONSE_READ_ERROR:
             case RESPONSE_DATA_ERROR:
-                printf("%s: error seeding host (%d)\n", server->name, resp);
+                printf("error seeding host %s (%d)\n", server->name, resp);
                 status[seed_nr] = -1;
+                num_errors++;
+                usleep(100);
             break;
         }
     }
 
-    /* make servers interchange the dataset */
+    /* make nodes interchange the dataset */
     for(i=0;i<config_num_remote_servers;i++) {
         if(status[i]) {
             continue;
@@ -463,7 +502,7 @@ remote_server_t** distribute_dataset(dataset_t*data, int*num_servers)
         int seed_nr = lrand48() % num_seeds;
         remote_server_t*other_server = seeds[seed_nr];
         printf("sending dataset from host %s to host %s\n", other_server->name, server->name);
-        int resp = remote_server_recv_dataset(server, data, other_server);
+        int resp = send_dataset_to_remote_server(server, data, other_server);
         switch(resp) {
             case RESPONSE_DUPL_DATA:
             case RESPONSE_OK:
@@ -480,6 +519,9 @@ remote_server_t** distribute_dataset(dataset_t*data, int*num_servers)
     }
     *num_servers = num_seeds;
     return seeds;
+error:
+    signal(SIGPIPE, old_sigpipe);
+    return NULL;
 }
 
 remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset)
@@ -492,8 +534,8 @@ remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset)
         }
         static int round_robin = 0;
         remote_server_t*s = &config_remote_servers[(round_robin++)%config_num_remote_servers];
-        printf("Starting %s on %s\n", model_name, s->host);fflush(stdout);
-        sock = connect_to_host(s->host, s->port);
+        printf("Starting %s on %s\n", model_name, s->name);fflush(stdout);
+        sock = connect_to_remote_server(s);
         if(sock>=0) {
             break;
         }
@@ -501,7 +543,7 @@ remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset)
     }
 
     writer_t*w = filewriter_new(sock);
-    make_request_train_model(w, model_name, dataset);
+    make_request_TRAIN_MODEL(w, model_name, dataset);
     w->finish(w);
 
     remote_job_t*j = malloc(sizeof(remote_job_t));

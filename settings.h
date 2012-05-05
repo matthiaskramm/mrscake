@@ -28,6 +28,8 @@ typedef struct remote_server {
     const char*host;
     int port;
     const char*name;
+
+    const char*broken;
 } remote_server_t;
 
 extern int config_num_remote_servers;
@@ -47,4 +49,9 @@ extern int config_num_seeded_hosts;
 
 void config_parse_remote_servers(const char*filename);
 void config_add_remote_server(const char*host, int port);
+
+void config_print_remote_servers();
+
+void remote_server_print(remote_server_t*server);
+void remote_server_is_broken(remote_server_t*server, const char*error);
 #endif

@@ -62,10 +62,10 @@ ast.$(O): ast.c ast.h mrscake.h
 mrscake.$(O): mrscake.c mrscake.h mrscake.h
 	$(CC) -c $< -o $@
 
-net.$(O): net.c net.h mrscake.h
+net.$(O): net.c net.h mrscake.h settings.h
 	$(CC) -c $< -o $@
 
-job.$(O): job.c job.h
+job.$(O): job.c job.h settings.h
 	$(CC) -c $< -o $@
 
 ast_transforms.$(O): ast_transforms.c ast_transforms.h ast.h

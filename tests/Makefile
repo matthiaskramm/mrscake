@@ -1,6 +1,6 @@
 all: test_codegen test_net
 
-CC=gcc -g
+CC=gcc -g -DHAVE_SHA1
 
 RUBY_LIBS=-lruby18
 PYTHON_LIBS=-lpthread -lrt -lpython2.6

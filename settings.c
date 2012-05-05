@@ -40,6 +40,28 @@ int config_remote_worker_timeout = 60;
 
 static int remote_server_size = 0;
 
+void remote_server_is_broken(remote_server_t*server, const char*error)
+{
+    if(server->broken)
+        free((void*)server->broken);
+    server->broken = strdup(error);
+}
+void remote_server_print(remote_server_t*server)
+{
+    printf("%s:%d", server->host, server->port);
+    if(server->broken)
+        printf(" [%s]", server->broken);
+    printf("\n");
+}
+void config_print_remote_servers()
+{
+    int i = 0;
+    for(i=0;i<config_num_remote_servers;i++) {
+        printf("REMOTE SERVER %d: ", i);
+        remote_server_print(&config_remote_servers[i]);
+    }
+}
+
 void config_add_remote_server(const char*host, int port)
 {
     if(!remote_server_size) {
@@ -53,6 +75,7 @@ void config_add_remote_server(const char*host, int port)
     s->host = host;
     s->port = port;
     s->name = allocprintf("%s:%d", host, port);
+    s->broken = NULL;
     config_do_remote_processing = true;
 }
 
