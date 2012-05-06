@@ -34,7 +34,7 @@ typedef struct _job {
     model_factory_t*factory;
     node_t*code;
 
-    int score;
+    int32_t score;
 
     struct _job*prev;
     struct _job*next;

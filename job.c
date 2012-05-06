@@ -32,6 +32,7 @@
 #include "settings.h"
 #include "net.h"
 #include "serialize.h"
+#include "transform.h"
 
 void job_train_and_score(job_t*job)
 {

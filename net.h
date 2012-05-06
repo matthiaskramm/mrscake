@@ -54,7 +54,6 @@ node_t* process_job_remotely(const char*model_name, dataset_t*dataset);
 remote_job_t* remote_job_start(const char*model_name, const char*transforms, dataset_t*dataset, server_array_t*servers);
 bool remote_job_is_ready(remote_job_t*j);
 time_t remote_job_age(remote_job_t*j);
-node_t* remote_job_read_result(remote_job_t*j);
 void remote_job_cancel(remote_job_t*j);
 
 void server_array_destroy(server_array_t*);

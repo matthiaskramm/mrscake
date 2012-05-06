@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <memory.h>
@@ -123,7 +124,7 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
     if(r->error)
         return;
 
-    printf("worker %d: processing model %s\n", getpid(), name);
+    printf("worker %d: processing model %s|%s\n", getpid(), transforms, name);
     model_factory_t* factory = model_factory_get_by_name(name);
     if(!factory) {
         printf("worker %d: unknown factory '%s'\n", getpid(), name);
@@ -138,11 +139,11 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
     j.code = 0;
     j.transforms = transforms;
     job_process(&j);
-    node_t*code = j.code;
 
     printf("worker %d: writing out model data\n", getpid());
     write_uint8(w, RESPONSE_OK);
-    node_write(code, w, SERIALIZE_DEFAULTS);
+    write_compressed_int(w, j.score);
+    node_write(j.code, w, SERIALIZE_DEFAULTS);
 }
 
 static dataset_t* make_request_SEND_DATASET(reader_t*r, writer_t*w, uint8_t*hash)
@@ -594,24 +595,24 @@ bool remote_job_is_ready(remote_job_t*j)
     return !!FD_ISSET(j->socket, &readfds);
 }
 
-node_t* remote_job_read_result(remote_job_t*j)
+void remote_job_read_result(remote_job_t*j, job_t*dest)
 {
     reader_t*r = filereader_with_timeout_new(j->socket, config_remote_read_timeout);
 
     j->response = read_uint8(r);
-    if(j->response != RESPONSE_OK)
-        return NULL;
-
-    node_t*code = node_read(r);
+    if(j->response != RESPONSE_OK) {
+        dest->score = INT_MAX;
+        dest->code = NULL;
+    } else {
+        dest->score = read_compressed_int(r);
+        dest->code = node_read(r);
+    }
     r->dealloc(r);
-    free(j);
-    return code;
 }
 
 void remote_job_cancel(remote_job_t*j)
 {
     close(j->socket);
-    free(j);
 }
 
 time_t remote_job_age(remote_job_t*j)
@@ -644,20 +645,19 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
         for(job=jobs->first;job;job=job->next) {
             if(r[pos] && !job->code) {
                 if(remote_job_is_ready(r[pos])) {
-                    job->code = remote_job_read_result(r[pos]);
+                    remote_job_read_result(r[pos], job);
                     if(job->code) {
                         printf("Finished: %s\n", job->factory->name);
                     } else {
                         printf("Failed (0x%02x): %s\n", r[pos]->response, job->factory->name);
                     }
-                    r[pos] = 0;
-                    open_jobs--;
                 } else if(remote_job_age(r[pos]) > config_model_timeout) {
                     printf("Failed (timeout): %s\n", job->factory->name);
                     remote_job_cancel(r[pos]);
-                    r[pos] = 0;
-                    open_jobs--;
                 }
+                free(r[pos]);
+                r[pos] = 0;
+                open_jobs--;
             }
             pos++;
         }

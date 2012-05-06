@@ -452,6 +452,8 @@ dataset_t* dataset_apply_named_transformation(dataset_t*old_dataset, const char*
 
 dataset_t* dataset_apply_transformations(dataset_t*dataset, const char*transform)
 {
+    if(!transform)
+        return dataset;
     char*s = strdup(transform);
     char*end = s+strlen(s);
     char*p = s;
