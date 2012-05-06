@@ -3,6 +3,7 @@
 import sys
 import re
 from optparse import OptionParser
+import os
 
 VERBOSE = 0
 
@@ -165,10 +166,12 @@ if headers:
 
 import mrscake
 
-with open("servers.txt", "rb") as fi:
-    for line in fi.readlines():
-        line = line.strip()
-        mrscake.add_server(line)
+if os.path.isfile("servers.txt"):
+    with open("servers.txt", "rb") as fi:
+        for line in fi.readlines():
+            if not line.startswith("#"):
+                line = line.strip()
+                mrscake.add_server(line)
 
 dataset = mrscake.DataSet()
 if headers:
