@@ -51,7 +51,7 @@ class Server:
             os.kill(self.pid, 9)
             os.waitpid(self.pid, 0)
             self.pid = None
-        system("killall -9 mrscake-job-server");
+        os.system("killall -9 mrscake-job-server");
 
 # distribute the load to the git server, by delaying
 # instance startup by a random number of seconds
