@@ -36,6 +36,7 @@ typedef enum {RESPONSE_OK,
               RESPONSE_DUPL_DATA,
               RESPONSE_DATASET_UNKNOWN,
               RESPONSE_FACTORY_UNKNOWN,
+              RESPONSE_GO_AHEAD,
               RESPONSE_READ_ERROR=-1} response_type_t;
 
 typedef struct _remote_job {
