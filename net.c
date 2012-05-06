@@ -639,13 +639,16 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
                     } else {
                         printf("Failed (0x%02x): %s\n", r[pos]->response, job->factory->name);
                     }
+                    free(r[pos]);
+                    r[pos] = 0;
+                    open_jobs--;
                 } else if(remote_job_age(r[pos]) > config_model_timeout) {
                     printf("Failed (timeout): %s\n", job->factory->name);
                     remote_job_cancel(r[pos]);
+                    free(r[pos]);
+                    r[pos] = 0;
+                    open_jobs--;
                 }
-                free(r[pos]);
-                r[pos] = 0;
-                open_jobs--;
             }
             pos++;
         }
