@@ -188,6 +188,7 @@ static void process_request_RECV_DATASET(datacache_t*datacache, reader_t*r, writ
     if(dataset!=NULL) {
         w->write(w, dataset->hash, HASH_SIZE);
         write_uint8(w, RESPONSE_DUPL_DATA);
+        printf("worker %d: dataset already known\n", getpid());
         return;
     }
 
@@ -354,6 +355,7 @@ int start_server(int port)
             signal(SIGALRM, worker_timeout_signal);
             alarm(config_remote_worker_timeout);
             process_request(server.datacache, newsock);
+            printf("pid %d: closing socket\n", pid);
             close(newsock);
             _exit(0);
         }
