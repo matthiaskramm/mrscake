@@ -166,6 +166,11 @@ static void make_request_RECV_DATASET(reader_t*r, writer_t*w, dataset_t*dataset,
 {
     write_uint8(w, REQUEST_RECV_DATASET);
     w->write(w, dataset->hash, HASH_SIZE);
+
+    uint8_t status = read_uint8(r);
+    if(status != RESPONSE_GO_AHEAD)
+        return;
+
     if(other_server) {
         write_string(w, other_server->host);
         write_compressed_uint(w, other_server->port);
@@ -186,10 +191,13 @@ static void process_request_RECV_DATASET(datacache_t*datacache, reader_t*r, writ
 
     dataset_t*dataset = datacache_find(datacache, hash);
     if(dataset!=NULL) {
+        printf("worker %d: dataset already known\n", getpid());
+        write_uint8(w, RESPONSE_DUPL_DATA);
         w->write(w, dataset->hash, HASH_SIZE);
         write_uint8(w, RESPONSE_DUPL_DATA);
-        printf("worker %d: dataset already known\n", getpid());
         return;
+    } else {
+        write_uint8(w, RESPONSE_GO_AHEAD);
     }
 
     char*host = read_string(r);
