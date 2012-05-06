@@ -113,19 +113,21 @@ void config_parse_remote_servers(const char*filename)
             if(end > line) {
                 *end = 0;
                 //parse line
-                char*colon = strchr(line, ':');
-                char*server;
-                int port;
-                if(colon) {
-                    *colon = 0;
-                    server = line;
-                    port = atoi(colon+1);
-                } else {
-                    server = line;
-                    port = MRSCAKE_DEFAULT_PORT;
+                if(line[0]!='#') {
+                    char*colon = strchr(line, ':');
+                    char*server;
+                    int port;
+                    if(colon) {
+                        *colon = 0;
+                        server = line;
+                        port = atoi(colon+1);
+                    } else {
+                        server = line;
+                        port = MRSCAKE_DEFAULT_PORT;
+                    }
+                    config_add_remote_server(server, port);
+                    printf("%s %d\n", server, port);
                 }
-                config_add_remote_server(server, port);
-                printf("%s %d\n", server, port);
             }
             line = p+1;
         }
