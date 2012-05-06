@@ -32,6 +32,8 @@ int main(int argn, char*argv[])
 {
     trainingdata_t* data = trainingdata_new();
 
+    config_parse_remote_servers("../servers.txt");
+
     int t;
     for(t=0;t<HEIGHT;t++) {
         example_t*e = example_new(WIDTH);

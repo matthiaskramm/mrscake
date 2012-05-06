@@ -42,13 +42,10 @@ CV_OBJECTS=lib/alloc.$(O) lib/ann_mlp.$(O) lib/arithm.$(O) lib/array.$(O) lib/bo
 	lib/matrix.$(O) lib/missing.$(O) lib/persistence.$(O) lib/precomp.$(O) lib/rand.$(O) lib/rtrees.$(O) lib/stat.$(O) lib/svm.$(O) lib/system.$(O) lib/tables.$(O) \
 	lib/testset.$(O) lib/tree.$(O)
 
-all: multimodel ast model subset mrscake-job-server mrscake.$(A) mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
+all: mrscake-job-server mrscake.$(A) mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
-
-multimodel.$(O): multimodel.cpp
-	$(CXX) -Ilib $< -c -o $@
 
 model.$(O): model.c constant.h ast.h
 	$(CC) -c $< -o $@
@@ -140,27 +137,6 @@ model_knearest.$(O): model_knearest.c mrscake.h ast.h cvtools.h dataset.h easy_a
 varselect_cv_dtree.$(O): varselect_cv_dtree.cpp mrscake.h cvtools.h dataset.h var_selection.h
 	$(CXX) -Ilib $< -c -o $@
 
-test_model.$(O): test_model.c mrscake.h
-	$(CC) -c $< -o $@
-
-test_ast.$(O): test_ast.c mrscake.h ast.h
-	$(CC) -c $< -o $@
-
-test_subset.$(O): test_subset.c mrscake.h ast.h
-	$(CC) -c $< -o $@
-
-ast: test_ast.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) test_ast.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
-model: test_model.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) test_model.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
-subset: test_subset.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) test_subset.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
-test_server: test_server.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) test_server.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
 mrscake-job-server: server.$(O) $(OBJECTS) lib/libml.a
 	$(CXX) server.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
@@ -189,9 +165,6 @@ install:
 	$(INSTALL) mrscake.$(SO_PYTHON) $(PYTHON_INSTALLDIR)/mrscake.$(SO_PYTHON)
 
 # ------------ old test code -----------------
-
-multimodel: multimodel.$(O) lib/libml.a $(OBJECTS)
-	$(CXX) multimodel.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
 test: mrscake.so
 	python test_python_module.py
