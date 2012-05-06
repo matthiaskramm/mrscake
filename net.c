@@ -96,13 +96,14 @@ static void worker_timeout_signal(int signal)
     kill(getpid(), 9);
 }
 
-static void make_request_TRAIN_MODEL(writer_t*w, const char*model_name, dataset_t*dataset)
+static void make_request_TRAIN_MODEL(writer_t*w, const char*model_name, const char*transforms, dataset_t*dataset)
 {
     write_uint8(w, REQUEST_TRAIN_MODEL);
     w->write(w, dataset->hash, HASH_SIZE);
     if(w->error)
         return;
     write_string(w, model_name);
+    write_string(w, transforms);
 }
 static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*w)
 {
@@ -118,6 +119,7 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
     }
 
     char*name = read_string(r);
+    char*transforms = read_string(r);
     if(r->error)
         return;
 
@@ -134,6 +136,7 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
     j.factory = factory;
     j.data = dataset;
     j.code = 0;
+    j.transforms = transforms;
     job_process(&j);
     node_t*code = j.code;
 
@@ -542,7 +545,7 @@ error:
     return NULL;
 }
 
-remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset, server_array_t*servers)
+remote_job_t* remote_job_start(const char*model_name, const char*transforms, dataset_t*dataset, server_array_t*servers)
 {
     int sock;
     while(1) {
@@ -566,7 +569,7 @@ remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset, server_
     }
 
     writer_t*w = filewriter_new(sock);
-    make_request_TRAIN_MODEL(w, model_name, dataset);
+    make_request_TRAIN_MODEL(w, model_name, transforms, dataset);
     w->finish(w);
 
     remote_job_t*j = malloc(sizeof(remote_job_t));
@@ -628,7 +631,7 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
     job_t*job;
     int pos = 0;
     for(job=jobs->first;job;job=job->next) {
-        r[pos] = remote_job_start(job->factory->name, job->data, servers);
+        r[pos] = remote_job_start(job->factory->name, job->transforms, job->data, servers);
         job->code = 0;
         pos++;
     }
