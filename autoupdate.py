@@ -86,6 +86,9 @@ while 1:
             server.start()
         except:
             print exception_as_string()
+            fi = open("/tmp/mrscake.err", "wb")
+            fi.write(exception_as_string())
+            fi.close()
 
     time.sleep(30)
 
