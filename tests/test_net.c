@@ -139,7 +139,6 @@ static void add_broken_server(int port, failure_mode_t failure_mode)
     config_add_remote_server("127.0.0.1", port);
 }
 
-void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array_t*servers);
 jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_name);
 
 int main()
@@ -186,7 +185,8 @@ int main()
     }
 
     printf("---------------------------------------\n");
-    jobqueue_t*jobs = generate_jobs(NULL, dataset, NULL);
+    varorder_t*order = dtree_var_order(dataset);
+    jobqueue_t*jobs = generate_jobs(order, dataset, NULL);
     distribute_jobs_to_servers(dataset, jobs, servers);
 }
 

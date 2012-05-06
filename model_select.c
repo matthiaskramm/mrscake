@@ -162,8 +162,6 @@ jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_nam
     return queue;
 }
 
-extern varorder_t*dtree_var_order(dataset_t*d);
-
 model_t* job_to_model(job_t*job)
 {
     if(!job->code)

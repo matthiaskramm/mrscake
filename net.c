@@ -535,7 +535,7 @@ error:
     return NULL;
 }
 
-remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset)
+remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset, server_array_t*servers)
 {
     int sock;
     while(1) {
@@ -544,9 +544,7 @@ remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset)
             exit(1);
         }
         static int round_robin = 0;
-        remote_server_t*s = &config_remote_servers[(round_robin++)%config_num_remote_servers];
-        if(s->broken)
-            continue;
+        remote_server_t*s = servers->servers[(round_robin++)%servers->num];
 
         printf("Starting %s on %s\n", model_name, s->name);fflush(stdout);
         sock = connect_to_remote_server(s);
@@ -619,7 +617,7 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
     job_t*job;
     int pos = 0;
     for(job=jobs->first;job;job=job->next) {
-        r[pos] = remote_job_start(job->factory->name, job->data);
+        r[pos] = remote_job_start(job->factory->name, job->data, servers);
         job->code = 0;
         pos++;
     }
