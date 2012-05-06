@@ -495,7 +495,7 @@ server_array_t* distribute_dataset(dataset_t*data)
         switch(resp) {
             case RESPONSE_DUPL_DATA:
             case RESPONSE_OK:
-                printf("seeded host %s\n", server->name);
+                printf("seeded host %s%s\n", server->name, resp==RESPONSE_DUPL_DATA?" (cached)":"");
                 status[seed_nr] = 1;
                 seeds[num_seeds++] = server;
             break;
