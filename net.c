@@ -56,22 +56,9 @@ typedef struct _server {
 static volatile server_t server;
 static sigset_t sigchld_set;
 
-/* unused */
-static void clean_old_workers()
-{
-    sigprocmask(SIG_BLOCK, &sigchld_set, 0);
-    int t;
-    for(t=0;t<server.num_workers;t++) {
-        if(time(0) - server.jobs[t].start_time > config_remote_worker_timeout) {
-            printf("killing worker %d\n", server.jobs[t].pid);
-            kill(server.jobs[t].pid, 9);
-        }
-    }
-    sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
-}
-
 static void sigchild(int signal)
 {
+    sigprocmask(SIG_BLOCK, &sigchld_set, 0);
     while(1) {
         int status;
         pid_t pid = waitpid(-1, &status, WNOHANG);
@@ -90,6 +77,7 @@ static void sigchild(int signal)
             }
         }
     }
+    sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
 }
 
 static void worker_timeout_signal(int signal)
@@ -601,7 +589,7 @@ void remote_job_read_result(remote_job_t*j, job_t*dest)
 
     j->response = read_uint8(r);
     if(j->response != RESPONSE_OK) {
-        dest->score = INT_MAX;
+        dest->score = INT32_MAX;
         dest->code = NULL;
     } else {
         dest->score = read_compressed_int(r);

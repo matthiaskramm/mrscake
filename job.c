@@ -25,6 +25,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <assert.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "job.h"
@@ -41,6 +42,7 @@ void job_train_and_score(job_t*job)
     dataset_t* dataset = dataset_apply_transformations(job->data, job->transforms);
     node_t*code = job->factory->train(job->factory, dataset);
     dataset = dataset_revert_all_transformations(dataset, &code);
+    job->score = INT32_MAX;
     if(code) {
         job->code = code;
         job->score = code_score(job->code, job->data);
