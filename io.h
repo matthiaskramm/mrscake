@@ -60,7 +60,7 @@ typedef struct _reader
     unsigned char bitpos;
     int pos;
 
-    char*error;
+    const char*error;
 } reader_t;
 
 typedef struct _writer
@@ -75,7 +75,7 @@ typedef struct _writer
     unsigned char bitpos;
     int pos;
 
-    const char*error; // TODO
+    const char*error;
 } writer_t;
 
 void reader_resetbits(reader_t*r);
