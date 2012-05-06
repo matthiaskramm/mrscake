@@ -358,6 +358,7 @@ writer_t* memwriter_new(void*data, int len)
     w->bitpos = 0;
     w->mybyte = 0;
     w->pos = 0;
+    w->error = NULL;
     return w;
 }
 
@@ -449,6 +450,7 @@ writer_t* growingmemwriter_new()
     w->bitpos = 0;
     w->mybyte = 0;
     w->pos = 0;
+    w->error = NULL;
     return w;
 }
 writer_t* growingmemwriter_new2(uint32_t grow)
@@ -513,6 +515,7 @@ writer_t* filewriter_new(int handle)
     w->bitpos = 0;
     w->mybyte = 0;
     w->pos = 0;
+    w->error = NULL;
     return w;
 }
 writer_t* filewriter_new2(const char*filename)
@@ -559,6 +562,7 @@ writer_t* nullwriter_new()
     w->bitpos = 0;
     w->mybyte = 0;
     w->pos = 0;
+    w->error = NULL;
     return w;
 }
 
@@ -628,6 +632,7 @@ writer_t* sha1writer_new()
     w->bitpos = 0;
     w->mybyte = 0;
     w->pos = 0;
+    w->error = NULL;
     return w;
 #else
     fprintf(stderr, "Error: compiled without crypto support");
@@ -905,6 +910,7 @@ writer_t* zlibdeflatewriter_new(writer_t*output)
     if (ret != Z_OK) zlib_error(ret, "bitio:deflate_init", &z->zs);
     w->bitpos = 0;
     w->mybyte = 0;
+    w->error = NULL;
     z->zs.next_out = z->writebuffer;
     z->zs.avail_out = ZLIB_BUFFER_SIZE;
     return w;

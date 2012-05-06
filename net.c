@@ -165,7 +165,11 @@ static void process_request_SEND_DATASET(datacache_t*datacache, reader_t*r, writ
 static void make_request_RECV_DATASET(reader_t*r, writer_t*w, dataset_t*dataset, remote_server_t*other_server)
 {
     write_uint8(w, REQUEST_RECV_DATASET);
+    if(w->error)
+        return;
     w->write(w, dataset->hash, HASH_SIZE);
+    if(w->error)
+        return;
 
     uint8_t status = read_uint8(r);
     if(status != RESPONSE_GO_AHEAD)
