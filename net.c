@@ -55,7 +55,8 @@ typedef struct _server {
 static volatile server_t server;
 static sigset_t sigchld_set;
 
-void clean_old_workers()
+/* unused */
+static void clean_old_workers()
 {
     sigprocmask(SIG_BLOCK, &sigchld_set, 0);
     int t;
@@ -88,6 +89,11 @@ static void sigchild(int signal)
             }
         }
     }
+}
+
+static void worker_timeout_signal(int signal)
+{
+    kill(getpid(), 9);
 }
 
 static void make_request_TRAIN_MODEL(writer_t*w, const char*model_name, dataset_t*dataset)
@@ -345,7 +351,6 @@ int start_server(int port)
         while(server.num_workers >= config_number_of_remote_workers) {
             printf("Wait for free worker (%d/%d)\n", server.num_workers, config_number_of_remote_workers);
             sleep(1);
-            clean_old_workers();
         }
 
         /* block child signals while we're modifying num_workers / jobs */
@@ -354,6 +359,8 @@ int start_server(int port)
         pid_t pid = fork();
         if(!pid) {
             sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
+            signal(SIGALRM, worker_timeout_signal);
+            alarm(config_remote_worker_timeout);
             process_request(server.datacache, newsock);
             close(newsock);
             _exit(0);
@@ -539,8 +546,12 @@ remote_job_t* remote_job_start(const char*model_name, dataset_t*dataset, server_
 {
     int sock;
     while(1) {
-        if(!config_has_remote_servers()) {
+        if(!config_num_remote_servers) {
             fprintf(stderr, "No remote servers configured.\n");
+            exit(1);
+        }
+        if(!config_has_remote_servers()) {
+            fprintf(stderr, "No remote servers available.\n");
             exit(1);
         }
         static int round_robin = 0;
