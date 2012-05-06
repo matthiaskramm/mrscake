@@ -91,14 +91,15 @@ static int read_with_retry(reader_t*r, int handle, void*_data, int len)
     while(pos<len) {
         int ret = read(handle, data+pos, len-pos);
         if(ret<0) {
-            if(errno == EINTR)
+            if(errno == EINTR || errno == EAGAIN)
                 continue;
-            perror("read");
+            r->error = strerror(errno);
             return ret;
         }
         if(ret==0) {
             // EOF
-            return ret;
+            r->error = "short read";
+            return pos;
         }
         pos += ret;
     }
@@ -474,12 +475,20 @@ typedef struct _filewrite
     char free_handle;
 } filewrite_t;
 
-static int writer_filewrite_write(writer_t*w, void* data, int len) 
+static int writer_filewrite_write(writer_t*w, void* data, int len)
 {
+    if(len == 0) {
+        return 0;
+    }
     filewrite_t * fw= (filewrite_t*)w->internal;
     w->pos += len;
-
-    return write(fw->handle, data, len);
+    int ret = write(fw->handle, data, len);
+    if(ret<=0) {
+        w->error = strerror(errno);
+    } else if(ret<len) {
+        w->error = "short write";
+    }
+    return ret;
 }
 static void writer_filewrite_finish(writer_t*w)
 {
@@ -1066,7 +1075,7 @@ char*read_string(reader_t*r)
         int ret = r->read(r, &b, 1);
         if(ret<=0) {
             g->finish(g);
-            return NULL;
+            return strdup("");
         }
         write_uint8(g, b);
         if(!b)
@@ -1080,7 +1089,7 @@ char*read_string(reader_t*r)
 void write_string(writer_t*w, const char*s)
 {
     char zero = 0;
-    if(!s) {
+    if(!s || !*s) {
         w->write(w, &zero, 1);
     } else {
         int l = strlen(s);
