@@ -154,11 +154,10 @@ int main()
     usleep(100);
 
     dataset_t*dataset = dataset1(2, 4);
-    int num_servers = 0;
     server_array_t*servers = distribute_dataset(dataset);
     int i;
     usleep(100);
-    int*ok = calloc(sizeof(int),num_servers);
+    int*ok = calloc(sizeof(int),servers->num);
     for(i=0;i<servers->num;i++) {
         dataset_t*d1 = dataset_read_from_server(servers->servers[i]->host, servers->servers[i]->port, dataset->hash);
 
