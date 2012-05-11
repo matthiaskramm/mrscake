@@ -33,6 +33,7 @@ def restart_script():
 class Server:
     def __init__(self):
         self.started = False
+        self.pid = None
 
     def start(self):
         self.started = True
