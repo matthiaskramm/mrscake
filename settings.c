@@ -31,7 +31,7 @@ int config_job_wait_timeout = 300;
 int config_remote_read_timeout = 10;
 int config_model_timeout = 15;
 bool config_do_remote_processing = false;
-int config_number_of_remote_workers = 32;
+int config_number_of_remote_workers = 2;
 int config_verbosity = 1;
 char*config_dataset_cache_directory = "/tmp/mrscake";
 int config_num_seeded_hosts = 1;
@@ -77,7 +77,7 @@ void config_add_remote_server(const char*host, int port)
     if(!remote_server_size) {
         remote_server_size = 32;
         config_remote_servers = malloc(sizeof(remote_server_t)*remote_server_size);
-    } else if(config_num_remote_servers <= remote_server_size) {
+    } else if(config_num_remote_servers >= remote_server_size) {
         remote_server_size *= 2;
         config_remote_servers = realloc(config_remote_servers, sizeof(remote_server_t)*remote_server_size);
     }
