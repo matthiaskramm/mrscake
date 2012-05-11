@@ -32,10 +32,10 @@ def restart_script():
 
 class Server:
     def __init__(self):
-        pass
+        self.started = False
 
     def start(self):
-        self.started  = 1
+        self.started = True
         try:
             self.pid = os.fork()
             if not self.pid:
@@ -53,7 +53,7 @@ class Server:
             os.waitpid(self.pid, 0)
             self.pid = None
         os.system("killall -9 mrscake-job-server");
-        self.started = 0
+        self.started = False
 
 # distribute the load to the git server, by delaying
 # instance startup by a random number of seconds
