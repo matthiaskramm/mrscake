@@ -1,6 +1,7 @@
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
 ifneq ($(IS_MACOS),) # Mac compile
+    CPPFLAGS=-DHAVE_SHA1
     LIBS=-lz -lpthread -lcrypto
     PYTHON_LIB?=-lpython2.6
     PYTHON_INCLUDE?=-I/usr/include/python2.6
