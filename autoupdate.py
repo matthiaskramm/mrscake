@@ -47,6 +47,7 @@ class Server:
         except:
             print "Error spawning server"
             self.pid = None
+            self.started = False
 
     def stop(self):
         if self.pid:
