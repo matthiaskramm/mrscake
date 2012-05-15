@@ -8,8 +8,13 @@ ifneq ($(IS_MACOS),) # Mac compile
     PYTHON_INSTALLDIR?=/usr/lib/python2.6/
     RUBY_LDFLAGS?=-shared
     RUBY_LIB?=-lruby
-    RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
-    RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin10.0
+    ifeq ($(shell test -d /usr/lib/ruby/1.8/universal-darwin10.0 && echo 10.0),10.0)
+      RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
+      RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin10.0
+    else
+      RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin11.0
+      RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin11.0
+    endif
     SO_PYTHON=so
     SO_RUBY=bundle
 endif
