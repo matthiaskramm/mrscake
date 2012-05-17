@@ -537,8 +537,8 @@ static PyMethodDef mrscake_methods[] =
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},
     {"load_data", (PyCFunction)py_dataset_load, M_FLAGS, dataset_load_doc},
 
-    //{"DataSet", (PyCFunction)py_dataset_new, M_FLAGS, dataset_new_doc},
-    //{"Model", (PyCFunction)py_model_new, M_FLAGS, model_new_doc},
+    // fake constructor. FIXME: this breaks pydoc
+    {"DataSet", (PyCFunction)py_dataset_new, M_FLAGS, dataset_new_doc},
 
     /* sentinel */
     {0, 0, 0, 0}
@@ -581,7 +581,7 @@ PyObject * PyInit_mrscake(void)
     memset(state, 0, sizeof(state_t));
 
     PyObject*module_dict = PyModule_GetDict(module);
-    PyDict_SetItemString(module_dict, "DataSet", (PyObject*)&DataSetClass);
+    //PyDict_SetItemString(module_dict, "DataSet", (PyObject*)&DataSetClass);
     PyDict_SetItemString(module_dict, "Model", (PyObject*)&ModelClass);
     return module;
 }
