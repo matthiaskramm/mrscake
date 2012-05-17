@@ -408,6 +408,15 @@ static PyObject* py_dataset_new(PyObject* module, PyObject* args, PyObject* kwar
     self->data = trainingdata_new();
     return (PyObject*)self;
 }
+static PyObject* py_dataset_tp_new(struct _typeobject * type, PyObject* args, PyObject* kwargs)
+{
+    static char *kwlist[] = {NULL};
+    if (args && !PyArg_ParseTupleAndKeywords(args, kwargs, "", kwlist))
+        return NULL;
+    DataSetObject*self = PyObject_New(DataSetObject, &DataSetClass);
+    self->data = trainingdata_new();
+    return (PyObject*)self;
+}
 static PyMethodDef dataset_methods[] =
 {
     /* DataSet functions */
@@ -444,7 +453,8 @@ static PyTypeObject DataSetClass =
     tp_getattr: dataset_getattr,
     tp_setattr: dataset_setattr,
     tp_doc: dataset_doc,
-    tp_methods: dataset_methods
+    tp_methods: dataset_methods,
+    tp_new: py_dataset_tp_new,
 };
 PyDoc_STRVAR(model_doc,
 "A Model can be used to predict values from (so far unknown)\n"
@@ -537,9 +547,6 @@ static PyMethodDef mrscake_methods[] =
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},
     {"load_data", (PyCFunction)py_dataset_load, M_FLAGS, dataset_load_doc},
 
-    // fake constructor. FIXME: this breaks pydoc
-    {"DataSet", (PyCFunction)py_dataset_new, M_FLAGS, dataset_new_doc},
-
     /* sentinel */
     {0, 0, 0, 0}
 };
@@ -581,7 +588,7 @@ PyObject * PyInit_mrscake(void)
     memset(state, 0, sizeof(state_t));
 
     PyObject*module_dict = PyModule_GetDict(module);
-    //PyDict_SetItemString(module_dict, "DataSet", (PyObject*)&DataSetClass);
+    PyDict_SetItemString(module_dict, "DataSet", (PyObject*)&DataSetClass);
     PyDict_SetItemString(module_dict, "Model", (PyObject*)&ModelClass);
     return module;
 }
