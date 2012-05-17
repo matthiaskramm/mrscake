@@ -3,18 +3,8 @@ IS_MACOS:=$(shell test -d /Library && echo macos)
 ifneq ($(IS_MACOS),) # Mac compile
     CPPFLAGS=-DHAVE_SHA1
     LIBS=-lz -lpthread -lcrypto
-    PYTHON_LIB?=-lpython2.6
-    PYTHON_INCLUDE?=-I/usr/include/python2.6
-    PYTHON_INSTALLDIR?=/usr/lib/python2.6/
     RUBY_LDFLAGS?=-shared
     RUBY_LIB?=-lruby
-    ifeq ($(shell test -d /usr/lib/ruby/1.8/universal-darwin10.0 && echo 10.0),10.0)
-      RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
-      RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin10.0
-    else
-      RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin11.0
-      RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin11.0
-    endif
     SO_PYTHON=so
     SO_RUBY=bundle
 endif
@@ -22,16 +12,17 @@ endif
 ifeq ($(IS_MACOS),) # Linux compile
     CPPFLAGS=-DHAVE_SHA1
     LIBS=-lz -lpthread -lcrypto -lrt
-    PYTHON_LIB?=-lpython2.6
-    PYTHON_INCLUDE?=-I/usr/include/python2.6
-    PYTHON_INSTALLDIR?=/usr/lib/python2.6/site-packages/
     RUBY_LDFLAGS?=-shared 
     RUBY_LIB?=-lruby18
-    RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/i686-linux/ 
-    RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/i686-linux/ 
     SO_PYTHON=so
     SO_RUBY=rb.so
 endif
+
+PYTHON_INSTALLDIR?=@PYTHON_INSTALL_PATH@
+PYTHON_INCLUDE?=@PYTHON_INCLUDES@
+PYTHON_LIB?=@PYTHON_LIB@
+RUBY_INCLUDE?=-I@RUBY_EXT_INC@
+RUBY_INSTALLDIR?=@RUBY_EXT_INC@
 
 A=a
 O=o
