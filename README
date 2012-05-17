@@ -26,6 +26,8 @@ result = model.predict(["a", 2.0, "red"])
 
 code = model.generate_code("python") # or: ruby, javascript, c
 
+print code
+
 Ruby:
 -----
 
@@ -44,3 +46,4 @@ result = model.predict([:a, 2.0, :red])
 
 code = model.generate_code("ruby") # or: ruby, javascript, c
 
+puts code
