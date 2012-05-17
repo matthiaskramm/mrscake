@@ -1,6 +1,6 @@
-all: mrscake.html
+all: mrscake.py.html
 
 ../mrscake.so: ../mrscake.py.c
 	cd ..;$(MAKE)
-mrscake.html: ../mrscake.so
-	PYTHONPATH=.. pydoc -w mrscake
+mrscake.py.html: ../mrscake.so
+	PYTHONPATH=.. pydoc -w mrscake && mv mrscake.html mrscake.py.html
