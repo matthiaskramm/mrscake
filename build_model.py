@@ -183,9 +183,9 @@ else:
 
 output_filename = "test.model"
 if opts.model:
-    model = dataset.get_model(opts.model)
+    model = dataset.train(opts.model)
 else:
-    model = dataset.get_model()
+    model = dataset.train()
 model.save(output_filename)
 
 def show_model_performance(model, examples):

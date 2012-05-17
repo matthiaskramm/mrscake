@@ -182,7 +182,7 @@ static int py_model_print(PyObject * _self, FILE *fi, int flags)
 }
 PyDoc_STRVAR(model_save_doc, \
 "save(filename)\n\n"
-"Saves the trained model to a file\n"
+"Save the model to a file"
 );
 static PyObject* py_model_save(PyObject* _self, PyObject* args, PyObject* kwargs)
 {
@@ -197,8 +197,8 @@ static PyObject* py_model_save(PyObject* _self, PyObject* args, PyObject* kwargs
     return PY_NONE;
 }
 PyDoc_STRVAR(model_predict_doc, \
-"predict(data)\n\n"
-"Evaluate the model for a given input. I.e. tries to estimate the target value (do a prediction).\n"
+"predict({feature1:value1,feature2:value2})\n\n"
+"Evaluate the model for the given input. I.e. tries to estimate the target value (do a prediction)."
 );
 static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwargs)
 {
@@ -235,7 +235,7 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
 }
 PyDoc_STRVAR(model_generate_code_doc, \
 "generate_code(language)\n\n"
-"Generate code for this model\n"
+"Generate code for this model"
 );
 static PyObject* py_model_generate_code(PyObject* _self, PyObject* args, PyObject* kwargs)
 {
@@ -249,7 +249,7 @@ static PyObject* py_model_generate_code(PyObject* _self, PyObject* args, PyObjec
 }
 PyDoc_STRVAR(model_load_doc, \
 "load_model()\n\n"
-"Load a model.\n"
+"Load a model that has been saved using Model.save()."
 );
 static PyObject* py_model_load(PyObject* module, PyObject* args, PyObject* kwargs)
 {
@@ -265,7 +265,7 @@ static PyObject* py_model_load(PyObject* module, PyObject* args, PyObject* kwarg
 }
 PyDoc_STRVAR(model_new_doc, \
 "Model()\n\n"
-"Load a model.\n"
+"Load a model."
 );
 static PyObject* py_model_new(PyObject* module, PyObject* args, PyObject* kwargs)
 {
@@ -302,7 +302,7 @@ static int py_dataset_print(PyObject * _self, FILE *fi, int flags)
 }
 PyDoc_STRVAR(dataset_add_doc, \
 "add({feature1:value1,feature2:value2},output)\n\n"
-"Adds a row of training data to the model.\n"
+"Adds a row of training data to the model."
 );
 static PyObject* py_dataset_add(PyObject * _self, PyObject* args, PyObject* kwargs)
 {
@@ -329,11 +329,11 @@ static PyObject* py_dataset_add(PyObject * _self, PyObject* args, PyObject* kwar
     trainingdata_add_example(self->data, e);
     return PY_NONE;
 }
-PyDoc_STRVAR(dataset_get_model_doc, \
-"get_model()\n\n"
-"Train a classifier\n"
+PyDoc_STRVAR(dataset_train_doc, \
+"train()\n\n"
+"Train a classifier"
 );
-static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* kwargs)
+static PyObject* py_dataset_train(PyObject*_self, PyObject* args, PyObject* kwargs)
 {
     DataSetObject*self = (DataSetObject*)_self;
     static char *kwlist[] = {"name", NULL};
@@ -367,7 +367,7 @@ static PyObject* py_dataset_get_model(PyObject*_self, PyObject* args, PyObject* 
 }
 PyDoc_STRVAR(dataset_save_doc, \
 "save(filename)\n\n"
-"Save training data to a file.\n"
+"Save training data to a file."
 );
 static PyObject* py_dataset_save(PyObject*_self, PyObject* args, PyObject* kwargs)
 {
@@ -381,7 +381,7 @@ static PyObject* py_dataset_save(PyObject*_self, PyObject* args, PyObject* kwarg
 }
 PyDoc_STRVAR(dataset_load_doc, \
 "load_data()\n\n"
-"Load a dataset.\n"
+"Load a dataset that has been saved using DataSet.save()."
 );
 static PyObject* py_dataset_load(PyObject* module, PyObject* args, PyObject* kwargs)
 {
@@ -397,7 +397,7 @@ static PyObject* py_dataset_load(PyObject* module, PyObject* args, PyObject* kwa
 }
 PyDoc_STRVAR(dataset_new_doc, \
 "DataSet()\n\n"
-"Creates a new (initially empty) dataset.\n"
+"Creates a new (initially empty) dataset."
 );
 static PyObject* py_dataset_new(PyObject* module, PyObject* args, PyObject* kwargs)
 {
@@ -412,8 +412,7 @@ static PyMethodDef dataset_methods[] =
 {
     /* DataSet functions */
     {"add", (PyCFunction)py_dataset_add, METH_KEYWORDS, dataset_add_doc},
-    {"train", (PyCFunction)py_dataset_get_model, METH_KEYWORDS, dataset_get_model_doc},
-    {"get_model", (PyCFunction)py_dataset_get_model, METH_KEYWORDS, dataset_get_model_doc},
+    {"train", (PyCFunction)py_dataset_train, METH_KEYWORDS, dataset_train_doc},
     {"save", (PyCFunction)py_dataset_save, METH_KEYWORDS, dataset_save_doc},
     {0,0,0,0}
 };
@@ -430,14 +429,14 @@ static PyMethodDef dataset_methods[] =
 #endif
 
 PyDoc_STRVAR(dataset_doc,
-"A DataSet object stores training data (examples of features and\n"
-"desired output values). DataSets can be converted to models in\n"
-"order to do prediction.\n"
+"A DataSet stores training data (examples of features and\n"
+"desired corresponding output values). DataSets can be used\n"
+"to train models (in order to do predictions.)"
 );
 static PyTypeObject DataSetClass =
 {
     PYTHON23_HEAD_INIT
-    tp_name: "predict.DataSet",
+    tp_name: "mrscake.DataSet",
     tp_basicsize: sizeof(DataSetObject),
     tp_itemsize: 0,
     tp_dealloc: dataset_dealloc,
@@ -451,12 +450,12 @@ PyDoc_STRVAR(model_doc,
 "A Model can be used to predict values from (so far unknown)\n"
 "input data. Models are \"lightweight\", in that they don't\n"
 "store any data other than that needed to do predictions (in\n"
-"particular, they don't contain any examplicit training data)\n"
+"particular, they don't contain any explicit training data)"
 );
 static PyTypeObject ModelClass =
 {
     PYTHON23_HEAD_INIT
-    tp_name: "predict.Model",
+    tp_name: "mrscake.Model",
     tp_basicsize: sizeof(ModelObject),
     tp_itemsize: 0,
     tp_dealloc: model_dealloc,
@@ -471,6 +470,9 @@ static PyTypeObject ModelClass =
 
 PyDoc_STRVAR(mrscake_add_server_doc, \
 "add_server(host, port=3075)\n\n"
+"A training run can be distributed across servers. In order\n"
+"to do that, run \"mrscake-job-server\" on every server (by default,\n"
+"it listens on port 3075), and then add the servers using add_server()."
 );
 static PyObject* mrscake_add_server(PyObject* module, PyObject* args, PyObject* kwargs)
 {
@@ -486,6 +488,7 @@ static PyObject* mrscake_add_server(PyObject* module, PyObject* args, PyObject* 
 
 PyDoc_STRVAR(mrscake_set_parameter_doc, \
 "set_parameter(key,value)\n\n"
+"Set an internal parameter."
 );
 static PyObject* mrscake_set_parameter(PyObject* module, PyObject* args, PyObject* kwargs)
 {
@@ -494,11 +497,15 @@ static PyObject* mrscake_set_parameter(PyObject* module, PyObject* args, PyObjec
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss", kwlist, &key, &value))
         return NULL;
     state_t*state = STATE(module);
+    config_setparameter(key,value);
     return PY_NONE;
 }
 
 PyDoc_STRVAR(mrscake_model_names_doc, \
 "model_names()\n\n"
+"Returns an array of model names. Any of these model names can be passed\n"
+"to DataSet.train() to train a specific model. Notice that not every model\n"
+"type works for every data set.\n"
 );
 static PyObject* mrscake_model_names(PyObject* module, PyObject* args, PyObject* kwargs)
 {
@@ -530,15 +537,15 @@ static PyMethodDef mrscake_methods[] =
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},
     {"load_data", (PyCFunction)py_dataset_load, M_FLAGS, dataset_load_doc},
 
-    {"DataSet", (PyCFunction)py_dataset_new, M_FLAGS, dataset_new_doc},
-    {"Model", (PyCFunction)py_model_new, M_FLAGS, model_new_doc},
+    //{"DataSet", (PyCFunction)py_dataset_new, M_FLAGS, dataset_new_doc},
+    //{"Model", (PyCFunction)py_model_new, M_FLAGS, model_new_doc},
 
     /* sentinel */
     {0, 0, 0, 0}
 };
 
 PyDoc_STRVAR(mrscake_doc, \
-"Data prediction python wrapper\n"
+"Python interface to the mrscake machine-learning library\n"
 );
 void mrscake_free(void*module)
 {
@@ -573,9 +580,9 @@ PyObject * PyInit_mrscake(void)
     state_t* state = STATE(module);
     memset(state, 0, sizeof(state_t));
 
-    //PyObject*module_dict = PyModule_GetDict(module);
-    //PyDict_SetItemString(module_dict, "DataSet", (PyObject*)&DataSetClass);
-    //PyDict_SetItemString(module_dict, "Model", (PyObject*)&ModelClass);
+    PyObject*module_dict = PyModule_GetDict(module);
+    PyDict_SetItemString(module_dict, "DataSet", (PyObject*)&DataSetClass);
+    PyDict_SetItemString(module_dict, "Model", (PyObject*)&ModelClass);
     return module;
 }
 #ifndef PYTHON3

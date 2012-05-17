@@ -134,3 +134,7 @@ void config_parse_remote_servers(const char*filename)
         p++;
     }
 }
+
+void config_setparameter(const char*key, const char*value)
+{
+}

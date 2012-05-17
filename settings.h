@@ -24,6 +24,8 @@
 
 #include <stdbool.h>
 
+#define MRSCAKE_DEFAULT_PORT 3075
+
 typedef struct remote_server {
     const char*host;
     int port;
@@ -46,7 +48,7 @@ extern char*config_dataset_cache_directory;
 extern int config_num_seeded_hosts;
 extern bool config_subset_variables;
 
-#define MRSCAKE_DEFAULT_PORT 3075
+void config_setparameter(const char*key, const char*value);
 
 void config_parse_remote_servers(const char*filename);
 void config_add_remote_server(const char*host, int port);

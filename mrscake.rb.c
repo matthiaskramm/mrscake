@@ -119,7 +119,7 @@ static VALUE rb_dataset_add(VALUE cls, VALUE input, VALUE response)
     trainingdata_add_example(dataset->trainingdata, e);
     return cls;
 }
-static VALUE rb_dataset_get_model(int argc, VALUE* argv, VALUE cls)
+static VALUE rb_dataset_train(int argc, VALUE* argv, VALUE cls)
 {
     Get_DataSet(dataset,cls);
     VALUE model_value = rb_model_allocate(Model);
@@ -311,8 +311,7 @@ void Init_mrscake()
     DataSet = rb_define_class_under(mrscake, "DataSet", rb_cObject);
     rb_define_alloc_func(DataSet, rb_dataset_allocate);
     rb_define_method(DataSet, "add", rb_dataset_add, 2);
-    rb_define_method(DataSet, "get_model", rb_dataset_get_model, -1);
-    rb_define_method(DataSet, "train", rb_dataset_get_model, -1);
+    rb_define_method(DataSet, "train", rb_dataset_train, -1);
     rb_define_method(DataSet, "print", rb_dataset_print, 0);
     rb_define_method(DataSet, "save", rb_dataset_save, 1);
 
