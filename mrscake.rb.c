@@ -66,6 +66,8 @@ variable_t value_to_variable(VALUE v)
         return variable_new_continuous(NUM2DBL(v));
     } else if(TYPE(v) == T_FIXNUM) {
         return variable_new_continuous(FIX2INT(v));
+    } else if(TYPE(v) == T_STRING) {
+        return variable_new_text(StringValuePtr(v));
     } else {
         return variable_new_missing();
     }
