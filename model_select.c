@@ -204,8 +204,8 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
 model_t* model_select(dataset_t*data)
 {
 #ifdef DEBUG
-    printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
-            data->num_columns, dataset_count_expanded_columns(data));
+    printf("# %d classes, %d rows of examples (%d columns)\n", data->desired_response->num_classes, data->num_rows,
+            data->num_columns);
 #endif
 
     varorder_t*order = NULL;
@@ -220,7 +220,7 @@ model_t* model_select(dataset_t*data)
         return NULL;
     }
 
-//#define DEBUG
+#define DEBUG
 #ifdef DEBUG
     //model_errors_old(best_model, data);
     printf("# Using %s.\n", best_model->name);

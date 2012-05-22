@@ -32,5 +32,6 @@ typedef struct _environment {
 } environment_t;
 
 environment_t* environment_new(void*node, row_t*row);
+void environment_print(environment_t*e);
 void environment_destroy(environment_t*e);
 #endif

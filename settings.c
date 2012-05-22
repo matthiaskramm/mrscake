@@ -137,4 +137,7 @@ void config_parse_remote_servers(const char*filename)
 
 void config_setparameter(const char*key, const char*value)
 {
+    if(!strcmp(key, "subset_variables")) {
+        config_subset_variables = atoi(value);
+    }
 }

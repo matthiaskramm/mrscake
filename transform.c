@@ -78,12 +78,31 @@ static node_t* expand_revert_in_code(dataset_t*dataset, node_t* node)
     return node;
 }
 
-static expanded_column_t* expanded_columns(dataset_t*dataset)
+static int count_expanded_columns(dataset_t*s)
+{
+    int x;
+    int num = 0;
+    for(x=0;x<s->num_columns;x++) {
+        if(s->columns[x]->type == CATEGORICAL) {
+            int c = s->columns[x]->num_classes;
+            if(c>2) {
+                num += c;
+            } else {
+                num += 1;
+            }
+        } else {
+            num += 1;
+        }
+    }
+    return num;
+}
+
+static expanded_column_t* expanded_columns(dataset_t*dataset, int*_num)
 {
     /* build expanded column info (version of the data where every class of every
        input variable has its own 0/1 column)
      */
-    int num = dataset_count_expanded_columns(dataset);
+    int num = count_expanded_columns(dataset);
     
     expanded_column_t* ecolumns = calloc(sizeof(expanded_column_t),num);
     int pos=0;
@@ -93,6 +112,11 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
             ecolumns[pos].source_column = x;
             ecolumns[pos].source_class = 0;
             ecolumns[pos].from_category = false;
+            pos++;
+        } else if(dataset->columns[x]->num_classes == 2) {
+            ecolumns[pos].source_column = x;
+            ecolumns[pos].source_class = 0;
+            ecolumns[pos].from_category = true;
             pos++;
         } else {
             int c;
@@ -106,6 +130,7 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
     }
 
     assert(pos == num);
+    *_num = num;
     return ecolumns;
 }
 
@@ -163,8 +188,7 @@ dataset_t* expand_categorical_columns(dataset_t*old_dataset)
     transform->head.original = old_dataset;
     transform->head.name = "expand_categorical_columns";
 
-    transform->num = dataset_count_expanded_columns(old_dataset);
-    transform->ecolumns = expanded_columns(old_dataset);
+    transform->ecolumns = expanded_columns(old_dataset, &transform->num);
 
     return expand_dataset(transform, old_dataset);
 }

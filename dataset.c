@@ -527,16 +527,6 @@ void dataset_destroy(dataset_t*s)
     free(s);
 }
 
-int dataset_count_expanded_columns(dataset_t*s)
-{
-    int x;
-    int num = 0;
-    for(x=0;x<s->num_columns;x++) {
-        num += (s->columns[x]->type == CATEGORICAL) ? s->columns[x]->num_classes : 1;
-    }
-    return num;
-}
-
 array_t* dataset_classes_as_array(dataset_t*dataset)
 {
     array_t*classes = array_new(dataset->desired_response->num_classes);
