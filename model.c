@@ -230,7 +230,6 @@ variable_t model_predict(model_t*m, row_t*row)
 {
     node_t*code = (node_t*)m->code;
     environment_t*e = environment_new(code, row);
-    environment_print(e);
     constant_t c = node_eval(code, e);
     environment_destroy(e);
     return constant_to_variable(&c);

@@ -220,7 +220,7 @@ model_t* model_select(dataset_t*data)
         return NULL;
     }
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
     //model_errors_old(best_model, data);
     printf("# Using %s.\n", best_model->name);
