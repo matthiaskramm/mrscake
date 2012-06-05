@@ -135,7 +135,7 @@ EOF
     else
         AC_MSG_RESULT([failed])
     fi
-    #rm -f _pypath.txt _pypath.py
+    rm -f _pypath.txt _pypath.py
 
     if test "x$PYTHON_OK" = "xyes";then
         AC_MSG_CHECKING([for Python-Imaging])
@@ -168,6 +168,6 @@ EOF
             AC_MSG_RESULT(no)
         fi
     fi
-    rm -f conftest*
+    rm -f conftest* _pypath.py
 fi
 ])
