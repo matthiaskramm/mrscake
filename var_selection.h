@@ -4,12 +4,16 @@
 extern "C" {
 #endif
 
+#include "dataset.h"
+
 typedef struct _varorder {
     int num;
     int*order;
 } varorder_t;
 
 void varorder_print(varorder_t*order, int num);
+
+varorder_t*dtree_var_order(dataset_t*d);
 
 #ifdef __cplusplus
 }

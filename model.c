@@ -116,12 +116,34 @@ example_t*example_new(int num_inputs)
     r->num_inputs = num_inputs;
     return r;
 }
+
+static row_t*example_to_row_with_names(row_t*r, example_t*e, const char**column_names)
+{
+    dict_t*dict = dict_new(&charptr_type);
+    int i;
+    for(i=0;i<e->num_inputs;i++) {
+        dict_put_int(dict, column_names[i], i);
+    }
+    for(i=0;i<e->num_inputs;i++) {
+        int new_i = dict_lookup_int(dict, e->input_names[i]);
+        r->inputs[new_i] = e->inputs[i];
+    }
+    dict_destroy(dict);
+    return r;
+}
+
 row_t*example_to_row(example_t*e, const char**column_names)
 {
     row_t*r = row_new(e->num_inputs);
     if(e->input_names && !column_names) {
         fprintf(stderr, "can't convert example data with input names to row\n");
         return 0;
+    }
+    int i;
+    for(i=0;i<e->num_inputs;i++) {
+        if(strcmp(column_names[i], e->input_names[i])) {
+            return example_to_row_with_names(r, e, column_names);
+        }
     }
     memcpy(r->inputs, e->inputs, sizeof(variable_t)*e->num_inputs);
     return r;

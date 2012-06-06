@@ -1,0 +1,221 @@
+<html>
+<head>
+<style type="text/css">
+* {
+    font-family: Lucida Sans Unicode, Lucida Grande, sans-serif;
+    font-size: 16pt;
+    background-color: #202040; 
+    color: #ffffff;
+}
+pre.code, pre.commit, pre.ruby, pre.shell, pre.python, pre.c {
+    border: 1px solid #a0b090;
+    font-family: Lucida Console, Monaco, monospace;
+    font-size: 16pt;
+    background-color: #204040; 
+    color: #ffffff;
+    width: 100%;
+}
+pre.commit, pre.generated {
+    border: 1px solid #ffffff;
+    background-color: #000000; 
+    color: #ffffff;
+    font-size: 14pt;
+}
+h1 {
+    color: #ffffff;
+    font-size: 20pt;
+    text-decoration: underline;
+    text-align:center;
+}
+h2 {
+    color: #4080f0;
+    font-size: 19pt;
+    text-decoration: underline;
+}
+</style>
+</head>
+
+<body>
+
+<h1>MrsCake Tutorial</h1>
+
+<h2>Installing</h2>
+
+To install mrscake, clone the github archive and then do the usual
+configure / make / make install incantation:
+
+<pre class="code">
+git clone git://github.com/matthiaskramm/mrscake.git
+cd mrscake
+./configure
+make 
+make install
+</pre>
+
+<h2>Creating Datasets</h2>
+
+<p>
+Suppose you've already aquired some training data. For example, you
+want to try to predict whether a given git commit breaks a build
+(this is a real example from our company- we found we can predict
+70% of possible build breakages just by looking at git commits)
+</p>
+
+<p>
+This is a typical git commit:
+</p>
+
+<pre class="commit">
+commit f1568a8318a64e68944b805f34cc6e08f1ef1c1b
+Author: Karl Weizenfeld &lt;karl@acme.com&gt;
+Date: Fri Apr 13 16:23:20 2012 -0400
+So much noise in funnel.yml
+config/funnel.yml | 56 ++++++++++----------
+1 files changed, 28 insertions(+), 28 deletions(-)
+</pre>
+
+<p>
+It has a number of easily extracted features:
+<ul>
+<li>Time of day (hour, 0-24)</li>
+<li>Author name</li>
+<li>Number of added/removed lines</li>
+<li>Commit message</li>
+</ul>
+</p>
+
+<p>
+Suppose we also have a labelled training set from past software
+releases that specifies, for every commit, whether that commit
+broke the build or not.
+</p>
+
+<p>
+To feed all this data into mrscake, we create a dataset:
+</p>
+
+<p>(This example is in Ruby- the Python API looks very similar)</p>
+
+<pre class="code">
+require 'mrscake'
+d = MrsCake::DataSet.new()
+
+d.add({:author=&gt;:stefan,:added_lines=&gt;5, :removed_lines=&gt;5,  
+       :message=&gt;"misprint oopsie",         :hour=&gt;18}, :broken)
+d.add({:author=&gt;:karl,  :added_lines=&gt;80,:removed_lines=&gt;14, 
+       :message=&gt;"fixed log output",        :hour=&gt;11}, :not_broken)    
+d.add({:author=&gt;:peter, :added_lines=&gt;2, :removed_lines=&gt;1,  
+       :message=&gt;"more strace goodness",    :hour=&gt;19}, :not_broken)    
+d.add({:author=&gt;:karl,  :added_lines=&gt;2, :removed_lines=&gt;2,  
+       :message=&gt;"Fix for bug 3718",        :hour=&gt;14}, :broken)    
+d.add({:author=&gt;:bran,  :added_lines=&gt;36,:removed_lines=&gt;0,  
+       :message=&gt;"migration for user split",:hour=&gt;10}, :not_broken)    
+d.add({:author=&gt;:peter, :added_lines=&gt;3, :removed_lines=&gt;7,  
+       :message=&gt;"simplify group handling", :hour=&gt;17}, :not_broken)    
+</pre>
+
+<p>
+As you can see, <tt>DataSet::add</tt> takes two parameters: A hash (or array) or features, and the
+training label (i.e., the desired output for these features.)
+</p>
+
+<p>Notice that the desired output will always be categories, not numbers- mrscake can only categorize,
+not make numerical prediction (it's a classification engine, not a regression suite.)
+</p>
+
+<h2>Training Models</h2>
+
+<p>
+Once you've fed your data into mrscake in this way, you can train a prediction model. The easiest way to
+do this is by just using <tt>DataSet::train</tt> and have mrscake pick the right model for you:
+</p>
+
+<pre class="code">
+model = d.train()
+</pre>
+
+<p><tt>train</tt> will run a model selection over a large number of models, including neuronal networks,
+decision trees, random forests, support vector machines and many others. It will then pick the model
+that explains your data best (and in the most condensed way.)
+</p>
+
+<p>
+The resulting model can now make predictions:
+</p>
+
+<pre class="code">
+model.predict({:author=&gt;:karl, :added_lines=&gt;508, :removed_lines=&gt;529, :message=&gt;"Refactor default layout", :hour=&gt;12})
+=&gt; :not_broken
+</pre>
+
+<h2>Saving models</h2>
+
+<p>
+As training takes some time, you'll probably want to save the resulting model to disk:
+</p>
+
+<pre class="code">
+model.save("broken_build_predict.dat")
+</pre>
+
+<p>Another way of making your model persistent is to have it generate a function and then plugging that
+function into your codebase:</p>
+
+<pre class="code">
+puts model.generate_code("ruby")
+</pre>
+
+<p>In this example, the output of this will be something like this:</p>
+
+<pre class="code generated">
+def predict(message, author, hour, added_lines, removed_lines)
+    if !![:stefan,:karl].index((author)) then
+        return :broken
+    else
+        return :not_broken
+    end
+end
+</pre>
+
+<p>This is a decision tree, which is usually the best model if you have only a small amount
+of training data.</p>
+
+<p>You can generate code in C, Python, Ruby and Javascript.</p>
+
+<h2>Training specific models</h2>
+
+<p>If you already have a hunch what kind of model might suit your data best, you can also have
+mrscake train a specific model for you:
+
+<pre class="code">
+data.train("neuronal network (gaussian) with 2 layers")
+</pre>
+
+<p>Use</p>
+
+<pre class="code">
+p MrsCake::model_names
+</pre>
+
+<p>to see all the supported models.</p>
+
+<h2>Parallel processing</h2>
+
+<p>It's possible to parallelize model selection. To do this, run</p>
+
+<pre class="shell">
+mrscake-job-server
+</pre>
+
+<p>on a couple of machines and then add them to mrscake before you run <tt>train()</tt>:</p>
+
+<pre class="code">
+MrsCake::add_server("129.187.2.1")
+MrsCake::add_server("129.187.2.2")
+MrsCake::add_server("129.187.2.3")
+MrsCake::add_server("129.187.2.4")
+</pre>
+
+
+</body>
+</html>

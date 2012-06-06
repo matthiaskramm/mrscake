@@ -22,12 +22,21 @@
 #ifndef __util_h__
 #define __util_h__
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 void*memdup(const void*ptr, size_t size);
 char*escape_string(const char*str);
+char* allocprintf(const char*format, ...);
+char* concat_paths(const char*base, const char*add);
+void mkdir_p(const char*path);
+
+bool str_starts_with(const char*str, const char*start);
+
+int imin(int x, int y);
 
 #ifdef __cplusplus
 }

@@ -1,55 +1,48 @@
-A=a
-O=o
-CC=gcc -pg -g -fPIC -Wimplicit
-CXX=g++ -pg -g -fPIC -Wimplicit
-INSTALL=/usr/bin/install -c
-
 IS_MACOS:=$(shell test -d /Library && echo macos)
 
-ifneq ($(IS_MACOS),)
-    # Mac defaults
-    LIBS=-lz -lpthread
-    PYTHON_LIB?=-lpython2.6
-    PYTHON_INCLUDE?=-I/usr/include/python2.6
-    PYTHON_INSTALLDIR?=/usr/lib/python2.6/
+ifneq ($(IS_MACOS),) # Mac compile
+    CPPFLAGS=-DHAVE_SHA1
+    LIBS=-lz -lpthread -lcrypto
     RUBY_LDFLAGS?=-shared
     RUBY_LIB?=-lruby
-    RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/universal-darwin10.0
-    RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/universal-darwin10.0
     SO_PYTHON=so
     SO_RUBY=bundle
 endif
 
-ifeq ($(IS_MACOS),)
-    # Linux defaults
-    LIBS=-lz -lpthread -lrt
-    PYTHON_LIB?=-lpython2.6
-    PYTHON_INCLUDE?=-I/usr/include/python2.6
-    PYTHON_INSTALLDIR?=/usr/lib/python2.6/site-packages/
+ifeq ($(IS_MACOS),) # Linux compile
+    CPPFLAGS=-DHAVE_SHA1
+    LIBS=-lz -lpthread -lcrypto -lrt
     RUBY_LDFLAGS?=-shared 
     RUBY_LIB?=-lruby18
-    RUBY_INCLUDE?=-I/usr/lib/ruby/1.8/i686-linux/ 
-    RUBY_INSTALLDIR?=/usr/lib/ruby/1.8/i686-linux/ 
     SO_PYTHON=so
     SO_RUBY=rb.so
 endif
 
+PYTHON_INSTALLDIR?=@PYTHON_INSTALL_PATH@
+PYTHON_INCLUDE?=@PYTHON_INCLUDES@
+PYTHON_LIB?=@PYTHON_LIB@
+RUBY_INCLUDE?=-I@RUBY_EXT_INC@
+RUBY_INSTALLDIR?=@RUBY_EXT_INC@
+
+A=a
+O=o
+CC=gcc $(CPPFLAGS) $(CFLAGS) -pg -g -fPIC -Wimplicit
+CXX=g++ $(CPPFLAGS) $(CXXFLAGS) -pg -g -fPIC -Wimplicit
+INSTALL=/usr/bin/install -c
+
 MODELS=model_cv_dtree.$(O) model_cv_ann.$(O) model_cv_svm.$(O) model_cv_linear.$(O) model_perceptron.$(O) model_knearest.$(O)
 VAR_SELECTORS=varselect_cv_dtree.$(O)
 CODE_GENERATORS=codegen_python.$(O) codegen_ruby.$(O) codegen_js.$(O) codegen_c.$(O)
-OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.$(O) constant.$(O) ast.$(O) model.$(O) serialize.$(O) io.$(O) list.$(O) model_select.$(O) dict.$(O) dataset.$(O) text.$(O) environment.$(O) codegen.$(O) ast_transforms.$(O) stringpool.$(O) net.$(O) settings.$(O) job.$(O) var_selection.$(O) transform.$(O) mrscake.$(O) util.$(O)
+OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.$(O) constant.$(O) ast.$(O) model.$(O) serialize.$(O) io.$(O) list.$(O) model_select.$(O) dict.$(O) dataset.$(O) datacache.$(O) text.$(O) environment.$(O) codegen.$(O) ast_transforms.$(O) stringpool.$(O) net.$(O) settings.$(O) job.$(O) var_selection.$(O) transform.$(O) mrscake.$(O) util.$(O)
 CV_OBJECTS=lib/alloc.$(O) lib/ann_mlp.$(O) lib/arithm.$(O) lib/array.$(O) lib/boost.$(O) lib/cnn.$(O) lib/convert.$(O) lib/copy.$(O) lib/data.$(O) \
 	lib/datastructs.$(O) lib/ertrees.$(O) lib/estimate.$(O) lib/gbt.$(O) lib/inner_functions.$(O) lib/knearest.$(O) lib/mathfuncs.$(O) lib/matmul.$(O) \
 	lib/matrix.$(O) lib/missing.$(O) lib/persistence.$(O) lib/precomp.$(O) lib/rand.$(O) lib/rtrees.$(O) lib/stat.$(O) lib/svm.$(O) lib/system.$(O) lib/tables.$(O) \
 	lib/testset.$(O) lib/tree.$(O)
 
-all: multimodel ast model subset mrscake-job-server mrscake.$(A) mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
+all: mrscake-job-server mrscake.$(A) mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
-
-multimodel.$(O): multimodel.cpp
-	$(CXX) -Ilib $< -c -o $@
 
 model.$(O): model.c constant.h ast.h
 	$(CC) -c $< -o $@
@@ -63,10 +56,10 @@ ast.$(O): ast.c ast.h mrscake.h
 mrscake.$(O): mrscake.c mrscake.h mrscake.h
 	$(CC) -c $< -o $@
 
-net.$(O): net.c net.h mrscake.h
+net.$(O): net.c net.h mrscake.h settings.h
 	$(CC) -c $< -o $@
 
-job.$(O): job.c job.h
+job.$(O): job.c job.h settings.h
 	$(CC) -c $< -o $@
 
 ast_transforms.$(O): ast_transforms.c ast_transforms.h ast.h
@@ -141,27 +134,6 @@ model_knearest.$(O): model_knearest.c mrscake.h ast.h cvtools.h dataset.h easy_a
 varselect_cv_dtree.$(O): varselect_cv_dtree.cpp mrscake.h cvtools.h dataset.h var_selection.h
 	$(CXX) -Ilib $< -c -o $@
 
-test_model.$(O): test_model.c mrscake.h
-	$(CC) -c $< -o $@
-
-test_ast.$(O): test_ast.c mrscake.h ast.h
-	$(CC) -c $< -o $@
-
-test_subset.$(O): test_subset.c mrscake.h ast.h
-	$(CC) -c $< -o $@
-
-ast: test_ast.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) test_ast.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
-model: test_model.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) test_model.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
-subset: test_subset.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) test_subset.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
-test_server: test_server.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) test_server.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
 mrscake-job-server: server.$(O) $(OBJECTS) lib/libml.a
 	$(CXX) server.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
@@ -191,14 +163,11 @@ install:
 
 # ------------ old test code -----------------
 
-multimodel: multimodel.$(O) lib/libml.a $(OBJECTS)
-	$(CXX) multimodel.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
-
 test: mrscake.so
 	python test_python_module.py
 
 local-clean:
-	rm -f svm ast ann multimodel *.o *.obj *.$(O) mrscake.$(SO) predict.$(SO) prediction.$(SO)
+	rm -f *.o *.obj *.$(O) mrscake.$(SO) predict.$(SO) prediction.$(SO)
 
 clean: local-clean
 	rm -f lib/*.$(O) lib/*.o lib/*.obj lib/*.a lib/*.gch

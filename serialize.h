@@ -46,7 +46,7 @@ void trainingdata_write(trainingdata_t*d, writer_t*w);
 void trainingdata_save(trainingdata_t*d, const char*filename);
 trainingdata_t* trainingdata_load(const char*filename);
 
-void dataset_save(dataset_t*d, const char*filename);
+int dataset_save(dataset_t*d, const char*filename);
 dataset_t* dataset_load(const char*filename);
 void dataset_write(dataset_t*d, writer_t*w);
 dataset_t*dataset_read(reader_t*r);

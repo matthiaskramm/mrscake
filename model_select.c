@@ -124,39 +124,12 @@ model_factory_t* model_factory_get_by_name(const char*name)
     return 0;
 }
 
-static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_name)
+static void add_jobs_with_transforms(jobqueue_t*queue, dataset_t*data, const char*model_name, char*transforms)
 {
-    /* TODO:
-       We should pass required transformations (like variable subsetting)
-       all the way to the slave and apply them there, so the main dataset
-       can be cached.
-    */
-    jobqueue_t* queue = jobqueue_new();
-    int t;
     int s;
-    int i;
-#define SUBSET_VARIABLES
-#ifdef SUBSET_VARIABLES
-    for(i=1;i<order->num;i++) {
-        dataset_t*newdata = pick_columns(data, order->order, i);
-        for(s=0;s<NUM(collections);s++) {
-            model_collection_t*collection = &collections[s];
-            for(t=0;t<*collection->num_models;t++) {
-                model_factory_t*factory = collection->models[t];
-                if(model_name && strcmp(factory->name, model_name))
-                    continue;
-                job_t* job = job_new();
-                job->factory = factory;
-                job->code = NULL;
-                job->data = newdata;
-                jobqueue_append(queue,job);
-            }
-        }
-    }
-#endif
-
     for(s=0;s<NUM(collections);s++) {
         model_collection_t*collection = &collections[s];
+        int t;
         for(t=0;t<*collection->num_models;t++) {
             model_factory_t*factory = collection->models[t];
             if(model_name && strcmp(factory->name, model_name))
@@ -165,23 +138,29 @@ static jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*mo
             job->factory = factory;
             job->code = NULL;
             job->data = data;
+            job->transforms = transforms? strdup(transforms) : NULL;
             jobqueue_append(queue,job);
         }
     }
-    return queue;
 }
 
-void jobqueue_revert_dataset_transformations(jobqueue_t*jobs)
+jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_name)
 {
-    job_t*job;
-    for(job=jobs->first;job;job=job->next) {
-        if(job->code) {
-            job->data = dataset_revert_all_transformations(job->data, &job->code);
+    jobqueue_t* queue = jobqueue_new();
+    int t;
+    int s;
+    int i;
+    if(order) {
+        for(i=1;i<order->num;i++) {
+            char*transform = pick_columns_transform(order->order, i);
+            add_jobs_with_transforms(queue, data, model_name, transform);
+            free(transform);
         }
     }
+    // also try running on untransformed dataset
+    add_jobs_with_transforms(queue, data, model_name, NULL);
+    return queue;
 }
-
-extern varorder_t*dtree_var_order(dataset_t*d);
 
 model_t* job_to_model(job_t*job)
 {
@@ -225,15 +204,17 @@ model_t* jobqueue_extract_best_and_destroy(jobqueue_t*jobs)
 model_t* model_select(dataset_t*data)
 {
 #ifdef DEBUG
-    printf("# %d classes, %d rows of examples (%d/%d columns)\n", data->desired_response->num_classes, data->num_rows,
-            data->num_columns, dataset_count_expanded_columns(data));
+    printf("# %d classes, %d rows of examples (%d columns)\n", data->desired_response->num_classes, data->num_rows,
+            data->num_columns);
 #endif
 
-    varorder_t*order = dtree_var_order(data);
+    varorder_t*order = NULL;
+    if(config_subset_variables) {
+        order = dtree_var_order(data);
+    }
 
     jobqueue_t*jobs = generate_jobs(order, data, NULL);
-    jobqueue_process(jobs);
-    jobqueue_revert_dataset_transformations(jobs);
+    jobqueue_process(data, jobs);
     model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
     if(!best_model) {
         return NULL;
@@ -253,13 +234,15 @@ model_t* model_select(dataset_t*data)
 
 model_t* model_train_specific_model(dataset_t*data, const char*name)
 {
-    varorder_t*order = dtree_var_order(data);
+    varorder_t*order = NULL;
+    if(config_subset_variables) {
+        order = dtree_var_order(data);
+    }
 
     jobqueue_t*jobs = generate_jobs(order, data, name);
     config_verbosity = 0;
-    jobqueue_process(jobs);
+    jobqueue_process(data, jobs);
     config_verbosity = 1;
-    jobqueue_revert_dataset_transformations(jobs);
 
     model_t*best_model = jobqueue_extract_best_and_destroy(jobs);
     if(!best_model)

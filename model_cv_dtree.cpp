@@ -350,7 +350,10 @@ void verify(dataset_t*dataset, model_t*m, CodeGeneratingDTree*tree)
 static int get_max_trees(dtree_model_factory_t*factory, dataset_t*d)
 {
     /* TODO: more max_trees parameter tweaking (k-fold cross-validation?) */
-    return (int)sqrt(d->num_rows) / factory->max_trees_divide;
+    int num = (int)sqrt(d->num_rows) / factory->max_trees_divide;
+    if(num<=0)
+        num = 1;
+    return num;
 }
 
 static node_t*dtree_train(dtree_model_factory_t*factory, dataset_t*d)
@@ -378,8 +381,10 @@ static node_t*rtrees_train(dtree_model_factory_t*factory, dataset_t*d)
     CvMLDataFromExamples data(d);
     CodeGeneratingRTrees rtrees(d);
     int max_trees = get_max_trees(factory, d);
-    if(!max_trees)
+    if(!max_trees) {
+        printf("bad number of trees\n");
         return 0;
+    }
     CvRTParams params(16, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
     rtrees.train(&data, params);
 
@@ -400,8 +405,10 @@ static node_t*ertrees_train(dtree_model_factory_t*factory, dataset_t*d)
     CvMLDataFromExamples data(d);
     CodeGeneratingERTrees ertrees(d);
     int max_trees = get_max_trees(factory, d);
-    if(!max_trees)
+    if(!max_trees) {
+        printf("bad number of trees\n");
         return 0;
+    }
     CvRTParams params(16, 2, 0, false, 16, 0, true, 0, max_trees, 0, CV_TERMCRIT_ITER);
     ertrees.train(&data, params);
 

@@ -45,6 +45,7 @@
 #define WRITER_TYPE_ZLIB_U 4
 #define WRITER_TYPE_NULL 5
 #define WRITER_TYPE_GROWING_MEM  6
+#define WRITER_TYPE_SHA1 7
 #define WRITER_TYPE_ZLIB WRITER_TYPE_ZLIB_C
 
 typedef struct _reader
@@ -59,7 +60,7 @@ typedef struct _reader
     unsigned char bitpos;
     int pos;
 
-    char*error;
+    const char*error;
 } reader_t;
 
 typedef struct _writer
@@ -73,6 +74,8 @@ typedef struct _writer
     unsigned char mybyte;
     unsigned char bitpos;
     int pos;
+
+    const char*error;
 } writer_t;
 
 void reader_resetbits(reader_t*r);
@@ -123,6 +126,11 @@ writer_t* memwriter_new(void*data, int length);
 writer_t* nullwriter_new();
 writer_t* growingmemwriter_new();
 writer_t* growingmemwriter_new2(uint32_t grow);
+#ifdef HAVE_SHA1
+#define HASH_SIZE 20
+writer_t* sha1writer_new();
+uint8_t* writer_sha1_get(writer_t*w);
+#endif
 
 void* writer_growmemwrite_memptr(writer_t*w, int*len);
 void* writer_growmemwrite_getmem(writer_t*w, int*len);

@@ -23,6 +23,7 @@
 #include <memory.h>
 #include "environment.h"
 #include "ast.h"
+#include "model.h"
 #include "ast_transforms.h"
 
 environment_t* environment_new(void*node, row_t*row)
@@ -32,6 +33,17 @@ environment_t* environment_new(void*node, row_t*row)
     e->locals = (constant_t*)calloc(sizeof(constant_t), e->num_locals);
     e->row = row;
     return e;
+}
+
+void environment_print(environment_t*e)
+{
+    int i;
+    for(i=0;i<e->num_locals;i++) {
+        printf("local %d: ", i);
+        constant_print(&e->locals[i]);
+        printf("\n");
+    }
+    row_print(e->row);
 }
 
 void environment_destroy(environment_t*e)

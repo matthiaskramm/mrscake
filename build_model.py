@@ -3,6 +3,7 @@
 import sys
 import re
 from optparse import OptionParser
+import os
 
 VERBOSE = 0
 
@@ -165,10 +166,12 @@ if headers:
 
 import mrscake
 
-with open("servers.txt", "rb") as fi:
-    for line in fi.readlines():
-        line = line.strip()
-        mrscake.add_server(line)
+if os.path.isfile("servers.txt"):
+    with open("servers.txt", "rb") as fi:
+        for line in fi.readlines():
+            if not line.startswith("#"):
+                line = line.strip()
+                mrscake.add_server(line)
 
 dataset = mrscake.DataSet()
 if headers:
@@ -180,9 +183,9 @@ else:
 
 output_filename = "test.model"
 if opts.model:
-    model = dataset.get_model(opts.model)
+    model = dataset.train(opts.model)
 else:
-    model = dataset.get_model()
+    model = dataset.train()
 model.save(output_filename)
 
 def show_model_performance(model, examples):

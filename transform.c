@@ -20,7 +20,9 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
+#include <alloca.h>
 #include "transform.h"
 #include "easy_ast.h"
 #include "util.h"
@@ -76,12 +78,31 @@ static node_t* expand_revert_in_code(dataset_t*dataset, node_t* node)
     return node;
 }
 
-static expanded_column_t* expanded_columns(dataset_t*dataset)
+static int count_expanded_columns(dataset_t*s)
+{
+    int x;
+    int num = 0;
+    for(x=0;x<s->num_columns;x++) {
+        if(s->columns[x]->type == CATEGORICAL) {
+            int c = s->columns[x]->num_classes;
+            if(c>2) {
+                num += c;
+            } else {
+                num += 1;
+            }
+        } else {
+            num += 1;
+        }
+    }
+    return num;
+}
+
+static expanded_column_t* expanded_columns(dataset_t*dataset, int*_num)
 {
     /* build expanded column info (version of the data where every class of every
        input variable has its own 0/1 column)
      */
-    int num = dataset_count_expanded_columns(dataset);
+    int num = count_expanded_columns(dataset);
     
     expanded_column_t* ecolumns = calloc(sizeof(expanded_column_t),num);
     int pos=0;
@@ -91,6 +112,11 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
             ecolumns[pos].source_column = x;
             ecolumns[pos].source_class = 0;
             ecolumns[pos].from_category = false;
+            pos++;
+        } else if(dataset->columns[x]->num_classes == 2) {
+            ecolumns[pos].source_column = x;
+            ecolumns[pos].source_class = 0;
+            ecolumns[pos].from_category = true;
             pos++;
         } else {
             int c;
@@ -104,6 +130,7 @@ static expanded_column_t* expanded_columns(dataset_t*dataset)
     }
 
     assert(pos == num);
+    *_num = num;
     return ecolumns;
 }
 
@@ -161,8 +188,7 @@ dataset_t* expand_categorical_columns(dataset_t*old_dataset)
     transform->head.original = old_dataset;
     transform->head.name = "expand_categorical_columns";
 
-    transform->num = dataset_count_expanded_columns(old_dataset);
-    transform->ecolumns = expanded_columns(old_dataset);
+    transform->ecolumns = expanded_columns(old_dataset, &transform->num);
 
     return expand_dataset(transform, old_dataset);
 }
@@ -218,7 +244,7 @@ dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num)
     newdata->transform = (transform_t*)transform;
 
     transform->original_column = (int*)memdup(index, sizeof(int)*num);
-   
+
     newdata->num_columns = num;
     newdata->columns = (column_t**)malloc(sizeof(column_t*)*num);
     int i;
@@ -386,7 +412,8 @@ dataset_t* dataset_revert_one_transformation(dataset_t*dataset, node_t**code)
         return dataset;
     transform_t*transform = dataset->transform;
     dataset_t*original = transform->original;
-    *code = transform->revert_in_code(dataset, *code);
+    if(*code)
+        *code = transform->revert_in_code(dataset, *code);
 
     //in the presence of variable selection, some transformations are shared
     //between models (see generate_jobs() in model_select.c)
@@ -404,4 +431,79 @@ dataset_t* dataset_revert_all_transformations(dataset_t*dataset, node_t**code)
         dataset = dataset_revert_one_transformation(dataset, code);
     }
     return dataset;
+}
+
+dataset_t* dataset_apply_named_transformation(dataset_t*old_dataset, const char*transform)
+{
+    if(str_starts_with(transform, "pick_columns")) {
+        char*end = strchr(transform, ')');
+        const char*params = transform+12;
+        assert(params[0]=='(' && end);
+        params++;
+        const char*c = params;
+        int count = 0;
+        while(*c) {
+            count++;
+            char*comma = strchr(c, ',');
+            if(!comma)
+                break;
+            c = comma+1;
+        }
+        c = params;
+        int*indexes = alloca(sizeof(int)*count);
+        count = 0;
+        while(c<end) {
+            char*comma = strchr(c, ',');
+            const char*e = comma?comma:end;
+            int nr = 0;
+            for(;c<e;c++) {
+                nr *= 10;
+                nr += (*c-'0');
+            }
+            c++;
+            indexes[count++] = nr;
+        }
+        return pick_columns(old_dataset, indexes, count);
+    } else if(str_starts_with(transform, "expand_categorical_columns")) {
+        return expand_categorical_columns(old_dataset);
+    } else if(str_starts_with(transform, "remove_text_columns")) {
+        return remove_text_columns(old_dataset);
+    } else if(str_starts_with(transform, "expand_text_columns")) {
+        return expand_text_columns(old_dataset);
+    }
+    return old_dataset;
+}
+
+dataset_t* dataset_apply_transformations(dataset_t*dataset, const char*transform)
+{
+    if(!transform)
+        return dataset;
+    char*s = strdup(transform);
+    char*end = s+strlen(s);
+    char*p = s;
+    while(p<end) {
+        char*e = strchr(p, '|');
+        if(!e)
+            e = end;
+        *e = 0;
+        dataset = dataset_apply_named_transformation(dataset, p);
+        p = e+1;
+    }
+    free(s);
+    return dataset;
+}
+
+char* pick_columns_transform(int*index, int num)
+{
+    char*str = malloc(10*num + strlen("pick_columns()") + 1);
+    char*p = str;
+    int i;
+    p += sprintf(p, "pick_columns(");
+    for(i=0;i<num;i++) {
+        if(i)
+            p += sprintf(p, ",");
+        p += sprintf(p, "%d", index[i]);
+    }
+    p += sprintf(p, ")");
+    return str;
 }

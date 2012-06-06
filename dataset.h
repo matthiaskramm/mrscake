@@ -48,6 +48,8 @@ typedef struct _dataset {
        field specifies the untransformed original and how to modify code 
        to target said untransformed version */
     transform_t* transform;
+
+    uint8_t* hash;
 } dataset_t;
 
 
@@ -71,8 +73,9 @@ dataset_t* trainingdata_sanitize(trainingdata_t*dataset);
 void dataset_print(dataset_t*s);
 constant_t dataset_map_response_class(dataset_t*dataset, int i);
 void dataset_destroy(dataset_t*dataset);
-int dataset_count_expanded_columns(dataset_t*s);
 bool dataset_has_categorical_columns(dataset_t*data);
+uint8_t* dataset_hash(dataset_t*s);
+void column_destroy(column_t*c);
 
 typedef node_t* (transform_reverse_function_t)(dataset_t*, node_t* code);
 struct _transform

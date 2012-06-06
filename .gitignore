@@ -23,3 +23,7 @@ server
 subset
 TODO
 tests/test_codegen
+autom4te.cache
+config.log
+config.status
+

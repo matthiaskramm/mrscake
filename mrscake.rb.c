@@ -1,10 +1,8 @@
-/* predict.rb.c
+/* mrscake.rb.c
 
-   Ruby wrapper for the prediction library
+   Ruby interface to the mrscake machine learning library
 
-   Part of the prediction package.
-
-   Copyright (c) 2011 Matthias Kramm <kramm@quiss.org>
+   Copyright (c) 2011,2012 Matthias Kramm <kramm@quiss.org>
  
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,6 +24,12 @@
 #include "stringpool.h"
 #include "settings.h"
 
+/*
+ * Document-class: MrsCake
+ *
+ * Ruby interface to the mrscake machine-learning library
+ */
+
 static VALUE mrscake;
 static VALUE DataSet, Model;
 static ID id_doc;
@@ -46,6 +50,14 @@ static VALUE rb_dataset_allocate(VALUE cls);
 
 // ------------------------ dataset ------------------------------------
 
+/*
+ * Document-class: MrsCake::DataSet
+ *
+ * A DataSet stores training data (examples of features and
+ * desired corresponding output values). DataSets can be used
+ * to train models (in order to do predictions.)
+ */
+
 variable_t value_to_variable(VALUE v)
 {
     if(TYPE(v) == T_SYMBOL) {
@@ -56,6 +68,8 @@ variable_t value_to_variable(VALUE v)
         return variable_new_continuous(NUM2DBL(v));
     } else if(TYPE(v) == T_FIXNUM) {
         return variable_new_continuous(FIX2INT(v));
+    } else if(TYPE(v) == T_STRING) {
+        return variable_new_text(StringValuePtr(v));
     } else {
         return variable_new_missing();
     }
@@ -116,6 +130,12 @@ static example_t*value_to_example(VALUE input)
     e->desired_response = variable_new_missing();
     return e;
 }
+
+/* call-seq:
+ *   dataset.add({feature1=>value1,feature2=>value2}, output) -> nil
+ *
+ * Adds a row of training data to the model.
+ */
 static VALUE rb_dataset_add(VALUE cls, VALUE input, VALUE response)
 {
     Get_DataSet(dataset,cls);
@@ -127,7 +147,13 @@ static VALUE rb_dataset_add(VALUE cls, VALUE input, VALUE response)
     trainingdata_add_example(dataset->trainingdata, e);
     return cls;
 }
-static VALUE rb_dataset_get_model(int argc, VALUE* argv, VALUE cls)
+
+/* call-seq:
+ *   dataset.train() -> model
+ *
+ * Train a classifier
+ */
+static VALUE rb_dataset_train(int argc, VALUE* argv, VALUE cls)
 {
     Get_DataSet(dataset,cls);
     VALUE model_value = rb_model_allocate(Model);
@@ -144,12 +170,24 @@ static VALUE rb_dataset_get_model(int argc, VALUE* argv, VALUE cls)
         rb_raise(rb_eArgError, "bad (empty?) data");
     return model_value;
 }
+
+/* call-seq:
+ *   dataset.print()
+ *
+ * Print the dataset to stdout.
+ */
 static VALUE rb_dataset_print(VALUE cls)
 {
     Get_DataSet(dataset,cls);
     trainingdata_print(dataset->trainingdata);
     return cls;
 }
+
+/* call-seq:
+ *   dataset.save()
+ *
+ * Save the dataset to a file, using mrscake's internal file format.
+ */
 static VALUE rb_dataset_save(VALUE cls, VALUE _filename)
 {
     Check_Type(_filename, T_STRING);
@@ -158,6 +196,7 @@ static VALUE rb_dataset_save(VALUE cls, VALUE _filename)
     trainingdata_save(dataset->trainingdata, filename);
     return cls;
 }
+
 static void rb_dataset_mark(dataset_internal_t*dataset)
 {
 }
@@ -180,6 +219,15 @@ static VALUE rb_dataset_allocate(VALUE cls)
 
 // ------------------------ model ---------------------------------------
 
+/*
+ * Document-class: MrsCake::Model
+ *
+ * A Model can be used to predict values from (so far unknown)
+ * input data. Models are "lightweight", in that they don't
+ * store any data other than that needed to do predictions (in
+ * particular, they don't contain any explicit training data)
+ */
+
 static void rb_model_free(model_internal_t*model)
 {
     if(!model) return;
@@ -189,12 +237,24 @@ static void rb_model_free(model_internal_t*model)
     }
     free(model);
 }
+
+/* call-seq:
+ *   model.print()
+ *
+ * Print the model to stdout.
+ */
 static VALUE rb_model_print(VALUE cls)
 {
     Get_Model(model,cls);
     model_print(model->model);
     return cls;
 }
+
+/* call-seq:
+ *   model.save()
+ *
+ * Save the model to a file, using mrscake's internal file format.
+ */
 static VALUE rb_model_save(VALUE cls, VALUE _filename)
 {
     Check_Type(_filename, T_STRING);
@@ -203,6 +263,12 @@ static VALUE rb_model_save(VALUE cls, VALUE _filename)
     model_save(model->model, filename);
     return cls;
 }
+
+/* call-seq:
+ *   model.generate_code(language) -> string
+ *
+ * Generate code for this model. Supported languages are: "ruby", "c", "javascript" and "python".
+ */
 static VALUE rb_model_generate_code(VALUE cls, VALUE _language)
 {
     Check_Type(_language, T_STRING);
@@ -211,6 +277,12 @@ static VALUE rb_model_generate_code(VALUE cls, VALUE _language)
     char*code = model_generate_code(model->model, language);
     return rb_str_new2(code);
 }
+
+/* call-seq:
+ *   mrscake::load_model(filename) -> model
+ *
+ * Load a model that has been saved using Model.save().
+ */
 static VALUE rb_load_model(VALUE module, VALUE _filename)
 {
     Check_Type(_filename, T_STRING);
@@ -223,6 +295,12 @@ static VALUE rb_load_model(VALUE module, VALUE _filename)
     }
     return cls;
 }
+
+/* call-seq:
+ *   mrscake::load_dataset(filename) -> dataset
+ *
+ * Load a dataset that has been saved using DataSet.save().
+ */
 static VALUE rb_load_dataset(VALUE module, VALUE _filename)
 {
     Check_Type(_filename, T_STRING);
@@ -235,6 +313,12 @@ static VALUE rb_load_dataset(VALUE module, VALUE _filename)
     }
     return cls;
 }
+
+/* call-seq:
+ *   model.predict({feature1=>value1,feature2=>value2}) -> prediction
+ *
+ * Use the model to classify a set of features.
+ */
 static VALUE rb_model_predict(VALUE cls, VALUE input)
 {
     Get_Model(model,cls);
@@ -274,6 +358,13 @@ static VALUE rb_model_allocate(VALUE cls)
 
 // --------------------------------------------------------------------------
 
+/* call-seq:
+ *   mrscake::add_server(host, port=3075)
+ *
+ * A training run can be distributed across servers. In order
+ * to do that, run "mrscake-job-server" on every server (by default,
+ * it listens on port 3075), and then add the servers using add_server().
+ */
 static VALUE rb_add_server(int argc, VALUE* argv, VALUE cls)
 {
     VALUE _server;
@@ -288,6 +379,13 @@ static VALUE rb_add_server(int argc, VALUE* argv, VALUE cls)
     return Qnil;
 }
 
+/* call-seq:
+ *   mrscake::model_names() -> array
+ *
+ * Returns an array of model names. Any of these model names can be passed
+ * to DataSet.train() to train a specific model. Notice that not every model
+ * type works for every data set.
+ */
 static VALUE rb_model_names(VALUE cls)
 {
     const char*const*model_names = mrscake_get_model_names();
@@ -319,16 +417,15 @@ void Init_mrscake()
     DataSet = rb_define_class_under(mrscake, "DataSet", rb_cObject);
     rb_define_alloc_func(DataSet, rb_dataset_allocate);
     rb_define_method(DataSet, "add", rb_dataset_add, 2);
-    rb_define_method(DataSet, "get_model", rb_dataset_get_model, -1);
-    rb_define_method(DataSet, "train", rb_dataset_get_model, -1);
+    rb_define_method(DataSet, "train", rb_dataset_train, -1);
     rb_define_method(DataSet, "print", rb_dataset_print, 0);
     rb_define_method(DataSet, "save", rb_dataset_save, 1);
 
     Model = rb_define_class_under(mrscake, "Model", rb_cObject);
     rb_define_alloc_func(Model, rb_model_allocate);
-    rb_define_method(Model, "print", rb_model_print, 0);
-    rb_define_method(Model, "save", rb_model_save, 1);
     rb_define_method(Model, "predict", rb_model_predict, 1);
     rb_define_method(Model, "generate_code", rb_model_generate_code, 1);
+    rb_define_method(Model, "print", rb_model_print, 0);
+    rb_define_method(Model, "save", rb_model_save, 1);
 }
 

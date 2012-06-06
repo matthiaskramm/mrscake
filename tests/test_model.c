@@ -25,12 +25,14 @@
 #include "model_select.h"
 #include "settings.h"
 
-#define HEIGHT 256
+#define HEIGHT 64
 #define WIDTH 4
 
 int main(int argn, char*argv[])
 {
     trainingdata_t* data = trainingdata_new();
+
+    config_parse_remote_servers("../servers.txt");
 
     int t;
     for(t=0;t<HEIGHT;t++) {

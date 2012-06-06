@@ -17,7 +17,7 @@ data.save("/tmp/data.txt")
 data = mrscake.load_data("/tmp/data.txt")
 
 print data
-model = data.get_model()
+model = data.train()
 
 print model
 

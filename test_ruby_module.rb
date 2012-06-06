@@ -12,7 +12,7 @@ data.add([0.6,0.0,:bla], :no)
 
 data.print
 
-model = data.get_model()
+model = data.train()
 model.print
 
 model.save("/tmp/model.dat")
@@ -39,7 +39,7 @@ data.add({:bananas=>0.6,:oranges=>-1.0,:name=>:bla}, :no)
 
 data.print
 
-model = data.get_model()
+model = data.train()
 model.print
 
 model.save("/tmp/model.dat")

@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "settings.h"
+#include "util.h"
 
 int config_num_remote_servers = 0;
 remote_server_t*config_remote_servers = 0;
@@ -30,25 +31,61 @@ int config_job_wait_timeout = 300;
 int config_remote_read_timeout = 10;
 int config_model_timeout = 15;
 bool config_do_remote_processing = false;
-int config_number_of_remote_workers = 32;
+int config_number_of_remote_workers = 2;
 int config_verbosity = 1;
-
+char*config_dataset_cache_directory = "/tmp/mrscake";
+int config_num_seeded_hosts = 1;
+bool config_subset_variables = true;
 int config_remote_worker_timeout = 60;
 
 static int remote_server_size = 0;
+
+void remote_server_is_broken(remote_server_t*server, const char*error)
+{
+    if(server->broken)
+        free((void*)server->broken);
+    server->broken = strdup(error);
+}
+void remote_server_print(remote_server_t*server)
+{
+    printf("%s:%d", server->host, server->port);
+    if(server->broken)
+        printf(" [%s]", server->broken);
+    printf("\n");
+}
+bool config_has_remote_servers()
+{
+    int i = 0;
+    for(i=0;i<config_num_remote_servers;i++) {
+        remote_server_t* r = &config_remote_servers[i];
+        if(!r->broken)
+            return true;
+    }
+    return false;
+}
+void config_print_remote_servers()
+{
+    int i = 0;
+    for(i=0;i<config_num_remote_servers;i++) {
+        printf("REMOTE SERVER %d: ", i);
+        remote_server_print(&config_remote_servers[i]);
+    }
+}
 
 void config_add_remote_server(const char*host, int port)
 {
     if(!remote_server_size) {
         remote_server_size = 32;
         config_remote_servers = malloc(sizeof(remote_server_t)*remote_server_size);
-    } else if(config_num_remote_servers <= remote_server_size) {
+    } else if(config_num_remote_servers >= remote_server_size) {
         remote_server_size *= 2;
         config_remote_servers = realloc(config_remote_servers, sizeof(remote_server_t)*remote_server_size);
     }
     remote_server_t*s = &config_remote_servers[config_num_remote_servers++];
     s->host = host;
     s->port = port;
+    s->name = allocprintf("%s:%d", host, port);
+    s->broken = NULL;
     config_do_remote_processing = true;
 }
 
@@ -76,22 +113,31 @@ void config_parse_remote_servers(const char*filename)
             if(end > line) {
                 *end = 0;
                 //parse line
-                char*colon = strchr(line, ':');
-                char*server;
-                int port;
-                if(colon) {
-                    *colon = 0;
-                    server = line;
-                    port = atoi(colon+1);
-                } else {
-                    server = line;
-                    port = MRSCAKE_DEFAULT_PORT;
+                if(line[0]!='#') {
+                    char*colon = strchr(line, ':');
+                    char*server;
+                    int port;
+                    if(colon) {
+                        *colon = 0;
+                        server = line;
+                        port = atoi(colon+1);
+                    } else {
+                        server = line;
+                        port = MRSCAKE_DEFAULT_PORT;
+                    }
+                    config_add_remote_server(server, port);
+                    printf("%s %d\n", server, port);
                 }
-                config_add_remote_server(server, port);
-                printf("%s %d\n", server, port);
             }
             line = p+1;
         }
         p++;
+    }
+}
+
+void config_setparameter(const char*key, const char*value)
+{
+    if(!strcmp(key, "subset_variables")) {
+        config_subset_variables = atoi(value);
     }
 }
