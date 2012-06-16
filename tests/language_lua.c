@@ -5,6 +5,7 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+#include <errno.h>
 #include "language_interpreter.h"
 
 typedef struct _lua_internal {
@@ -18,15 +19,15 @@ static const luaL_reg lualibs[] =
     {NULL,   NULL}
 };
 
-static int my_increment(lua_State *l)
+static int f_trace(lua_State *l)
 {
-    int x;
     if(lua_gettop(l) >= 0) {
-        x = (int)lua_tonumber(l, -1);
-        lua_pushnumber(l, x + 1);
+        const char*str = lua_tostring(l, -1);
+        printf("%s\n", str);
+        lua_pushnumber(l, 1);
+        return 1;
     }
-    printf("increment\n");
-    return 1;
+    return 0;
 }
 
 static void openlualibs(lua_State *l)
@@ -50,36 +51,59 @@ bool init_lua(lua_internal_t*lua)
 {
     lua->state = lua_open();
     openlualibs(lua->state);
-    lua_pushcfunction(lua->state, my_increment);
-    lua_setglobal(lua->state, "my_increment");
+    lua_pushcfunction(lua->state, f_trace);
+    lua_setglobal(lua->state, "trace");
 }
 
 static bool define_function_lua(language_interpreter_t*li, const char*script)
 {
     lua_internal_t*lua = (lua_internal_t*)li->internal;
     lua_State*l = lua->state;
-    //int error = luaL_dostring(l, "function run_me()\nthrow \"test\";\nprint(\"test \" .. my_increment(3))\nend");
-    int error = luaL_dofile(l, "test.lua");
+
+    int error = luaL_loadbuffer(l, script, strlen(script), "@file.lua");
+    if(!error) {
+        error = lua_pcall(l, 0, LUA_MULTRET, 0);
+    }
     if(error) {
-        show_error(lua->state);
+        show_error(l);
         printf("Couldn't compile: %d\n", error);
         return 0;
     }
+
+    return 1;
 }
 
 static int call_function_lua(language_interpreter_t*li, row_t*row)
 {
     lua_internal_t*lua = (lua_internal_t*)li->internal;
     lua_State*l = lua->state;
-    lua_getfield(l, LUA_GLOBALSINDEX, "run_me"); // push function
-    int error = lua_pcall(l, /*nargs*/0, /*nresults*/1, 0);
+    lua_getfield(l, LUA_GLOBALSINDEX, "predict"); // push function
+    int i;
+    for(i=0;i<row->num_inputs;i++) {
+        variable_t*v = &row->inputs[i];
+        switch(v->type) {
+            case CATEGORICAL:
+                lua_pushinteger(l, row->inputs[i].category);
+            break;
+            case CONTINUOUS:
+                lua_pushnumber(l, row->inputs[i].value);
+            break;
+            case TEXT:
+                lua_pushstring(l, row->inputs[i].text);
+            break;
+            default:
+                return 0;
+        }
+    }
+    int error = lua_pcall(l, /*nargs*/row->num_inputs, /*nresults*/1, 0);
     if(error) {
         show_error(l);
         printf("Couldn't run: %d\n", error);
         return 0;
     }
+    int ret = lua_tointeger(l, -1);
     lua_pop(l, 1);
-
+    return ret;
 }
 
 static void destroy_lua(language_interpreter_t* li)
@@ -102,11 +126,4 @@ language_interpreter_t* lua_interpreter_new()
     lua->li = li;
     init_lua(lua);
     return li;
-}
-
-int main()
-{
-    language_interpreter_t* l = lua_interpreter_new();
-    l->define_function(l, "function bla() return 3; end");
-    int r = l->call_function(l, NULL);
 }
