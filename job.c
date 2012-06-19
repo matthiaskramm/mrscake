@@ -51,7 +51,7 @@ void job_train_and_score(job_t*job)
 
 void job_process(job_t*job)
 {
-    if(!config_fork_for_training || !(job->flags & JOB_NO_FORK)) {
+    if(!config_fork_for_training || (job->flags & JOB_NO_FORK)) {
         job_train_and_score(job);
     } else {
         int p[2];
