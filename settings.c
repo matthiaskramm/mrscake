@@ -37,6 +37,7 @@ char*config_dataset_cache_directory = "/tmp/mrscake";
 int config_num_seeded_hosts = 1;
 bool config_subset_variables = true;
 int config_remote_worker_timeout = 60;
+bool config_even_out_class_count = 1;
 
 static int remote_server_size = 0;
 
@@ -139,5 +140,7 @@ void config_setparameter(const char*key, const char*value)
 {
     if(!strcmp(key, "subset_variables")) {
         config_subset_variables = atoi(value);
+    } else if(!strcmp(key, "even_out_class_count")) {
+        config_even_out_class_count = atoi(value);
     }
 }

@@ -30,6 +30,7 @@
 #include "easy_ast.h"
 #include "stringpool.h"
 #include "serialize.h"
+#include "settings.h"
 
 trainingdata_t* trainingdata_new()
 {
@@ -371,9 +372,11 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
     dict_t*column_names = extract_column_names(trainingdata);
 
     int num_examples = 0;
-    example_t** examples = example_list_to_array(trainingdata, &num_examples,
-                                      DATASET_SHUFFLE | DATASET_EVEN_OUT_CLASS_COUNT
-                                      );
+    int flags = 0;
+    flags |= DATASET_SHUFFLE;
+    if(config_even_out_class_count)
+        flags |= DATASET_EVEN_OUT_CLASS_COUNT;
+    example_t** examples = example_list_to_array(trainingdata, &num_examples, flags);
 
     example_t*first_row = trainingdata->first_example;
     s->num_columns = first_row->num_inputs;
