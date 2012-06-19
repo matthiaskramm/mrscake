@@ -54,7 +54,7 @@ class Server:
             os.kill(self.pid, 9)
             os.waitpid(self.pid, 0)
             self.pid = None
-        os.system("killall -9 mrscake-job-server");
+        os.system("killall -9 mrscake-job-server >/dev/null 2>&1");
         self.started = False
 
 # distribute the load to the git server, by delaying
