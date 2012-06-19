@@ -49,47 +49,45 @@ void job_train_and_score(job_t*job)
     }
 }
 
-#define FORK_FOR_TRAINING
 void job_process(job_t*job)
 {
-#ifndef FORK_FOR_TRAINING
-    job_train_and_score(job);
-    return;
-#else
-    int p[2];
-    int ret = pipe(p);
-    int read_fd = p[0];
-    int write_fd = p[1];
-    if(ret) {
-        perror("create pipe");
-        exit(-1);
-    }
-    pid_t pid = fork();
-    if(!pid) {
-        //child
-        close(read_fd); // close read
-
+    if(!config_fork_for_training || !(job->flags & JOB_NO_FORK)) {
         job_train_and_score(job);
-
-        writer_t*w = filewriter_new(write_fd);
-        write_compressed_int(w, job->score);
-        node_write(job->code, w, SERIALIZE_DEFAULTS);
-        w->finish(w);
-        close(write_fd); // close write
-        _exit(0);
     } else {
-        //parent
-        close(write_fd); // close write
-        reader_t*r = filereader_with_timeout_new(read_fd, config_job_wait_timeout);
-        job->score = read_compressed_int(r);
-        job->code = node_read(r);
-        r->dealloc(r);
-        close(read_fd); // close read
+        int p[2];
+        int ret = pipe(p);
+        int read_fd = p[0];
+        int write_fd = p[1];
+        if(ret) {
+            perror("create pipe");
+            exit(-1);
+        }
+        pid_t pid = fork();
+        if(!pid) {
+            //child
+            close(read_fd); // close read
 
-        kill(pid, SIGKILL);
-        ret = waitpid(pid, NULL, WNOHANG);
+            job_train_and_score(job);
+
+            writer_t*w = filewriter_new(write_fd);
+            write_compressed_int(w, job->score);
+            node_write(job->code, w, SERIALIZE_DEFAULTS);
+            w->finish(w);
+            close(write_fd); // close write
+            _exit(0);
+        } else {
+            //parent
+            close(write_fd); // close write
+            reader_t*r = filereader_with_timeout_new(read_fd, config_job_wait_timeout);
+            job->score = read_compressed_int(r);
+            job->code = node_read(r);
+            r->dealloc(r);
+            close(read_fd); // close read
+
+            kill(pid, SIGKILL);
+            ret = waitpid(pid, NULL, WNOHANG);
+        }
     }
-#endif
 }
 
 static void process_jobs(jobqueue_t*jobs)

@@ -28,6 +28,8 @@ extern "C" {
 #include "model_select.h"
 #include "dataset.h"
 
+#define JOB_NO_FORK 1
+
 typedef struct _job {
     dataset_t*data;
     char* transforms;
@@ -35,6 +37,7 @@ typedef struct _job {
     node_t*code;
 
     int32_t score;
+    uint32_t flags;
 
     struct _job*prev;
     struct _job*next;

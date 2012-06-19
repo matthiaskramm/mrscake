@@ -1,0 +1,1 @@
+#define HAVE_SYS_TIMEB

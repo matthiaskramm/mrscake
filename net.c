@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <memory.h>
+#include <sys/timeb.h>
 #include "io.h"
 #include "net.h"
 #include "dataset.h"
@@ -123,10 +124,12 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
 
     printf("worker %d: %d rows of data\n", getpid(), dataset->num_rows);
     job_t j;
+    memset(&j, 0, sizeof(j));
     j.factory = factory;
     j.data = dataset;
     j.code = 0;
     j.transforms = transforms;
+    j.flags = JOB_NO_FORK;
     job_process(&j);
 
     printf("worker %d: writing out model data\n", getpid());
@@ -549,8 +552,13 @@ error:
     return NULL;
 }
 
-remote_job_t* remote_job_start(const char*model_name, const char*transforms, dataset_t*dataset, server_array_t*servers)
+remote_job_t* remote_job_start(job_t*job, const char*model_name, const char*transforms, dataset_t*dataset, server_array_t*servers)
 {
+    remote_job_t*j = calloc(1, sizeof(remote_job_t));
+    j->job = job;
+    j->start_time = time(0);
+
+    ftime(&j->profile_time[0]);
     int sock;
     while(1) {
         if(!config_num_remote_servers) {
@@ -563,22 +571,22 @@ remote_job_t* remote_job_start(const char*model_name, const char*transforms, dat
         }
         static int round_robin = 0;
         remote_server_t*s = servers->servers[(round_robin++)%servers->num];
-
-        printf("Starting %s on %s\n", model_name, s->name);fflush(stdout);
         sock = connect_to_remote_server(s);
         if(sock>=0) {
+            printf("Starting %s on %s\n", model_name, s->name);fflush(stdout);
             break;
         }
-        sleep(1);
+        usleep(10000);
     }
+    ftime(&j->profile_time[1]);
 
     writer_t*w = filewriter_new(sock);
     make_request_TRAIN_MODEL(w, model_name, transforms, dataset);
     w->finish(w);
 
-    remote_job_t*j = malloc(sizeof(remote_job_t));
+    ftime(&j->profile_time[2]);
+
     j->socket = sock;
-    j->start_time = time(0);
     return j;
 }
 
@@ -623,6 +631,19 @@ time_t remote_job_age(remote_job_t*j)
     return time(0) - j->start_time;
 }
 
+static void store_times(remote_job_t*j, int nr)
+{
+    char filename[80];
+    sprintf(filename, "job%d.txt", nr);
+    FILE*fi = fopen(filename, "wb");
+    int i;
+    for(i=0;i<5;i++) {
+        struct timeb*t = &j->profile_time[i];
+        fprintf(fi, "%f\n", t->time+t->millitm/1000.0);
+    }
+    fclose(fi);
+}
+
 void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array_t*servers)
 {
     remote_job_t**r = malloc(sizeof(reader_t*)*jobs->num);
@@ -630,45 +651,58 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
        will now only return an error, not halt the program */
     sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
 
-    /* Right now, most of the total processing time spent in this loop, as
+    /* Right now, most of the total processing time is spent in this loop, as
        remote_job_start() will block until the next worker becomes available */
     job_t*job;
     int pos = 0;
     for(job=jobs->first;job;job=job->next) {
-        r[pos] = remote_job_start(job->factory->name, job->transforms, job->data, servers);
+        r[pos] = remote_job_start(job, job->factory->name, job->transforms, job->data, servers);
         job->code = 0;
         pos++;
     }
+    int num = pos;
 
     /* Wait for remaining servers and gather results */
     int open_jobs = jobs->num;
+    int i;
     printf("%d open jobs\n", open_jobs);
     while(open_jobs) {
-        int pos = 0;
-        for(job=jobs->first;job;job=job->next) {
-            if(r[pos] && !job->code) {
-                if(remote_job_is_ready(r[pos])) {
-                    remote_job_read_result(r[pos], job);
+        for(i=0;i<num;i++) {
+            remote_job_t*j = r[i];
+            job_t*job = j->job;
+            if(!j->done && !job->code) {
+                if(remote_job_is_ready(j)) {
+                    ftime(&j->profile_time[3]);
+                    remote_job_read_result(j, job);
                     if(job->code) {
                         printf("Finished: %s\n", job->factory->name);
                     } else {
-                        printf("Failed (0x%02x): %s\n", r[pos]->response, job->factory->name);
+                        printf("Failed (0x%02x): %s\n", j->response, job->factory->name);
                     }
-                    free(r[pos]);
-                    r[pos] = 0;
                     open_jobs--;
-                } else if(remote_job_age(r[pos]) > config_model_timeout) {
+                    ftime(&j->profile_time[4]);
+                    j->done = true;
+                } else if(remote_job_age(j) > config_model_timeout) {
+                    ftime(&j->profile_time[3]);
                     printf("Failed (timeout): %s\n", job->factory->name);
-                    remote_job_cancel(r[pos]);
-                    free(r[pos]);
-                    r[pos] = 0;
+                    remote_job_cancel(j);
                     open_jobs--;
+                    ftime(&j->profile_time[4]);
+                    j->done = true;
                 }
             }
             pos++;
         }
     }
+
+    for(i=0;i<num;i++) {
+        remote_job_t*j = r[i];
+        //store_times(j, i);
+        free(j);
+    }
+
     free(r);
+
     signal(SIGPIPE, old_sigpipe);
 }
 

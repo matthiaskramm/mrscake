@@ -35,9 +35,10 @@ int config_number_of_remote_workers = 2;
 int config_verbosity = 1;
 char*config_dataset_cache_directory = "/tmp/mrscake";
 int config_num_seeded_hosts = 1;
-bool config_subset_variables = true;
+bool config_subset_variables = false;
 int config_remote_worker_timeout = 60;
-bool config_even_out_class_count = 1;
+bool config_even_out_class_count = true;
+bool config_fork_for_training = true;
 
 static int remote_server_size = 0;
 

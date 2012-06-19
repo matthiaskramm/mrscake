@@ -48,6 +48,7 @@ extern char*config_dataset_cache_directory;
 extern int config_num_seeded_hosts;
 extern bool config_subset_variables;
 extern bool config_even_out_class_count;
+extern bool config_fork_for_training;
 
 void config_setparameter(const char*key, const char*value);
 

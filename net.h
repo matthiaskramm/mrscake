@@ -23,9 +23,15 @@
 #define __server_h__
 
 #include <time.h>
+#include "config.h"
 #include "dataset.h"
 #include "settings.h"
 #include "job.h"
+#ifdef HAVE_SYS_TIMEB
+#include <sys/timeb.h>
+#else
+#define ftime(x)
+#endif
 
 typedef enum {REQUEST_SEND_DATASET,
               REQUEST_RECV_DATASET,
@@ -40,9 +46,15 @@ typedef enum {RESPONSE_OK,
               RESPONSE_READ_ERROR=-1} response_type_t;
 
 typedef struct _remote_job {
+    job_t*job;
     int socket;
-    time_t start_time;
     response_type_t response;
+    time_t start_time;
+
+#ifdef HAVE_SYS_TIMEB
+    struct timeb profile_time[16];
+#endif
+    bool done;
 } remote_job_t;
 
 typedef struct _server_array {
@@ -52,7 +64,7 @@ typedef struct _server_array {
 
 int connect_to_host(const char *host, int port);
 node_t* process_job_remotely(const char*model_name, dataset_t*dataset);
-remote_job_t* remote_job_start(const char*model_name, const char*transforms, dataset_t*dataset, server_array_t*servers);
+remote_job_t* remote_job_start(job_t*job, const char*model_name, const char*transforms, dataset_t*dataset, server_array_t*servers);
 bool remote_job_is_ready(remote_job_t*j);
 time_t remote_job_age(remote_job_t*j);
 void remote_job_cancel(remote_job_t*j);
