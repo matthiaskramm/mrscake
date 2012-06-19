@@ -1,4 +1,4 @@
-all: test_codegen test_net model
+all: test_codegen test_net model lua
 
 CC=gcc -g -DHAVE_SHA1 -I..
 CXX=g++ -g -DHAVE_SHA1
@@ -73,7 +73,10 @@ test_server: test_server.$(O) $(OBJECTS) ../mrscake.a
 test_cv: test_cv.$(O) lib/libml.a $(OBJECTS) ../mrscake.a 
 	$(CXX) test_cv.$(O) $(OBJECTS) ../mrscake.a -o $@ $(LIBS)
 
+lua: language_lua.$(O)
+	$(CC) $< -o $@ $(LUA_LIBS)
+
 clean:
-	rm -f *.o test_codegen
+	rm -f *.o test_codegen lua
 
 .PHONY: all clean
