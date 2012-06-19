@@ -87,6 +87,7 @@ while 1:
 
         if updated or not server.started:
             server.stop()
+            run("./configure")
             run("make mrscake-job-server")
             server.start()
     except:
