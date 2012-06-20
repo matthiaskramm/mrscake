@@ -358,6 +358,8 @@ int start_server(int port)
            the connection here and have the server decide what to
            do with the job now? */
         while(server.num_workers >= config_number_of_remote_workers) {
+            close(newsock);
+            continue;
             printf("Wait for free worker (%d/%d)\n", server.num_workers, config_number_of_remote_workers);
             sleep(1);
         }
@@ -391,6 +393,7 @@ int connect_to_remote_server(remote_server_t*server)
     char buf_ip[100];
     struct sockaddr_in sin;
 
+    printf("gethostbyname\n");
     struct hostent *he = gethostbyname(server->host);
     if(!he) {
         fprintf(stderr, "gethostbyname returned %d\n", h_errno);
@@ -407,6 +410,7 @@ int connect_to_remote_server(remote_server_t*server)
     sin.sin_port = htons(server->port);
     memcpy(&sin.sin_addr.s_addr, ip, 4);
 
+    printf("socket\n");
     int sock = socket(AF_INET, SOCK_STREAM, 6);
     if(sock < 0) {
         perror("socket");
@@ -415,12 +419,14 @@ int connect_to_remote_server(remote_server_t*server)
     }
 
     /* FIXME: connect has a very long timeout */
+    printf("connect\n");
     ret = connect(sock, (struct sockaddr*)&sin, sizeof(struct sockaddr_in));
     if(ret < 0) {
         perror("connect");
         remote_server_is_broken(server, strerror(errno));
         return -1;
     }
+    printf("connected\n");
     return sock;
 }
 
@@ -576,6 +582,7 @@ remote_job_t* remote_job_start(job_t*job, const char*model_name, const char*tran
             printf("Starting %s on %s\n", model_name, s->name);fflush(stdout);
             break;
         }
+        char buf[100];
         usleep(10000);
     }
     ftime(&j->profile_time[1]);
@@ -697,7 +704,7 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
 
     for(i=0;i<num;i++) {
         remote_job_t*j = r[i];
-        //store_times(j, i);
+        store_times(j, i);
         free(j);
     }
 
