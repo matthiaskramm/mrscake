@@ -300,7 +300,7 @@ int start_server(int port)
         perror("bind");
         exit(1);
     }
-    ret = listen(sock, 5);
+    ret = listen(sock, 256);
     if(ret<0) {
         perror("listen");
         exit(1);
