@@ -54,9 +54,9 @@ variable_t variable_new_missing()
     v.value = __builtin_nan("");
     return v;
 }
-const char*variable_type(variable_t*v)
+const char*variable_type_name(columntype_t type)
 {
-    switch(v->type) {
+    switch(type) {
         case CATEGORICAL:
             return "category";
         break;
@@ -70,6 +70,10 @@ const char*variable_type(variable_t*v)
             return "invalid";
         break;
     }
+}
+const char*variable_type(variable_t*v)
+{
+    return variable_type_name(v->type);
 }
 void variable_print(const variable_t*v, FILE*stream)
 {

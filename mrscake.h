@@ -47,7 +47,7 @@ variable_t variable_new_continuous(float v);
 variable_t variable_new_text(const char*s);
 variable_t variable_new_missing();
 double variable_value(variable_t*v);
-const char*variable_type(variable_t*v);
+const char*variable_type_name(columntype_t type);
 bool variable_equals(variable_t*v1, variable_t*v2);
 void variable_print(const variable_t*v, FILE*stream);
 

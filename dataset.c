@@ -50,7 +50,8 @@ void trainingdata_add_example(trainingdata_t*d, example_t*e)
     }
     d->num_examples++;
 }
-bool trainingdata_check_format(trainingdata_t*trainingdata)
+
+bool trainingdata_check_format2(trainingdata_t*trainingdata, dict_t*column_names)
 {
     if(!trainingdata || !trainingdata->first_example)
         return false;
@@ -59,6 +60,7 @@ bool trainingdata_check_format(trainingdata_t*trainingdata)
     int pos = 0;
     char has_names = 0;
     char has_no_names = 0;
+
     for(e=trainingdata->first_example;e;e=e->next) {
         if(e->input_names)
             has_names = 1;
@@ -72,20 +74,69 @@ bool trainingdata_check_format(trainingdata_t*trainingdata)
             fprintf(stderr, "Bad configuration: row %d has %d inputs, row %d has %d.\n", t, trainingdata->first_example->num_inputs, 0, e->num_inputs);
             return false;
         }
-        int s;
-        for(s=0;s<e->num_inputs;s++) {
-            if(trainingdata->first_example->inputs[s].type != e->inputs[s].type) {
-                fprintf(stderr, "Bad configuration: item %d in row %d is %s, item %d in row %d is %s\n",
-                         s, pos, variable_type(&e->inputs[s]),
-                         s,   0, variable_type(&trainingdata->first_example->inputs[s])
-                        );
-                return false;
+        if(e->input_names) {
+            int x;
+            for(x=0;x<e->num_inputs;x++) {
+                int column_and_type = dict_lookup_int(column_names,e->input_names[x])-1;
+                int column = column_and_type >> 3;
+                int type = column_and_type & 7;
+                if(e->inputs[x].type != type) {
+                    fprintf(stderr, "Bad configuration: column '%s' has mixed %s and %s\n", 
+                            e->input_names[x],
+                            variable_type_name(e->inputs[x].type),
+                            variable_type_name(type));
+                    return false;
+                }
+            }
+        } else {
+            int x;
+            for(x=0;x<e->num_inputs;x++) {
+                if(trainingdata->first_example->inputs[x].type != e->inputs[x].type) {
+                    fprintf(stderr, "Bad configuration: item %d in row %d is %s, item %d in row %d is %s\n",
+                             x, pos, variable_type_name(e->inputs[x].type),
+                             x,   0, variable_type_name(trainingdata->first_example->inputs[x].type)
+                            );
+                    return false;
+                }
             }
         }
         pos++;
     }
     return true;
 }
+
+dict_t*extract_column_names(trainingdata_t*dataset)
+{
+    dict_t*d = 0;
+    example_t*e = dataset->first_example;
+    int pos = 1;
+    while(e) {
+        if(e->input_names) {
+            if(!d) {
+                d = dict_new(&charptr_type);
+            }
+            int x;
+            for(x=0;x<e->num_inputs;x++) {
+                const char*name = e->input_names[x];
+                if(!dict_lookup(d, name)) {
+                    dict_put_int(d, name, pos<<3|e->inputs[x].type);
+                    pos++;
+                }
+            }
+        }
+        e = e->next;
+    }
+    return d;
+}
+
+bool trainingdata_check_format(trainingdata_t*trainingdata)
+{
+    dict_t*column_names = extract_column_names(trainingdata);
+    bool result = trainingdata_check_format2(trainingdata, column_names);
+    dict_destroy(column_names);
+    return result;
+}
+
 void trainingdata_print(trainingdata_t*trainingdata)
 {
     example_t*e;
@@ -249,30 +300,6 @@ static column_t* convert_to_category_column(column_t*column, int num_rows)
 }
 
 
-dict_t*extract_column_names(trainingdata_t*dataset)
-{
-    dict_t*d = 0;
-    example_t*e = dataset->first_example;
-    int pos = 1;
-    while(e) {
-        if(e->input_names) {
-            if(!d) {
-                d = dict_new(&charptr_type);
-            }
-            int x;
-            for(x=0;x<e->num_inputs;x++) {
-                const char*name = e->input_names[x];
-                if(!dict_lookup(d, name)) {
-                    dict_put_int(d, name, pos);
-                    pos++;
-                }
-            }
-        }
-        e = e->next;
-    }
-    return d;
-}
-
 #define DATASET_SHUFFLE 1
 #define DATASET_EVEN_OUT_CLASS_COUNT 2
 
@@ -366,10 +393,12 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
 {
     dataset_t*s = calloc(1,sizeof(dataset_t));
 
-    if(!trainingdata_check_format(trainingdata))
-        return 0;
-
     dict_t*column_names = extract_column_names(trainingdata);
+
+    if(!trainingdata_check_format2(trainingdata, column_names)) {
+        dict_destroy(column_names);
+        return 0;
+    }
 
     int num_examples = 0;
     int flags = 0;
@@ -398,7 +427,7 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
         for(x=0;x<s->num_columns;x++) {
             int col = x;
             if(example->input_names) {
-                col = dict_lookup_int(column_names,example->input_names[x])-1;
+                col = dict_lookup_int(column_names, example->input_names[x])-1;
             }
             variable_t*var = &example->inputs[x];
             columnbuilder_add(builders[col],y,variable_to_constant(var));
@@ -433,7 +462,8 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
     bool has_column_names = false;
     if(column_names) {
         DICT_ITERATE_ITEMS(column_names, char*, name, void*, _column) {
-            int column = PTR_TO_INT(_column)-1;
+            int column_and_type = PTR_TO_INT(_column)-1;
+            int column = column_and_type >> 3;
             s->columns[column]->name = register_string(name);
         }
         dict_destroy(column_names);
