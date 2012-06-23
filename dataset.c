@@ -77,8 +77,8 @@ bool trainingdata_check_format2(trainingdata_t*trainingdata, dict_t*column_names
         if(e->input_names) {
             int x;
             for(x=0;x<e->num_inputs;x++) {
-                int column_and_type = dict_lookup_int(column_names,e->input_names[x])-1;
-                int column = column_and_type >> 3;
+                int column_and_type = dict_lookup_int(column_names,e->input_names[x]);
+                int column = (column_and_type >> 3) - 1;
                 int type = column_and_type & 7;
                 if(e->inputs[x].type != type) {
                     fprintf(stderr, "Bad configuration: column '%s' has mixed %s and %s\n", 
@@ -427,7 +427,8 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
         for(x=0;x<s->num_columns;x++) {
             int col = x;
             if(example->input_names) {
-                col = dict_lookup_int(column_names, example->input_names[x])-1;
+                int column_and_type = dict_lookup_int(column_names, example->input_names[x]);
+                col = (column_and_type >> 3) - 1;
             }
             variable_t*var = &example->inputs[x];
             columnbuilder_add(builders[col],y,variable_to_constant(var));
@@ -462,8 +463,8 @@ dataset_t* trainingdata_sanitize(trainingdata_t*trainingdata)
     bool has_column_names = false;
     if(column_names) {
         DICT_ITERATE_ITEMS(column_names, char*, name, void*, _column) {
-            int column_and_type = PTR_TO_INT(_column)-1;
-            int column = column_and_type >> 3;
+            int column_and_type = PTR_TO_INT(_column);
+            int column = (column_and_type >> 3) - 1;
             s->columns[column]->name = register_string(name);
         }
         dict_destroy(column_names);
