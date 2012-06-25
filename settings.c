@@ -29,7 +29,6 @@ int config_num_remote_servers = 0;
 remote_server_t*config_remote_servers = 0;
 int config_job_wait_timeout = 300;
 int config_remote_read_timeout = 2;
-int config_model_timeout = 15;
 bool config_do_remote_processing = false;
 int config_number_of_remote_workers = 2;
 int config_verbosity = 1;

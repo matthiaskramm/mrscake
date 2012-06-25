@@ -141,9 +141,9 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
 
     times(&tms_after);
 
-    printf("worker %d: finished training (time: %d)\n", getpid(), (int)(tms_after.tms_utime - tms_before.tms_utime));
+    printf("worker %d: finished training (time: %.2f)\n", getpid(), (tms_after.tms_utime - tms_before.tms_utime) /  (float)sysconf(_SC_CLK_TCK));
     write_uint8(w, RESPONSE_OK);
-    write_compressed_int(w, tms_after.tms_utime - tms_before.tms_utime);
+    write_compressed_int(w, (tms_after.tms_utime - tms_before.tms_utime) * 1000ll / sysconf(_SC_CLK_TCK));
     write_compressed_int(w, j.score);
 
     uint8_t want_data = read_uint8(r);
@@ -489,7 +489,7 @@ int connect_to_remote_server(remote_server_t*server)
     if(sock < 0) {
         perror("socket");
         remote_server_is_broken(server, strerror(errno));
-        return -1;
+        return -2;
     }
 
     /* FIXME: connect has a very long timeout */
@@ -497,7 +497,7 @@ int connect_to_remote_server(remote_server_t*server)
     if(ret < 0) {
         perror("connect");
         remote_server_is_broken(server, strerror(errno));
-        return -1;
+        return -3;
     }
 
     /* receive header */
@@ -509,7 +509,7 @@ int connect_to_remote_server(remote_server_t*server)
         header[0] != RESPONSE_BUSY)) {
         fprintf(stderr, "invalid header");
         remote_server_is_broken(server, "invalid header");
-        return -1;
+        return -4;
     }
     server->num_jobs = header[1];
     server->num_workers = header[2];
@@ -517,7 +517,7 @@ int connect_to_remote_server(remote_server_t*server)
         /* TODO: we should allow transferring datasets even when jobs are running
                  on a server */
         server->busy = true;
-        return -1;
+        return -5;
     }
     server->busy = false;
     return sock;
@@ -664,33 +664,32 @@ error:
     return NULL;
 }
 
-remote_job_t* remote_job_start(job_t*job, const char*model_name, const char*transforms, dataset_t*dataset, server_array_t*servers)
+remote_job_t* remote_job_try_to_start(job_t*job, const char*model_name, const char*transforms, dataset_t*dataset, server_array_t*servers)
 {
     remote_job_t*j = calloc(1, sizeof(remote_job_t));
     j->job = job;
     j->start_time = time(0);
 
     ftime(&j->profile_time[0]);
-    int sock;
-    while(1) {
-        if(!config_num_remote_servers) {
-            fprintf(stderr, "No remote servers configured.\n");
-            exit(1);
-        }
-        if(!config_has_remote_servers()) {
-            fprintf(stderr, "No remote servers available.\n");
-            exit(1);
-        }
-        static int round_robin = 0;
-        remote_server_t*s = servers->servers[(round_robin++)%servers->num];
-        sock = connect_to_remote_server(s);
-        if(sock>=0) {
-            j->server = s;
-            printf("Starting %s on %s\n", model_name, s->name);
-            break;
-        }
-        usleep(10000);
+    if(!config_num_remote_servers) {
+        fprintf(stderr, "No remote servers configured.\n");
+        exit(1);
     }
+    if(!config_has_remote_servers()) {
+        fprintf(stderr, "No remote servers available.\n");
+        exit(1);
+    }
+    static int round_robin = 0;
+    remote_server_t*s = servers->servers[(round_robin++)%servers->num];
+    int sock = connect_to_remote_server(s);
+    if(sock<0) {
+        free(j);
+        return NULL;
+    }
+    j->server = s;
+    j->running = true;
+    printf("Starting %s on %s\n", model_name, s->name);
+
     ftime(&j->profile_time[1]);
 
     writer_t*w = filewriter_new(sock);
@@ -763,29 +762,29 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
        will now only return an error, not halt the program */
     sig_t old_sigpipe = signal(SIGPIPE, SIG_IGN);
 
-    /* Right now, most of the total processing time is spent in this loop, as
-       remote_job_start() will block until the next worker becomes available */
-    job_t*job;
-    int pos = 0;
-    for(job=jobs->first;job;job=job->next) {
-        r[pos] = remote_job_start(job, job->factory->name, job->transforms, job->data, servers);
-        job->code = 0;
-        pos++;
-    }
-    int num = pos;
-
-    /* Wait for remaining servers and gather results */
+    job_t*job = jobs->first;
     int open_jobs = jobs->num;
     int i;
     printf("%d open jobs\n", open_jobs);
     int32_t best_score = INT_MAX;
     int total_cpu_time = 0;
 
-    while(open_jobs) {
+    int num = 0;
+    int pos = 0;
+    do {
+        if(job) {
+            r[num] = remote_job_try_to_start(job, job->factory->name, job->transforms, job->data, servers);
+            if(r[num]) {
+                job->code = NULL;
+                num++;
+                job = job->next;
+            }
+        }
+
         for(i=0;i<num;i++) {
             remote_job_t*j = r[i];
             job_t*job = j->job;
-            if(!j->done && !job->code) {
+            if(j->running && !j->done && !job->code) {
                 if(remote_job_is_ready(j)) {
                     ftime(&j->profile_time[3]);
                     remote_job_read_result(j, &best_score);
@@ -798,9 +797,9 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
                     open_jobs--;
                     ftime(&j->profile_time[4]);
                     j->done = true;
-                } else if(remote_job_age(j) > config_model_timeout) {
+                } else if(num == jobs->num && remote_job_age(j) > config_remote_worker_timeout) {
                     ftime(&j->profile_time[3]);
-                    printf("Failed (timeout): %s\n", job->factory->name);
+                    printf("Failed (%s, timeout): %s\n", j->server->name, job->factory->name);
                     remote_job_cancel(j);
                     open_jobs--;
                     ftime(&j->profile_time[4]);
@@ -809,7 +808,7 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
             }
             pos++;
         }
-    }
+    } while(open_jobs);
 
     printf("total cpu time: %.2f\n", total_cpu_time / (float)sysconf(_SC_CLK_TCK));
 

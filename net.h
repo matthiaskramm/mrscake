@@ -55,6 +55,7 @@ typedef struct _remote_job {
     job_t*job;
 
     remote_server_t*server;
+    bool running;
     int socket;
 
     response_type_t response;

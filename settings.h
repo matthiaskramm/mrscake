@@ -43,7 +43,6 @@ extern int config_remote_worker_timeout;
 
 extern int config_remote_read_timeout;
 extern int config_job_wait_timeout;
-extern int config_model_timeout;
 extern bool config_do_remote_processing;
 extern int config_number_of_remote_workers;
 extern int config_verbosity;

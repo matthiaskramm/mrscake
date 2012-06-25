@@ -41,7 +41,7 @@ int main(int argn, char*argv[])
 {
     config_parse_remote_servers("../servers.txt");
 
-    dataset_t*dataset = dataset1(32, 2048);
+    dataset_t*dataset = dataset1(32, 1250);
 
 #ifdef HAVE_SYS_TIMEB
     struct timeb start_ftime,distribute_done_ftime,end_ftime;
