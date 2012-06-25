@@ -51,7 +51,10 @@ typedef enum {RESPONSE_OK,
 
 typedef struct _remote_job {
     job_t*job;
+
+    remote_server_t*server;
     int socket;
+
     response_type_t response;
 
     int cpu_time;

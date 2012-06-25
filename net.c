@@ -217,18 +217,24 @@ static void process_request_SEND_DATASET(datacache_t*datacache, reader_t*r, writ
     dataset_write(dataset, w);
 }
 
-static void make_request_RECV_DATASET(reader_t*r, writer_t*w, dataset_t*dataset, remote_server_t*other_server)
+static bool make_request_RECV_DATASET(reader_t*r, writer_t*w, dataset_t*dataset, remote_server_t*other_server)
 {
     write_uint8(w, REQUEST_RECV_DATASET);
-    if(w->error)
-        return;
+    if(w->error) {
+        printf("%s\n", w->error);
+        return false;
+    }
     w->write(w, dataset->hash, HASH_SIZE);
-    if(w->error)
-        return;
+    if(w->error) {
+        printf("%s\n", w->error);
+        return false;
+    }
 
     uint8_t status = read_uint8(r);
-    if(status != RESPONSE_GO_AHEAD)
-        return;
+    if(status != RESPONSE_GO_AHEAD) {
+        printf("bad status (%02x)\n", status);
+        return false;
+    }
 
     if(other_server) {
         write_string(w, other_server->host);
@@ -238,6 +244,7 @@ static void make_request_RECV_DATASET(reader_t*r, writer_t*w, dataset_t*dataset,
         write_compressed_uint(w, 0);
         dataset_write(dataset, w);
     }
+    return true;
 }
 static void process_request_RECV_DATASET(datacache_t*datacache, reader_t*r, writer_t*w)
 {
@@ -488,21 +495,28 @@ static int send_dataset_to_remote_server(remote_server_t*server, dataset_t*data,
 {
     int sock = connect_to_remote_server(server);
     if(sock<0) {
+        remote_server_is_broken(server, "couldn't connect");
         return RESPONSE_READ_ERROR;
     }
     writer_t*w = filewriter_new(sock);
     reader_t*r = filereader_with_timeout_new(sock, config_remote_read_timeout);
-    make_request_RECV_DATASET(r, w, data, from_server);
 
-    char hash[HASH_SIZE];
-    r->read(r, hash, HASH_SIZE);
-    int resp = read_uint8(r);
-    if(r->error) {
-        remote_server_is_broken(server, "read error after RECV_DATASET");
+    bool ret = make_request_RECV_DATASET(r, w, data, from_server);
+    int resp;
+    if(!ret) {
+        remote_server_is_broken(server, "read/write error in RECV_DATASET");
         resp = RESPONSE_READ_ERROR;
-    } else if(memcmp(hash, data->hash, HASH_SIZE)) {
-        remote_server_is_broken(server, "bad data checksum after RECV_DATASET");
-        resp = RESPONSE_DATA_ERROR;
+    } else {
+        char hash[HASH_SIZE];
+        r->read(r, hash, HASH_SIZE);
+        resp = read_uint8(r);
+        if(r->error) {
+            remote_server_is_broken(server, "read error after RECV_DATASET");
+            resp = RESPONSE_READ_ERROR;
+        } else if(memcmp(hash, data->hash, HASH_SIZE)) {
+            remote_server_is_broken(server, "bad data checksum after RECV_DATASET");
+            resp = RESPONSE_DATA_ERROR;
+        }
     }
 
     w->finish(w);
@@ -624,6 +638,7 @@ remote_job_t* remote_job_start(job_t*job, const char*model_name, const char*tran
         remote_server_t*s = servers->servers[(round_robin++)%servers->num];
         sock = connect_to_remote_server(s);
         if(sock>=0) {
+            j->server = s;
             printf("Starting %s on %s\n", model_name, s->name);fflush(stdout);
             break;
         }
@@ -731,7 +746,7 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
                         printf("Finished: %s (%.2f s)\n", job->factory->name, j->cpu_time / 1000.0);
                         total_cpu_time += j->cpu_time;
                     } else {
-                        printf("Failed (0x%02x): %s\n", j->response, job->factory->name);
+                        printf("Failed (%s, 0x%02x): %s\n", j->server->name, j->response, job->factory->name);
                     }
                     open_jobs--;
                     ftime(&j->profile_time[4]);
