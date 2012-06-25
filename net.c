@@ -141,9 +141,8 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
 
     times(&tms_after);
 
-    printf("worker %d: finished training\n", getpid());
+    printf("worker %d: finished training (time: %d)\n", getpid(), (int)(tms_after.tms_utime - tms_before.tms_utime));
     write_uint8(w, RESPONSE_OK);
-    printf("%d %d\n", tms_after.tms_utime, tms_before.tms_utime);
     write_compressed_int(w, tms_after.tms_utime - tms_before.tms_utime);
     write_compressed_int(w, j.score);
 
@@ -336,6 +335,16 @@ static void process_request(datacache_t*cache, int socket)
     w->finish(w);
 }
 
+static bool send_header(int sock, bool accept_request, int num_jobs, int num_workers)
+{
+    uint8_t header[3] = {
+        accept_request? RESPONSE_IDLE : RESPONSE_BUSY,
+        num_jobs,
+        num_workers};
+    int ret = write(sock, header, 3);
+    return ret == 3;
+}
+
 int start_server(int port)
 {
     struct sockaddr_in sin;
@@ -414,14 +423,17 @@ int start_server(int port)
             exit(1);
         }
 
+        bool accept_request = (server.num_workers < config_number_of_remote_workers);
+        send_header(sock, accept_request, server.num_workers, config_number_of_remote_workers);
+
         /* Wait for a free worker to become available. Only
            after we have a worker will we actually read the 
            job data. TODO: would it be better to just close
            the connection here and have the server decide what to
            do with the job now? */
-        while(server.num_workers >= config_number_of_remote_workers) {
-            printf("Wait for free worker (%d/%d)\n", server.num_workers, config_number_of_remote_workers);
-            sleep(1);
+        if(!accept_request) {
+            close(newsock);
+            continue;
         }
 
         /* block child signals while we're modifying num_workers / jobs */
@@ -445,6 +457,34 @@ int start_server(int port)
 
         close(newsock);
     }
+}
+
+int connect_to_host(const char*name, int port)
+{
+    int i, ret;
+    char buf_ip[100];
+    struct sockaddr_in sin;
+
+    struct hostent *he = gethostbyname(name);
+    if(!he) {
+        return -1;
+    }
+    unsigned char*ip = he->h_addr_list[0];
+
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(port);
+    memcpy(&sin.sin_addr.s_addr, ip, 4);
+
+    int sock = socket(AF_INET, SOCK_STREAM, 6);
+    if(sock < 0) {
+        return -1;
+    }
+    ret = connect(sock, (struct sockaddr*)&sin, sizeof(struct sockaddr_in));
+    if(ret < 0) {
+        return -1;
+    }
+    return sock;
 }
 
 int connect_to_remote_server(remote_server_t*server)
@@ -483,23 +523,27 @@ int connect_to_remote_server(remote_server_t*server)
         remote_server_is_broken(server, strerror(errno));
         return -1;
     }
-    return sock;
-}
 
-int connect_to_host(const char*host, int port)
-{
-    remote_server_t dummy;
-    dummy.host = host;
-    dummy.port = port;
-    dummy.broken = NULL;
-    return connect_to_remote_server(&dummy);
+    /* receive header */
+    reader_t*r = filereader_with_timeout_new(sock, config_remote_read_timeout);
+    uint8_t header[3];
+    int c = r->read(r, header, 3);
+    if(c!= 3 ||
+       (header[0] != RESPONSE_IDLE &&
+        header[0] != RESPONSE_BUSY)) {
+        fprintf(stderr, "invalid header");
+        remote_server_is_broken(server, "invalid header");
+        return -1;
+    }
+    server->num_jobs = header[1];
+    server->num_workers = header[2];
+    return sock;
 }
 
 static int send_dataset_to_remote_server(remote_server_t*server, dataset_t*data, remote_server_t*from_server)
 {
     int sock = connect_to_remote_server(server);
     if(sock<0) {
-        remote_server_is_broken(server, "couldn't connect");
         return RESPONSE_READ_ERROR;
     }
     writer_t*w = filewriter_new(sock);

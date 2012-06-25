@@ -47,6 +47,8 @@ typedef enum {RESPONSE_OK,
               RESPONSE_FACTORY_UNKNOWN,
               RESPONSE_GO_AHEAD,
               RESPONSE_DATA_FOLLOWS,
+              RESPONSE_BUSY,
+              RESPONSE_IDLE,
               RESPONSE_READ_ERROR=-1} response_type_t;
 
 typedef struct _remote_job {
