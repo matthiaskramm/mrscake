@@ -141,15 +141,17 @@ static void add_broken_server(int port, failure_mode_t failure_mode)
 
 jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_name);
 
-int main()
+int main(int argn, char*argv[])
 {
+    bool thorough = argn >= 2;
+
     add_broken_server(8800, GARBAGE_DATA);
     add_server(8801);
-    add_broken_server(8802, LEAVE_HANGING);
+    add_broken_server(8802, thorough? LEAVE_HANGING: GARBAGE_DATA);
     add_broken_server(8803, CLOSE_ON_OPEN);
     add_server(8804);
     add_server(8805);
-    add_broken_server(8806, LEAVE_HANGING);
+    add_broken_server(8806, thorough? LEAVE_HANGING: GARBAGE_DATA);
 
     usleep(100);
 

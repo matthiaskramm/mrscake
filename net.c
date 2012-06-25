@@ -22,6 +22,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/times.h>
 #include <arpa/inet.h>
 #include <signal.h>
 #include <errno.h>
@@ -33,7 +34,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <memory.h>
+#ifdef HAVE_SYS_TIMEB
 #include <sys/timeb.h>
+#endif
 #include "io.h"
 #include "net.h"
 #include "dataset.h"
@@ -123,6 +126,10 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
     }
 
     printf("worker %d: %d rows of data\n", getpid(), dataset->num_rows);
+
+    struct tms tms_before, tms_after;
+    times(&tms_before);
+
     job_t j;
     memset(&j, 0, sizeof(j));
     j.factory = factory;
@@ -132,10 +139,54 @@ static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*
     j.flags = JOB_NO_FORK;
     job_process(&j);
 
-    printf("worker %d: writing out model data\n", getpid());
+    times(&tms_after);
+
+    printf("worker %d: finished training\n", getpid());
     write_uint8(w, RESPONSE_OK);
+    printf("%d %d\n", tms_after.tms_utime, tms_before.tms_utime);
+    write_compressed_int(w, tms_after.tms_utime - tms_before.tms_utime);
     write_compressed_int(w, j.score);
-    node_write(j.code, w, SERIALIZE_DEFAULTS);
+
+    uint8_t want_data = read_uint8(r);
+    if(want_data == REQUEST_SEND_CODE) {
+        printf("worker %d: sending out model data\n", getpid());
+        write_uint8(w, RESPONSE_DATA_FOLLOWS);
+        node_write(j.code, w, SERIALIZE_DEFAULTS);
+    } else if(want_data == REQUEST_DISCARD_CODE) {
+        printf("worker %d: discarding model data\n", getpid());
+        // the server already has a better model for this data
+    } else {
+        printf("worker %d: Invalid response from server after training\n", getpid());
+    }
+}
+void finish_request_TRAIN_MODEL(reader_t*r, writer_t*w, remote_job_t*rjob, int32_t cutoff)
+{
+    job_t*dest = rjob->job;
+    rjob->response = read_uint8(r);
+    if(rjob->response != RESPONSE_OK) {
+        rjob->cpu_time = 0;
+        dest->score = INT32_MAX;
+        dest->code = NULL;
+        return;
+    }
+
+    rjob->cpu_time = read_compressed_int(r);
+    dest->score = read_compressed_int(r);
+
+    if(dest->score >= cutoff) {
+        write_uint8(w, REQUEST_DISCARD_CODE);
+        dest->code = NULL;
+    } else {
+        write_uint8(w, REQUEST_SEND_CODE);
+        int resp = read_uint8(r);
+        if(resp != RESPONSE_DATA_FOLLOWS) {
+            rjob->response = resp|0x80;
+            dest->score = INT32_MAX;
+            dest->code = NULL;
+        } else {
+            dest->code = node_read(r);
+        }
+    }
 }
 
 static dataset_t* make_request_SEND_DATASET(reader_t*r, writer_t*w, uint8_t*hash)
@@ -371,7 +422,7 @@ int start_server(int port)
             signal(SIGALRM, worker_timeout_signal);
             alarm(config_remote_worker_timeout);
             process_request(server.datacache, newsock);
-            printf("pid %d: closing socket\n", pid);
+            printf("worker %d: closing socket\n", getpid());
             close(newsock);
             _exit(0);
         }
@@ -606,18 +657,15 @@ bool remote_job_is_ready(remote_job_t*j)
     return !!FD_ISSET(j->socket, &readfds);
 }
 
-void remote_job_read_result(remote_job_t*j, job_t*dest)
+void remote_job_read_result(remote_job_t*j, int32_t*best_score)
 {
     reader_t*r = filereader_with_timeout_new(j->socket, config_remote_read_timeout);
-
-    j->response = read_uint8(r);
-    if(j->response != RESPONSE_OK) {
-        dest->score = INT32_MAX;
-        dest->code = NULL;
-    } else {
-        dest->score = read_compressed_int(r);
-        dest->code = node_read(r);
+    writer_t*w = filewriter_new(j->socket);
+    finish_request_TRAIN_MODEL(r, w, j, *best_score);
+    if(config_limit_network_io && j->job->score < *best_score) {
+        *best_score = j->job->score;
     }
+    w->finish(w);
     r->dealloc(r);
 }
 
@@ -631,6 +679,7 @@ time_t remote_job_age(remote_job_t*j)
     return time(0) - j->start_time;
 }
 
+#ifdef HAVE_SYS_TIMEB
 static void store_times(remote_job_t*j, int nr)
 {
     char filename[80];
@@ -643,6 +692,7 @@ static void store_times(remote_job_t*j, int nr)
     }
     fclose(fi);
 }
+#endif
 
 void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array_t*servers)
 {
@@ -666,6 +716,9 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
     int open_jobs = jobs->num;
     int i;
     printf("%d open jobs\n", open_jobs);
+    int32_t best_score = INT_MAX;
+    int total_cpu_time = 0;
+
     while(open_jobs) {
         for(i=0;i<num;i++) {
             remote_job_t*j = r[i];
@@ -673,9 +726,10 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
             if(!j->done && !job->code) {
                 if(remote_job_is_ready(j)) {
                     ftime(&j->profile_time[3]);
-                    remote_job_read_result(j, job);
-                    if(job->code) {
-                        printf("Finished: %s\n", job->factory->name);
+                    remote_job_read_result(j, &best_score);
+                    if(j->response == RESPONSE_OK) {
+                        printf("Finished: %s (%.2f s)\n", job->factory->name, j->cpu_time / 1000.0);
+                        total_cpu_time += j->cpu_time;
                     } else {
                         printf("Failed (0x%02x): %s\n", j->response, job->factory->name);
                     }
@@ -695,9 +749,13 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
         }
     }
 
+    printf("total cpu time: %.2f\n", total_cpu_time / (float)sysconf(_SC_CLK_TCK));
+
     for(i=0;i<num;i++) {
         remote_job_t*j = r[i];
+#ifdef HAVE_SYS_TIMEB
         //store_times(j, i);
+#endif
         free(j);
     }
 

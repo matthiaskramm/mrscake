@@ -49,6 +49,7 @@ extern int config_num_seeded_hosts;
 extern bool config_subset_variables;
 extern bool config_even_out_class_count;
 extern bool config_fork_for_training;
+extern bool config_limit_network_io;
 
 void config_setparameter(const char*key, const char*value);
 

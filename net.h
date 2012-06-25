@@ -35,7 +35,10 @@
 
 typedef enum {REQUEST_SEND_DATASET,
               REQUEST_RECV_DATASET,
-              REQUEST_TRAIN_MODEL} request_type_t;
+              REQUEST_TRAIN_MODEL,
+              REQUEST_SEND_CODE,
+              REQUEST_DISCARD_CODE,
+             } request_type_t;
 
 typedef enum {RESPONSE_OK,
               RESPONSE_DATA_ERROR,
@@ -43,12 +46,15 @@ typedef enum {RESPONSE_OK,
               RESPONSE_DATASET_UNKNOWN,
               RESPONSE_FACTORY_UNKNOWN,
               RESPONSE_GO_AHEAD,
+              RESPONSE_DATA_FOLLOWS,
               RESPONSE_READ_ERROR=-1} response_type_t;
 
 typedef struct _remote_job {
     job_t*job;
     int socket;
     response_type_t response;
+
+    int cpu_time;
     time_t start_time;
 
 #ifdef HAVE_SYS_TIMEB

@@ -124,7 +124,7 @@ model_factory_t* model_factory_get_by_name(const char*name)
     return 0;
 }
 
-static void add_jobs_with_transforms(jobqueue_t*queue, dataset_t*data, const char*model_name, char*transforms)
+static void add_jobs_with_transforms(jobqueue_t*queue, dataset_t*data, const char*pick_model, char*transforms)
 {
     int s;
     for(s=0;s<NUM(collections);s++) {
@@ -132,7 +132,7 @@ static void add_jobs_with_transforms(jobqueue_t*queue, dataset_t*data, const cha
         int t;
         for(t=0;t<*collection->num_models;t++) {
             model_factory_t*factory = collection->models[t];
-            if(model_name && strcmp(factory->name, model_name))
+            if(pick_model && strcmp(factory->name, pick_model))
                 continue;
             job_t* job = job_new();
             job->factory = factory;
@@ -144,7 +144,7 @@ static void add_jobs_with_transforms(jobqueue_t*queue, dataset_t*data, const cha
     }
 }
 
-jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_name)
+jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*pick_model)
 {
     jobqueue_t* queue = jobqueue_new();
     int t;
@@ -153,12 +153,12 @@ jobqueue_t* generate_jobs(varorder_t*order, dataset_t*data, const char*model_nam
     if(order) {
         for(i=1;i<order->num;i++) {
             char*transform = pick_columns_transform(order->order, i);
-            add_jobs_with_transforms(queue, data, model_name, transform);
+            add_jobs_with_transforms(queue, data, pick_model, transform);
             free(transform);
         }
     }
     // also try running on untransformed dataset
-    add_jobs_with_transforms(queue, data, model_name, NULL);
+    add_jobs_with_transforms(queue, data, pick_model, NULL);
     return queue;
 }
 

@@ -28,7 +28,7 @@
 int config_num_remote_servers = 0;
 remote_server_t*config_remote_servers = 0;
 int config_job_wait_timeout = 300;
-int config_remote_read_timeout = 10;
+int config_remote_read_timeout = 2;
 int config_model_timeout = 15;
 bool config_do_remote_processing = false;
 int config_number_of_remote_workers = 2;
@@ -39,6 +39,7 @@ bool config_subset_variables = false;
 int config_remote_worker_timeout = 60;
 bool config_even_out_class_count = true;
 bool config_fork_for_training = true;
+bool config_limit_network_io = true;
 
 static int remote_server_size = 0;
 

@@ -1,4 +1,4 @@
-all: test_codegen test_net model
+all: test_codegen test_net test_remotes model
 
 CC=gcc -g -DHAVE_SHA1 -I..
 CXX=g++ -g -DHAVE_SHA1
@@ -25,6 +25,9 @@ test_codegen.o: test_codegen.c language_interpreter.h
 test_net.o: test_net.c test_datasets.h
 	$(CC) -c test_net.c
 
+test_remotes.o: test_remotes.c test_datasets.h
+	$(CC) -c test_remotes.c
+
 language_interpreter.o: language_interpreter.c language_interpreter.h
 	$(CC) -c -I/usr/include/js/ language_interpreter.c
 
@@ -45,6 +48,9 @@ test_codegen: test_codegen.o test_datasets.o language_js.o language_py.o languag
 
 test_net: test_net.o test_datasets.o ../mrscake.a
 	$(CC) test_net.o test_datasets.o language_js.o language_py.o language_rb.o language_interpreter.o ../mrscake.a $(LIBS) -o $@ 
+
+test_remotes: test_remotes.o test_datasets.o ../mrscake.a
+	$(CC) test_remotes.o test_datasets.o language_js.o language_py.o language_rb.o language_interpreter.o ../mrscake.a $(LIBS) -o $@ 
 
 test_model.$(O): test_model.c ../settings.h ../mrscake.h
 	$(CC) -c $< -o $@
