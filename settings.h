@@ -30,6 +30,7 @@ typedef struct remote_server {
     const char*host;
     int port;
     const char*name;
+    char*ip;
 
     const char*broken;
     int num_jobs;

@@ -469,16 +469,17 @@ int connect_to_remote_server(remote_server_t*server)
     char buf_ip[100];
     struct sockaddr_in sin;
 
-    struct hostent *he = gethostbyname(server->host);
-    if(!he) {
-        fprintf(stderr, "gethostbyname returned %d\n", h_errno);
-        herror(server->host);
-        remote_server_is_broken(server, hstrerror(h_errno));
-        return -1;
+    unsigned char*ip = server->ip;
+    if(!ip) {
+        struct hostent *he = gethostbyname(server->host);
+        if(!he) {
+            fprintf(stderr, "gethostbyname returned %d\n", h_errno);
+            herror(server->host);
+            remote_server_is_broken(server, hstrerror(h_errno));
+            return -1;
+        }
+        ip = server->ip = memdup(he->h_addr_list[0], 4);
     }
-
-    unsigned char*ip = he->h_addr_list[0];
-    //printf("Connecting to %d.%d.%d.%d:%d...\n", ip[0], ip[1], ip[2], ip[3], port);
 
     memset(&sin, 0, sizeof(sin));
     sin.sin_family = AF_INET;
@@ -495,6 +496,7 @@ int connect_to_remote_server(remote_server_t*server)
     /* FIXME: connect has a very long timeout */
     ret = connect(sock, (struct sockaddr*)&sin, sizeof(struct sockaddr_in));
     if(ret < 0) {
+        close(sock);
         perror("connect");
         remote_server_is_broken(server, strerror(errno));
         return -3;
@@ -507,6 +509,7 @@ int connect_to_remote_server(remote_server_t*server)
     if(c!= 3 ||
        (header[0] != RESPONSE_IDLE &&
         header[0] != RESPONSE_BUSY)) {
+        close(sock);
         fprintf(stderr, "invalid header");
         remote_server_is_broken(server, "invalid header");
         return -4;
@@ -516,6 +519,7 @@ int connect_to_remote_server(remote_server_t*server)
     if(header[0] == RESPONSE_BUSY) {
         /* TODO: we should allow transferring datasets even when jobs are running
                  on a server */
+        close(sock);
         server->busy = true;
         return -5;
     }
@@ -730,11 +734,6 @@ void remote_job_read_result(remote_job_t*j, int32_t*best_score)
     r->dealloc(r);
 }
 
-void remote_job_cancel(remote_job_t*j)
-{
-    close(j->socket);
-}
-
 time_t remote_job_age(remote_job_t*j)
 {
     return time(0) - j->start_time;
@@ -797,13 +796,14 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
                     open_jobs--;
                     ftime(&j->profile_time[4]);
                     j->done = true;
+                    close(j->socket);
                 } else if(num == jobs->num && remote_job_age(j) > config_remote_worker_timeout) {
                     ftime(&j->profile_time[3]);
                     printf("Failed (%s, timeout): %s\n", j->server->name, job->factory->name);
-                    remote_job_cancel(j);
                     open_jobs--;
                     ftime(&j->profile_time[4]);
                     j->done = true;
+                    close(j->socket);
                 }
             }
             pos++;

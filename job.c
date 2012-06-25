@@ -28,6 +28,10 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "config.h"
+#ifdef HAVE_SYS_TIMEB
+#include <sys/timeb.h>
+#endif
 #include "job.h"
 #include "io.h"
 #include "settings.h"
@@ -106,8 +110,26 @@ static void process_jobs(jobqueue_t*jobs)
 
 static void process_jobs_remotely(dataset_t*dataset, jobqueue_t*jobs)
 {
+#ifdef HAVE_SYS_TIMEB
+    struct timeb start_ftime,distribute_done_ftime,end_ftime;
+    ftime(&start_ftime);
+    double start_time = start_ftime.time + start_ftime.millitm/1000.0;
+#endif
+
     server_array_t*servers = distribute_dataset(dataset);
+
+#ifdef HAVE_SYS_TIMEB
+    ftime(&distribute_done_ftime);
+    double distribute_done_time = distribute_done_ftime.time + distribute_done_ftime.millitm/1000.0;
+#endif
+
     distribute_jobs_to_servers(dataset, jobs, servers);
+
+#ifdef HAVE_SYS_TIMEB
+    ftime(&end_ftime);
+    double end_time = end_ftime.time + end_ftime.millitm/1000.0;
+    printf("total time: %.2f (%.2f for file transfer)\n", end_time - start_time, distribute_done_time - start_time);
+#endif
 }
 
 void jobqueue_process(dataset_t*data, jobqueue_t*jobs)
