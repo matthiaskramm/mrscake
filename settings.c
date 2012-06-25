@@ -28,7 +28,7 @@
 int config_num_remote_servers = 0;
 remote_server_t*config_remote_servers = 0;
 int config_job_wait_timeout = 300;
-int config_remote_read_timeout = 2;
+int config_remote_read_timeout = 5;
 bool config_do_remote_processing = false;
 int config_number_of_remote_workers = 2;
 int config_verbosity = 1;
@@ -83,11 +83,12 @@ void config_add_remote_server(const char*host, int port)
         remote_server_size *= 2;
         config_remote_servers = realloc(config_remote_servers, sizeof(remote_server_t)*remote_server_size);
     }
-    remote_server_t*s = &config_remote_servers[config_num_remote_servers++];
+    remote_server_t*s = &config_remote_servers[config_num_remote_servers];
     memset(s, 0, sizeof(remote_server_t));
     s->host = host;
     s->port = port;
-    s->name = allocprintf("%s:%d", host, port);
+    s->name = allocprintf("[%d]", config_num_remote_servers);
+    config_num_remote_servers++;
     config_do_remote_processing = true;
 }
 

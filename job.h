@@ -31,6 +31,7 @@ extern "C" {
 #define JOB_NO_FORK 1
 
 typedef struct _job {
+    int nr;
     dataset_t*data;
     char* transforms;
     model_factory_t*factory;

@@ -170,6 +170,7 @@ void jobqueue_append(jobqueue_t*queue, job_t*job)
         queue->last->next = job;
         queue->last = job;
     }
+    job->nr = queue->num;
     queue->num++;
 }
 

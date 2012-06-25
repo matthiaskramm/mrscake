@@ -688,7 +688,7 @@ remote_job_t* remote_job_try_to_start(job_t*job, const char*model_name, const ch
     }
     j->server = s;
     j->running = true;
-    printf("Starting %s on %s\n", model_name, s->name);
+    printf("Starting job %d on %s\n", job->nr, s->name);
 
     ftime(&j->profile_time[1]);
 
