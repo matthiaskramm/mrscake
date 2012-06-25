@@ -463,34 +463,6 @@ int start_server(int port)
     }
 }
 
-int connect_to_host(const char*name, int port)
-{
-    int i, ret;
-    char buf_ip[100];
-    struct sockaddr_in sin;
-
-    struct hostent *he = gethostbyname(name);
-    if(!he) {
-        return -1;
-    }
-    unsigned char*ip = he->h_addr_list[0];
-
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(port);
-    memcpy(&sin.sin_addr.s_addr, ip, 4);
-
-    int sock = socket(AF_INET, SOCK_STREAM, 6);
-    if(sock < 0) {
-        return -1;
-    }
-    ret = connect(sock, (struct sockaddr*)&sin, sizeof(struct sockaddr_in));
-    if(ret < 0) {
-        return -1;
-    }
-    return sock;
-}
-
 int connect_to_remote_server(remote_server_t*server)
 {
     int i, ret;
@@ -549,6 +521,15 @@ int connect_to_remote_server(remote_server_t*server)
     }
     server->busy = false;
     return sock;
+}
+
+int connect_to_host(const char*name, int port)
+{
+    remote_server_t dummy;
+    memset(&dummy, 0, sizeof(dummy));
+    dummy.host = name;
+    dummy.port = port;
+    return connect_to_remote_server(&dummy);
 }
 
 static int send_dataset_to_remote_server(remote_server_t*server, dataset_t*data, remote_server_t*from_server)
@@ -664,6 +645,8 @@ server_array_t* distribute_dataset(dataset_t*data)
                 status[seed_nr] = 1;
                 seeds[num_seeds++] = server;
             break;
+            default:
+            case RESPONSE_BUSY:
             case RESPONSE_READ_ERROR:
             case RESPONSE_DATA_ERROR:
                 printf("%s: error sending dataset from host %s\n", server->name, other_server->name);
@@ -703,7 +686,7 @@ remote_job_t* remote_job_start(job_t*job, const char*model_name, const char*tran
         sock = connect_to_remote_server(s);
         if(sock>=0) {
             j->server = s;
-            printf("Starting %s on %s\n", model_name, s->name);fflush(stdout);
+            printf("Starting %s on %s\n", model_name, s->name);
             break;
         }
         usleep(10000);
