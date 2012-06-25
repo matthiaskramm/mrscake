@@ -537,6 +537,13 @@ int connect_to_remote_server(remote_server_t*server)
     }
     server->num_jobs = header[1];
     server->num_workers = header[2];
+    if(header[0] == RESPONSE_BUSY) {
+        /* TODO: we should allow transferring datasets even when jobs are running
+                 on a server */
+        server->busy = true;
+        return -1;
+    }
+    server->busy = false;
     return sock;
 }
 
@@ -546,6 +553,10 @@ static int send_dataset_to_remote_server(remote_server_t*server, dataset_t*data,
     if(sock<0) {
         return RESPONSE_READ_ERROR;
     }
+    if(server->busy) {
+        return RESPONSE_BUSY;
+    }
+
     writer_t*w = filewriter_new(sock);
     reader_t*r = filereader_with_timeout_new(sock, config_remote_read_timeout);
 
@@ -621,6 +632,7 @@ server_array_t* distribute_dataset(dataset_t*data)
                 seeds[num_seeds++] = server;
             break;
             default:
+            case RESPONSE_BUSY:
             case RESPONSE_READ_ERROR:
             case RESPONSE_DATA_ERROR:
                 printf("error seeding host %s (%d)\n", server->name, resp);

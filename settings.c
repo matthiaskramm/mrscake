@@ -85,7 +85,7 @@ void config_add_remote_server(const char*host, int port)
         config_remote_servers = realloc(config_remote_servers, sizeof(remote_server_t)*remote_server_size);
     }
     remote_server_t*s = &config_remote_servers[config_num_remote_servers++];
-    memset(s, NULL, sizeof(remote_server_t));
+    memset(s, 0, sizeof(remote_server_t));
     s->host = host;
     s->port = port;
     s->name = allocprintf("%s:%d", host, port);

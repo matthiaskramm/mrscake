@@ -34,6 +34,7 @@ typedef struct remote_server {
     const char*broken;
     int num_jobs;
     int num_workers;
+    bool busy;
 } remote_server_t;
 
 extern int config_num_remote_servers;
