@@ -424,7 +424,11 @@ int start_server(int port)
         }
 
         bool accept_request = (server.num_workers < config_number_of_remote_workers);
-        send_header(sock, accept_request, server.num_workers, config_number_of_remote_workers);
+        ret = send_header(newsock, accept_request, server.num_workers, config_number_of_remote_workers);
+        if(ret<0) {
+            close(newsock);
+            continue;
+        }
 
         /* Wait for a free worker to become available. Only
            after we have a worker will we actually read the 
