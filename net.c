@@ -163,13 +163,13 @@ void finish_request_TRAIN_MODEL(reader_t*r, writer_t*w, remote_job_t*rjob, int32
     job_t*dest = rjob->job;
     rjob->response = read_uint8(r);
     if(rjob->response != RESPONSE_OK) {
-        rjob->cpu_time = 0;
+        rjob->cpu_time = 0.0;
         dest->score = INT32_MAX;
         dest->code = NULL;
         return;
     }
 
-    rjob->cpu_time = read_compressed_int(r);
+    rjob->cpu_time = read_compressed_int(r) / 1000.0;
     dest->score = read_compressed_int(r);
 
     if(dest->score >= cutoff) {
@@ -641,7 +641,7 @@ server_array_t* distribute_dataset(dataset_t*data)
         switch(resp) {
             case RESPONSE_DUPL_DATA:
             case RESPONSE_OK:
-                printf("%s: received dataset\n", server->name, other_server->host);
+                printf("%s: received dataset%s\n", server->name, resp==RESPONSE_DUPL_DATA?" (cached)":"");
                 status[seed_nr] = 1;
                 seeds[num_seeds++] = server;
             break;
@@ -767,7 +767,7 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
     int i;
     printf("%d open jobs\n", open_jobs);
     int32_t best_score = INT_MAX;
-    int total_cpu_time = 0;
+    float total_cpu_time = 0.0;
 
     int num = 0;
     int pos = 0;
@@ -789,7 +789,7 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
                     ftime(&j->profile_time[3]);
                     remote_job_read_result(j, &best_score);
                     if(j->response == RESPONSE_OK) {
-                        printf("Finished: %s (%.2f s)\n", job->factory->name, j->cpu_time / 1000.0);
+                        printf("Finished: %s (%.2f s)\n", job->factory->name, j->cpu_time);
                         total_cpu_time += j->cpu_time;
                     } else {
                         printf("Failed (%s, 0x%02x): %s\n", j->server->name, j->response, job->factory->name);
@@ -810,7 +810,7 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
         }
     } while(open_jobs);
 
-    printf("total cpu time: %.2f\n", total_cpu_time / (float)sysconf(_SC_CLK_TCK));
+    printf("total cpu time: %.2f\n", total_cpu_time);
 
     for(i=0;i<num;i++) {
         remote_job_t*j = r[i];

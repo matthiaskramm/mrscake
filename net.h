@@ -60,7 +60,7 @@ typedef struct _remote_job {
 
     response_type_t response;
 
-    int cpu_time;
+    double cpu_time;
     time_t start_time;
 
 #ifdef HAVE_SYS_TIMEB
