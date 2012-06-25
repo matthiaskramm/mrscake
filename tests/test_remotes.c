@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
+#include <sys/timeb.h>
 
 #include "config.h"
 #include "net.h"
@@ -45,14 +46,14 @@ int main(int argn, char*argv[])
 #ifdef HAVE_SYS_TIMEB
     struct timeb start_ftime,distribute_done_ftime,end_ftime;
     ftime(&start_ftime);
-    float start_time = start_ftime.time + start_ftime.millitm/1000.0;
+    double start_time = start_ftime.time + start_ftime.millitm/1000.0;
 #endif
 
     server_array_t*servers = distribute_dataset(dataset);
 
 #ifdef HAVE_SYS_TIMEB
     ftime(&distribute_done_ftime);
-    float distribute_done_time = distribute_done_ftime.time + distribute_done_ftime.millitm/1000.0;
+    double distribute_done_time = distribute_done_ftime.time + distribute_done_ftime.millitm/1000.0;
 #endif
 
     usleep(100);
@@ -66,7 +67,7 @@ int main(int argn, char*argv[])
 
 #ifdef HAVE_SYS_TIMEB
     ftime(&end_ftime);
-    float end_time = end_ftime.time + end_ftime.millitm/1000.0;
+    double end_time = end_ftime.time + end_ftime.millitm/1000.0;
     printf("total time: %.2f\n", end_time - start_time);
 #endif
 }
