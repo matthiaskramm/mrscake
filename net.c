@@ -231,9 +231,13 @@ static bool make_request_RECV_DATASET(reader_t*r, writer_t*w, dataset_t*dataset,
     }
 
     uint8_t status = read_uint8(r);
-    if(status != RESPONSE_GO_AHEAD) {
+    if(status != RESPONSE_GO_AHEAD &&
+       status != RESPONSE_DUPL_DATA) {
         printf("bad status (%02x)\n", status);
         return false;
+    }
+    if(status == RESPONSE_DUPL_DATA) {
+        return true;
     }
 
     if(other_server) {
