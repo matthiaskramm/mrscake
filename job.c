@@ -35,7 +35,7 @@
 #include "job.h"
 #include "io.h"
 #include "settings.h"
-#include "net.h"
+#include "net/distribute.h"
 #include "serialize.h"
 #include "transform.h"
 

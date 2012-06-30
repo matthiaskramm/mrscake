@@ -38,7 +38,7 @@
 #include "dataset.h"
 #include "codegen.h"
 #include "serialize.h"
-#include "net.h"
+#include "net/distribute.h"
 #include "settings.h"
 #include "transform.h"
 #include "var_selection.h"
