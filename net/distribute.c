@@ -1,9 +1,9 @@
-/* net.c
-   model training client/server.
+/* distribute.c
+   distributed job processing
 
    Part of the data prediction package.
    
-   Copyright (c) 2011 Matthias Kramm <kramm@quiss.org> 
+   Copyright (c) 2011/2012 Matthias Kramm <kramm@quiss.org> 
  
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,263 +37,15 @@
 #ifdef HAVE_SYS_TIMEB
 #include <sys/timeb.h>
 #endif
+#include "net/distribute.h"
+#include "net/protocol.h"
 #include "io.h"
-#include "net.h"
 #include "dataset.h"
-#include "datacache.h"
 #include "model_select.h"
 #include "serialize.h"
 #include "settings.h"
 #include "job.h"
 #include "util.h"
-
-typedef struct _worker {
-    pid_t pid;
-    int start_time;
-} worker_t;
-
-typedef struct _server {
-    worker_t* jobs;
-    int num_workers;
-    datacache_t*datacache;
-} server_t;
-
-static volatile server_t server;
-static sigset_t sigchld_set;
-
-static void sigchild(int signal)
-{
-    sigprocmask(SIG_BLOCK, &sigchld_set, 0);
-    while(1) {
-        int status;
-        pid_t pid = waitpid(-1, &status, WNOHANG);
-        if(pid<=0)
-            break;
-
-        int i;
-        for(i=0;i<server.num_workers;i++) {
-            if(pid == server.jobs[i].pid) {
-                printf("worker %d: finished: %s %d\n", pid,
-                        WIFEXITED(status)?"exit": (WIFSIGNALED(status)?"signal": "abnormal"),
-                        WIFEXITED(status)? WEXITSTATUS(status):WTERMSIG(status)
-                        );
-                server.jobs[i] = server.jobs[--server.num_workers];
-                break;
-            }
-        }
-    }
-    sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
-}
-
-static void worker_timeout_signal(int signal)
-{
-    kill(getpid(), 9);
-}
-
-static void make_request_TRAIN_MODEL(writer_t*w, const char*model_name, const char*transforms, dataset_t*dataset)
-{
-    write_uint8(w, REQUEST_TRAIN_MODEL);
-    w->write(w, dataset->hash, HASH_SIZE);
-    if(w->error)
-        return;
-    write_string(w, model_name);
-    write_string(w, transforms);
-}
-static void process_request_TRAIN_MODEL(datacache_t*cache, reader_t*r, writer_t*w)
-{
-    uint8_t hash[HASH_SIZE];
-    r->read(r, &hash, HASH_SIZE);
-    if(r->error)
-        return;
-
-    dataset_t*dataset = datacache_find(cache, hash);
-    if(!dataset) {
-        write_uint8(w, RESPONSE_DATASET_UNKNOWN);
-        return;
-    }
-
-    char*name = read_string(r);
-    char*transforms = read_string(r);
-    if(r->error)
-        return;
-
-    printf("worker %d: processing model %s|%s\n", getpid(), transforms, name);
-    model_factory_t* factory = model_factory_get_by_name(name);
-    if(!factory) {
-        printf("worker %d: unknown factory '%s'\n", getpid(), name);
-        write_uint8(w, RESPONSE_FACTORY_UNKNOWN);
-        return;
-    }
-
-    printf("worker %d: %d rows of data\n", getpid(), dataset->num_rows);
-
-    struct tms tms_before, tms_after;
-    times(&tms_before);
-
-    job_t j;
-    memset(&j, 0, sizeof(j));
-    j.factory = factory;
-    j.data = dataset;
-    j.code = 0;
-    j.transforms = transforms;
-    j.flags = JOB_NO_FORK;
-    job_process(&j);
-
-    times(&tms_after);
-
-    printf("worker %d: finished training (time: %.2f)\n", getpid(), (tms_after.tms_utime - tms_before.tms_utime) /  (float)sysconf(_SC_CLK_TCK));
-    write_uint8(w, RESPONSE_OK);
-    write_compressed_int(w, (tms_after.tms_utime - tms_before.tms_utime) * 1000ll / sysconf(_SC_CLK_TCK));
-    write_compressed_int(w, j.score);
-
-    uint8_t want_data = read_uint8(r);
-    if(want_data == REQUEST_SEND_CODE) {
-        printf("worker %d: sending out model data\n", getpid());
-        write_uint8(w, RESPONSE_DATA_FOLLOWS);
-        node_write(j.code, w, SERIALIZE_DEFAULTS);
-    } else if(want_data == REQUEST_DISCARD_CODE) {
-        printf("worker %d: discarding model data\n", getpid());
-        // the server already has a better model for this data
-    } else {
-        printf("worker %d: Invalid response from server after training\n", getpid());
-    }
-}
-void finish_request_TRAIN_MODEL(reader_t*r, writer_t*w, remote_job_t*rjob, int32_t cutoff)
-{
-    job_t*dest = rjob->job;
-    rjob->response = read_uint8(r);
-    if(rjob->response != RESPONSE_OK) {
-        rjob->cpu_time = 0.0;
-        dest->score = INT32_MAX;
-        dest->code = NULL;
-        return;
-    }
-
-    rjob->cpu_time = read_compressed_int(r) / 1000.0;
-    dest->score = read_compressed_int(r);
-
-    if(dest->score >= cutoff) {
-        write_uint8(w, REQUEST_DISCARD_CODE);
-        dest->code = NULL;
-    } else {
-        write_uint8(w, REQUEST_SEND_CODE);
-        int resp = read_uint8(r);
-        if(resp != RESPONSE_DATA_FOLLOWS) {
-            rjob->response = resp|0x80;
-            dest->score = INT32_MAX;
-            dest->code = NULL;
-        } else {
-            dest->code = node_read(r);
-        }
-    }
-}
-
-static dataset_t* make_request_SEND_DATASET(reader_t*r, writer_t*w, uint8_t*hash)
-{
-    write_uint8(w, REQUEST_SEND_DATASET);
-    w->write(w, hash, HASH_SIZE);
-    uint8_t response = read_uint8(r);
-    if(response!=RESPONSE_OK)
-        return NULL;
-    return dataset_read(r);
-}
-static void process_request_SEND_DATASET(datacache_t*datacache, reader_t*r, writer_t*w)
-{
-    uint8_t hash[HASH_SIZE];
-    r->read(r, &hash, HASH_SIZE);
-    if(r->error)
-        return;
-    char*hashstr = hash_to_string(hash);
-
-    dataset_t*dataset = datacache_find(datacache, hash);
-    if(!dataset) {
-        printf("worker %d: dataset unknown\n", getpid());
-        write_uint8(w, RESPONSE_DATASET_UNKNOWN);
-        return;
-    }
-    printf("worker %d: sending out dataset %s\n", getpid(), hashstr);
-    write_uint8(w, RESPONSE_OK);
-    dataset_write(dataset, w);
-}
-
-static bool make_request_RECV_DATASET(reader_t*r, writer_t*w, dataset_t*dataset, remote_server_t*other_server)
-{
-    write_uint8(w, REQUEST_RECV_DATASET);
-    if(w->error) {
-        printf("%s\n", w->error);
-        return false;
-    }
-    w->write(w, dataset->hash, HASH_SIZE);
-    if(w->error) {
-        printf("%s\n", w->error);
-        return false;
-    }
-
-    uint8_t status = read_uint8(r);
-    if(status != RESPONSE_GO_AHEAD &&
-       status != RESPONSE_DUPL_DATA) {
-        printf("bad status (%02x)\n", status);
-        return false;
-    }
-    if(status == RESPONSE_DUPL_DATA) {
-        return true;
-    }
-
-    if(other_server) {
-        write_string(w, other_server->host);
-        write_compressed_uint(w, other_server->port);
-    } else {
-        write_string(w, "");
-        write_compressed_uint(w, 0);
-        dataset_write(dataset, w);
-    }
-    return true;
-}
-static void process_request_RECV_DATASET(datacache_t*datacache, reader_t*r, writer_t*w)
-{
-    uint8_t hash[HASH_SIZE];
-    r->read(r, &hash, HASH_SIZE);
-    if(r->error)
-        return;
-    char*hashstr = hash_to_string(hash);
-    printf("worker %d: reading dataset %s\n", getpid(), hashstr);
-
-    dataset_t*dataset = datacache_find(datacache, hash);
-    if(dataset!=NULL) {
-        printf("worker %d: dataset already known\n", getpid());
-        write_uint8(w, RESPONSE_DUPL_DATA);
-        w->write(w, dataset->hash, HASH_SIZE);
-        write_uint8(w, RESPONSE_DUPL_DATA);
-        return;
-    } else {
-        write_uint8(w, RESPONSE_GO_AHEAD);
-    }
-
-    char*host = read_string(r);
-    int port = read_compressed_uint(r);
-    if(!*host) {
-        dataset = dataset_read(r);
-        if(r->error)
-            return;
-    } else {
-        dataset = dataset_read_from_server(host, port, hash);
-    }
-    if(!dataset) {
-        w->write(w, hash, HASH_SIZE);
-        write_uint8(w, RESPONSE_DATA_ERROR);
-        return;
-    }
-    if(memcmp(dataset->hash, hash, HASH_SIZE)) {
-        printf("worker %d: dataset has bad hash\n", getpid());
-        w->write(w, hash, HASH_SIZE);
-        write_uint8(w, RESPONSE_DATA_ERROR);
-        return;
-    }
-    datacache_store(datacache, dataset);
-    w->write(w, dataset->hash, HASH_SIZE);
-    write_uint8(w, RESPONSE_OK);
-    printf("worker %d: dataset stored\n", getpid());
-}
 
 dataset_t* dataset_read_from_server(const char*host, int port, uint8_t*hash)
 {
@@ -312,155 +64,6 @@ dataset_t* dataset_read_from_server(const char*host, int port, uint8_t*hash)
     r->dealloc(r);
 
     return dataset;
-}
-
-static void process_request(datacache_t*cache, int socket)
-{
-    reader_t*r = filereader_new(socket);
-    writer_t*w = filewriter_new(socket);
-
-    uint8_t request_code = read_uint8(r);
-
-    switch(request_code) {
-        case REQUEST_TRAIN_MODEL:
-            process_request_TRAIN_MODEL(cache, r, w);
-        break;
-        case REQUEST_RECV_DATASET:
-            process_request_RECV_DATASET(cache, r, w);
-        break;
-        case REQUEST_SEND_DATASET:
-            process_request_SEND_DATASET(cache, r, w);
-        break;
-    }
-    w->finish(w);
-}
-
-static bool send_header(int sock, bool accept_request, int num_jobs, int num_workers)
-{
-    uint8_t header[3] = {
-        accept_request? RESPONSE_IDLE : RESPONSE_BUSY,
-        num_jobs,
-        num_workers};
-    int ret = write(sock, header, 3);
-    return ret == 3;
-}
-
-int start_server(int port)
-{
-    struct sockaddr_in sin;
-    int sock;
-    int ret, i;
-    int val = 1;
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_addr.s_addr = INADDR_ANY;
-    sin.sin_port = htons(port);
-    sin.sin_family = AF_INET;
-
-    sock = socket(AF_INET, SOCK_STREAM, 6);
-    if(sock<0) {
-        perror("socket");
-        exit(1);
-    }
-    ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof (val));
-    if(ret<0) {
-        perror("setsockopt");
-        exit(1);
-    }
-    ret = bind(sock, (struct sockaddr*)&sin, sizeof(sin));
-    if(ret<0) {
-        perror("bind");
-        exit(1);
-    }
-    ret = listen(sock, 256);
-    if(ret<0) {
-        perror("listen");
-        exit(1);
-    }
-    ret = fcntl(sock, F_SETFL, O_NONBLOCK);
-    if(ret<0) {
-        perror("fcntl");
-        exit(1);
-    }
-
-    server.jobs = malloc(sizeof(worker_t)*config_number_of_remote_workers);
-    server.num_workers = 0;
-    server.datacache = datacache_new();
-
-    sigemptyset(&sigchld_set);
-    sigaddset(&sigchld_set, SIGCHLD);
-
-    signal(SIGCHLD, sigchild);
-
-    printf("listing on port %d\n", port);
-    while(1) {
-        fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(sock, &fds);
-
-        do {
-            ret = select(sock + 1, &fds, 0, 0, 0);
-        } while(ret == -1 && errno == EINTR);
-        if(ret<0) {
-            perror("select");
-            exit(1);
-        }
-        if(!FD_ISSET(sock, &fds))
-            continue;
-
-        struct sockaddr_in sin;
-        int len = sizeof(sin);
-
-        int newsock = accept(sock, (struct sockaddr*)&sin, &len);
-        if(newsock < 0) {
-            perror("accept");
-            exit(1);
-        }
-
-        // clear O_NONBLOCK
-        ret = fcntl(sock, F_SETFL, 0);
-        if(ret<0) {
-            perror("fcntl");
-            exit(1);
-        }
-
-        bool accept_request = (server.num_workers < config_number_of_remote_workers);
-        ret = send_header(newsock, accept_request, server.num_workers, config_number_of_remote_workers);
-        if(ret<0) {
-            close(newsock);
-            continue;
-        }
-
-        /* Wait for a free worker to become available. Only
-           after we have a worker will we actually read the 
-           job data. TODO: would it be better to just close
-           the connection here and have the server decide what to
-           do with the job now? */
-        if(!accept_request) {
-            close(newsock);
-            continue;
-        }
-
-        /* block child signals while we're modifying num_workers / jobs */
-        sigprocmask(SIG_BLOCK, &sigchld_set, 0);
-
-        pid_t pid = fork();
-        if(!pid) {
-            sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
-            signal(SIGALRM, worker_timeout_signal);
-            alarm(config_remote_worker_timeout);
-            process_request(server.datacache, newsock);
-            printf("worker %d: closing socket\n", getpid());
-            close(newsock);
-            _exit(0);
-        }
-        server.jobs[server.num_workers].pid = pid;
-        server.jobs[server.num_workers].start_time = time(0);
-        server.num_workers++;
-
-        sigprocmask(SIG_UNBLOCK, &sigchld_set, 0);
-
-        close(newsock);
-    }
 }
 
 int connect_to_remote_server(remote_server_t*server)
@@ -823,5 +426,29 @@ void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array
     free(r);
 
     signal(SIGPIPE, old_sigpipe);
+}
+
+void process_jobs_remotely(dataset_t*dataset, jobqueue_t*jobs)
+{
+#ifdef HAVE_SYS_TIMEB
+    struct timeb start_ftime,distribute_done_ftime,end_ftime;
+    ftime(&start_ftime);
+    double start_time = start_ftime.time + start_ftime.millitm/1000.0;
+#endif
+
+    server_array_t*servers = distribute_dataset(dataset);
+
+#ifdef HAVE_SYS_TIMEB
+    ftime(&distribute_done_ftime);
+    double distribute_done_time = distribute_done_ftime.time + distribute_done_ftime.millitm/1000.0;
+#endif
+
+    distribute_jobs_to_servers(dataset, jobs, servers);
+
+#ifdef HAVE_SYS_TIMEB
+    ftime(&end_ftime);
+    double end_time = end_ftime.time + end_ftime.millitm/1000.0;
+    printf("total time: %.2f (%.2f for file transfer)\n", end_time - start_time, distribute_done_time - start_time);
+#endif
 }
 

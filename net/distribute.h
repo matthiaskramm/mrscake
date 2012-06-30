@@ -1,5 +1,5 @@
-/* net.h
-   model training client/server.
+/* distribute.h
+   Distributed Job processing
 
    Part of the data prediction package.
    
@@ -19,8 +19,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-#ifndef __server_h__
-#define __server_h__
+#ifndef __distribute_h__
+#define __distribute_h__
 
 #include <time.h>
 #include "config.h"
@@ -33,24 +33,6 @@
 #define ftime(x)
 #endif
 
-typedef enum {REQUEST_SEND_DATASET,
-              REQUEST_RECV_DATASET,
-              REQUEST_TRAIN_MODEL,
-              REQUEST_SEND_CODE,
-              REQUEST_DISCARD_CODE,
-             } request_type_t;
-
-typedef enum {RESPONSE_OK,
-              RESPONSE_DATA_ERROR,
-              RESPONSE_DUPL_DATA,
-              RESPONSE_DATASET_UNKNOWN,
-              RESPONSE_FACTORY_UNKNOWN,
-              RESPONSE_GO_AHEAD,
-              RESPONSE_DATA_FOLLOWS,
-              RESPONSE_BUSY,
-              RESPONSE_IDLE,
-              RESPONSE_READ_ERROR=-1} response_type_t;
-
 typedef struct _remote_job {
     job_t*job;
 
@@ -58,7 +40,7 @@ typedef struct _remote_job {
     bool running;
     int socket;
 
-    response_type_t response;
+    int response;
 
     double cpu_time;
     time_t start_time;
@@ -89,4 +71,6 @@ server_array_t* distribute_dataset(dataset_t*data);
 int start_server(int port);
 
 void distribute_jobs_to_servers(dataset_t*dataset, jobqueue_t*jobs, server_array_t*servers);
+
+void process_jobs_remotely(dataset_t*dataset, jobqueue_t*jobs);
 #endif

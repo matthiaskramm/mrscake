@@ -29,118 +29,55 @@ O=o
 CC=gcc $(CPPFLAGS) $(CFLAGS) -pg -g -fPIC -Wimplicit
 CXX=g++ $(CPPFLAGS) $(CXXFLAGS) -pg -g -fPIC -Wimplicit
 INSTALL=/usr/bin/install -c
+DEP=cpp -
 
-MODELS=model_cv_dtree.$(O) model_cv_ann.$(O) model_cv_svm.$(O) model_cv_linear.$(O) model_perceptron.$(O) model_knearest.$(O)
-VAR_SELECTORS=varselect_cv_dtree.$(O)
-CODE_GENERATORS=codegen_python.$(O) codegen_ruby.$(O) codegen_js.$(O) codegen_c.$(O)
-OBJECTS=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.$(O) constant.$(O) ast.$(O) model.$(O) serialize.$(O) io.$(O) list.$(O) model_select.$(O) dict.$(O) dataset.$(O) datacache.$(O) text.$(O) environment.$(O) codegen.$(O) ast_transforms.$(O) stringpool.$(O) net.$(O) settings.$(O) job.$(O) var_selection.$(O) transform.$(O) mrscake.$(O) util.$(O)
-CV_OBJECTS=lib/alloc.$(O) lib/ann_mlp.$(O) lib/arithm.$(O) lib/array.$(O) lib/boost.$(O) lib/cnn.$(O) lib/convert.$(O) lib/copy.$(O) lib/data.$(O) \
-	lib/datastructs.$(O) lib/ertrees.$(O) lib/estimate.$(O) lib/gbt.$(O) lib/inner_functions.$(O) lib/knearest.$(O) lib/mathfuncs.$(O) lib/matmul.$(O) \
-	lib/matrix.$(O) lib/missing.$(O) lib/persistence.$(O) lib/precomp.$(O) lib/rand.$(O) lib/rtrees.$(O) lib/stat.$(O) lib/svm.$(O) lib/system.$(O) lib/tables.$(O) \
-	lib/testset.$(O) lib/tree.$(O)
+MODELS=model_cv_dtree.cpp model_cv_ann.cpp model_cv_svm.cpp model_cv_linear.cpp model_perceptron.c model_knearest.c
+VAR_SELECTORS=varselect_cv_dtree.cpp
+CODE_GENERATORS=codegen_python.c codegen_ruby.c codegen_js.c codegen_c.c
+MRSCAKE_SOURCES=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.c constant.c ast.c \
+	model.c serialize.c io.c list.c model_select.c dict.c dataset.c \
+	datacache.c text.c environment.c codegen.c ast_transforms.c \
+	stringpool.c settings.c job.c var_selection.c \
+	transform.c mrscake.c util.c
+
+NET_SOURCES=net/distribute.c net/protocol.c net/server.c 
+
+CV_SOURCES=lib/alloc.cpp lib/ann_mlp.cpp lib/arithm.cpp lib/array.cpp lib/boost.cpp lib/cnn.cpp lib/convert.cpp lib/copy.cpp lib/data.cpp \
+	lib/datastructs.cpp lib/ertrees.cpp lib/estimate.cpp lib/gbt.cpp lib/inner_functions.cpp lib/knearest.cpp lib/mathfuncs.cpp lib/matmul.cpp \
+	lib/matrix.cpp lib/missing.cpp lib/persistence.cpp lib/precomp.cpp lib/rand.cpp lib/rtrees.cpp lib/stat.cpp lib/svm.cpp lib/system.cpp lib/tables.cpp \
+	lib/testset.cpp lib/tree.cpp
+
+SOURCES=$(MRSCAKE_SOURCES) $(NET_SOURCES) $(CV_SOURCES) 
+OBJECTS=$(addsuffix .o,$(basename $(SOURCES)))
+DEPS=$(addsuffix .dep,$(basename $(SOURCES)))
+
+%.dep: %.c
+	cpp -I. -MF$@ -MT$< -MM $<
+%.dep: %.cpp
+	cpp -I. -MF$@ -MT$< -MM $<
+
+.deps: $(DEPS)
+	cat $(DEPS) > .deps
+	rm -f *.dep net/*.dep lib/*.dep
 
 all: mrscake-job-server mrscake.$(A) mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
 
 lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
 	cd lib;make libml.a
 
-model.$(O): model.c constant.h ast.h
-	$(CC) -c $< -o $@
-
-model_select.$(O): model_select.c constant.h ast.h
-	$(CC) -c $< -o $@
-
-ast.$(O): ast.c ast.h mrscake.h
-	$(CC) -c $< -o $@
-
-mrscake.$(O): mrscake.c mrscake.h mrscake.h
-	$(CC) -c $< -o $@
-
-net.$(O): net.c net.h mrscake.h settings.h
-	$(CC) -c $< -o $@
-
-job.$(O): job.c job.h settings.h
-	$(CC) -c $< -o $@
-
-ast_transforms.$(O): ast_transforms.c ast_transforms.h ast.h
-	$(CC) -c $< -o $@
-
-constant.$(O): constant.c constant.h mrscake.h
-	$(CC) -c $< -o $@
-
-environment.$(O): environment.c environment.h mrscake.h
-	$(CC) -c $< -o $@
-
-dataset.$(O): dataset.c dataset.h mrscake.h
-	$(CC) -c $< -o $@
-
-text.$(O): text.c text.h dataset.h mrscake.h
-	$(CC) -c $< -o $@
-
-transform.$(O): transform.c transform.h mrscake.h
-	$(CC) -c $< -o $@
-
-dict.$(O): dict.c dict.h mrscake.h
-	$(CC) -c $< -o $@
-
-list.$(O): list.c list.h
-	$(CC) -c $< -o $@
-
-serialize.$(O): serialize.c serialize.h ast.h constant.h
-	$(CC) -c $< -o $@
-
-stringpool.$(O): stringpool.c stringpool.h
-	$(CC) -c $< -o $@
-
-settings.$(O): settings.c settings.h
-	$(CC) -c $< -o $@
-
-var_selection.$(O): var_selection.c var_selection.h
-	$(CC) -c $< -o $@
-
-codegen.$(O): codegen.c codegen.h
-	$(CC) -c $< -o $@
-
-codegen_python.$(O): codegen_python.c codegen.h
-	$(CC) -c $< -o $@
-
-test_server.$(O): test_server.c
-	$(CC) -c $< -o $@
-
-io.$(O): io.c io.h
-	$(CC) -c $< -o $@
-
-cvtools.$(O): cvtools.cpp lib/ml.hpp dataset.h
-	$(CXX) -Ilib $< -c -o $@
-
-model_cv_dtree.$(O): model_cv_dtree.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
-	$(CXX) -Ilib $< -c -o $@
-
-model_cv_svm.$(O): model_cv_svm.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
-	$(CXX) -Ilib $< -c -o $@
-
-model_cv_ann.$(O): model_cv_ann.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
-	$(CXX) -Ilib $< -c -o $@
-
-model_cv_linear.$(O): model_cv_linear.cpp mrscake.h ast.h cvtools.h dataset.h easy_ast.h
-	$(CXX) -Ilib $< -c -o $@
-
-model_perceptron.$(O): model_perceptron.c mrscake.h ast.h cvtools.h dataset.h easy_ast.h
-	$(CC) -Ilib $< -c -o $@
-
-model_knearest.$(O): model_knearest.c mrscake.h ast.h cvtools.h dataset.h easy_ast.h
-	$(CC) -Ilib $< -c -o $@
-
-varselect_cv_dtree.$(O): varselect_cv_dtree.cpp mrscake.h cvtools.h dataset.h var_selection.h
-	$(CXX) -Ilib $< -c -o $@
-
 mrscake-job-server: server.$(O) $(OBJECTS) lib/libml.a
 	$(CXX) server.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
 
+%.$(O): %.c
+	$(CC) -c -I. -Ilib $< -o $@
+
+%.$(O): %.cpp
+	$(CXX) -c -I. -Ilib $< -o $@
+
 # ------------ static library ----------------
 
-mrscake.$(A): $(OBJECTS) $(CV_OBJECTS)
-	$(AR) cru $@ $(OBJECTS) $(CV_OBJECTS)
+mrscake.$(A): $(OBJECTS)
+	$(AR) cru $@ $(OBJECTS)
 
 # ------------ python interface --------------
 
@@ -167,10 +104,10 @@ test: mrscake.so
 	python test_python_module.py
 
 local-clean:
-	rm -f *.o *.obj *.$(O) mrscake.$(SO) predict.$(SO) prediction.$(SO)
+	rm -f *.dep net/*.dep net/*.o lib/*.dep *.o *.obj *.$(O) mrscake.$(SO) predict.$(SO) prediction.$(SO)
 
 clean: local-clean
-	rm -f lib/*.$(O) lib/*.o lib/*.obj lib/*.a lib/*.gch
+	rm -f lib/*.$(O) lib/*.o lib/*.obj lib/*.a lib/*.gch lib/*.dep
 	rm -rf *.dSYM
 
 
