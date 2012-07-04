@@ -1,9 +1,9 @@
-/* model_perceptron.cpp
+/* model_perceptron.c
    Perceptron model
 
-   Part of the data prediction package.
+   Part of mrscake.
    
-   Copyright (c) 2010-2011 Matthias Kramm <kramm@quiss.org> 
+   Copyright (c) 2012 Matthias Kramm <kramm@quiss.org> 
  
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,10 +28,12 @@
 
 typedef struct _perceptron_model_factory {
     model_factory_t head;
+    int halfside;
 } perceptron_model_factory_t;
 
 typedef struct _perceptron {
     float**weights;
+    bool*disabled;
     int intercept;
 } perceptron_t;
 
@@ -41,6 +43,8 @@ static double category_score(perceptron_t*p, category_t c, dataset_t*d, int row)
     int i;
     for(i=0;i<d->num_columns;i++)
     {
+        if(p->disabled[i])
+            continue;
         column_t*column = d->columns[i];
         double v = column->entries[row].f;
         result += p->weights[c][i]*v;
@@ -56,15 +60,16 @@ static perceptron_t* perceptron_new(dataset_t*d)
     int i;
     for(i=0;i<d->desired_response->num_classes;i++)
         p->weights[i] = calloc(sizeof(float), d->num_columns + 1);
+    p->disabled = calloc(sizeof(bool), d->num_columns);
     p->intercept = d->num_columns;
     return p;
 }
 
 static category_t perceptron_predict(perceptron_t*p, dataset_t*d, int row)
 {
-    double best_score = category_score(p, 0, d, row);
     int best_category = 0;
     int c;
+    double best_score = category_score(p, 0, d, row);
     for(c=1;c<d->desired_response->num_classes;c++)
     {
         double score = category_score(p, c, d, row);
@@ -86,6 +91,8 @@ static void perceptron_update_weights(perceptron_t*p, dataset_t*d, int row)
     int x;
     for(x=0;x<d->num_columns;x++)
     {
+        if(p->disabled[x])
+            continue;
         column_t*column = d->columns[x];
         double d = column->entries[row].f;
         p->weights[label][x] += d;
@@ -95,37 +102,57 @@ static void perceptron_update_weights(perceptron_t*p, dataset_t*d, int row)
     p->weights[guess][p->intercept] -= 1;
 }
 
-static void perceptron_destroy(perceptron_t*p)
+void perceptron_train(perceptron_t*p, dataset_t*d)
 {
-    if(p->weights) {
-        free(p->weights);
-        p->weights = 0;
-    }
-    free(p);
-}
-
-static node_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
-{
-    d = expand_text_columns(d);
-    d = expand_categorical_columns(d);
-    
-    assert(!dataset_has_categorical_columns(d));
-
     int num_iterations = d->num_rows*100;
-    double lastperf = 1.0;
-    double currentperf = -1;
     int i;
-   
-    perceptron_t*p = perceptron_new(d);
-
-    for(i=1;i<num_iterations;i++)
+    for(i=0;i<num_iterations;i++)
     {
         int row = lrand48() % d->num_rows;
         if(perceptron_predict(p, d, row) != d->desired_response->entries[row].c) {
             perceptron_update_weights(p, d, row);
         }
     }
+}
 
+void perceptron_train_halfsided(perceptron_t*p, dataset_t*d, int sign)
+{
+    int num_iterations = d->num_rows*100;
+    int i;
+    int drop;
+    int num_disabled = 0;
+    do {
+        for(i=0;i<num_iterations;i++)
+        {
+            int row = lrand48() % d->num_rows;
+            if(perceptron_predict(p, d, row) != d->desired_response->entries[row].c) {
+                perceptron_update_weights(p, d, row);
+            }
+        }
+        int x;
+        drop = 0;
+        int worst = -1;
+        double worst_weight = 0;
+        for(x=0;x<d->num_columns;x++) {
+            double w = p->weights[0][x]*sign;
+            if(!p->disabled[x] && w < 0) {
+                if(w < worst_weight) {
+                    worst_weight = w;
+                    worst = x;
+                }
+            }
+        }
+        if(worst>=0) {
+            p->disabled[worst] = true;
+            drop++;
+            num_disabled++;
+        }
+    } while(drop && num_disabled < d->num_rows);
+}
+
+node_t* perceptron_get_code(dataset_t*d, perceptron_t*p)
+{
+    int i;
     START_CODE(program)
     if(d->desired_response->num_classes == 2) {
         /* two classes */
@@ -136,6 +163,8 @@ static node_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
                 GT
                     ADD
                         for(i=0;i<d->num_columns;i++) {
+                            if(p->disabled[i])
+                                continue;
                             MUL
                                 PARAM(i);
                                 FLOAT_CONSTANT(p->weights[class0][i])
@@ -160,6 +189,8 @@ static node_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
                     for(c=0;c<d->desired_response->num_classes;c++) {
                         ADD
                             for(i=0;i<d->num_columns;i++) {
+                                if(p->disabled[i])
+                                    continue;
                                 MUL
                                     PARAM(i);
                                     FLOAT_CONSTANT(p->weights[c][i])
@@ -173,7 +204,30 @@ static node_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
         END;
     }
     END_CODE;
+    return program;
+}
 
+static void perceptron_destroy(perceptron_t*p)
+{
+    if(p->weights) {
+        free(p->weights);
+        p->weights = 0;
+    }
+    free(p);
+}
+
+static node_t*perceptron_train_model(perceptron_model_factory_t*factory, dataset_t*d)
+{
+    d = expand_text_columns(d);
+    d = expand_categorical_columns(d);
+
+    perceptron_t*p = perceptron_new(d);
+    if(factory->halfside) {
+        perceptron_train_halfsided(p, d, factory->halfside);
+    } else {
+        perceptron_train(p, d);
+    }
+    node_t*program = perceptron_get_code(d, p);
     perceptron_destroy(p);
 
     d = dataset_revert_one_transformation(d, &program);
@@ -184,16 +238,31 @@ static node_t*perceptron_train(perceptron_model_factory_t*factory, dataset_t*d)
 static perceptron_model_factory_t perceptron_model_factory = {
     head: {
         name: "perceptron",
-        train: (training_function_t)perceptron_train,
+        train: (training_function_t)perceptron_train_model,
     },
-    /*head: {
-        name: "voted-perceptron",
-        train: (training_function_t)voted_perceptron_train,
-    },*/
+    halfside: 0,
+};
+
+static perceptron_model_factory_t positive_perceptron_model_factory = {
+    head: {
+        name: "positive halfperceptron",
+        train: (training_function_t)perceptron_train_model,
+    },
+    halfside: 1,
+};
+
+static perceptron_model_factory_t negative_perceptron_model_factory = {
+    head: {
+        name: "negative halfperceptron",
+        train: (training_function_t)perceptron_train_model,
+    },
+    halfside: -1,
 };
 
 model_factory_t* perceptron_models[] =
 {
     (model_factory_t*)&perceptron_model_factory,
+    (model_factory_t*)&positive_perceptron_model_factory,
+    (model_factory_t*)&negative_perceptron_model_factory,
 };
 int num_perceptron_models = sizeof(perceptron_models) / sizeof(perceptron_models[0]);
