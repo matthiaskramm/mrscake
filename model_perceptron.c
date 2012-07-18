@@ -130,7 +130,7 @@ void perceptron_train_halfsided(perceptron_t*p, dataset_t*d, int sign)
             }
         }
 
-#define DEBUG
+//#define DEBUG
 #ifdef DEBUG
         int right = 0;
         for(i=0;i<d->num_rows;i++) {
