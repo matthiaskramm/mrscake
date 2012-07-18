@@ -35,6 +35,7 @@ dataset_t* expand_categorical_columns(dataset_t*old_dataset);
 dataset_t* pick_columns(dataset_t*old_dataset, int*index, int num);
 dataset_t* remove_text_columns(dataset_t*old_dataset);
 dataset_t* expand_text_columns(dataset_t*old_dataset);
+dataset_t* find_clear_cut_columns(dataset_t*old_dataset);
 
 dataset_t* dataset_apply_named_transformation(dataset_t*old_dataset, const char*transform);
 dataset_t* dataset_apply_transformations(dataset_t*dataset, const char*transform);

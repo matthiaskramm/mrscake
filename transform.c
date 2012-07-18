@@ -279,6 +279,173 @@ dataset_t* remove_text_columns(dataset_t*old_dataset)
     free(index);
     return new_dataset;
 }
+// ---------------------------------------------
+
+typedef struct {
+    int index;
+    category_t cat;
+} clear_cut_column_t;
+
+typedef struct _transform_find_clear_cut_columns {
+    transform_t head;
+    int*index;
+    int num;
+    clear_cut_column_t*ccol;
+    int num_ccols;
+} transform_find_clear_cut_columns_t;
+
+static node_t* substitute_params(dataset_t*dataset, node_t*node)
+{
+    transform_find_clear_cut_columns_t*transform = (transform_find_clear_cut_columns_t*)dataset->transform;
+    dataset_t*orig_dataset = dataset->transform->original;
+
+    if(node->type == &node_param) {
+        int i = node->value.i;
+        assert(i >= 0 && i < dataset->num_columns);
+        int x = transform->index[i];
+        assert(x >= 0 && x < orig_dataset->num_columns);
+
+        START_CODE(new_node);
+            PARAM(x);
+        END_CODE;
+        node_destroy(node);
+        return new_node;
+    }
+    int i;
+    for(i=0;i<node->num_children;i++) {
+        node_set_child(node, i, substitute_params(dataset, node->child[i]));
+    }
+    return node;
+}
+
+static node_t* find_clear_cut_columns_revert_in_code(dataset_t*dataset, node_t*node)
+{
+    transform_find_clear_cut_columns_t*transform = (transform_find_clear_cut_columns_t*)dataset->transform;
+    dataset_t*orig_dataset = dataset->transform->original;
+
+    START_CODE(new_node);
+        BLOCK
+          int i;
+          for(i=0;i<transform->num_ccols;i++) {
+              IF
+                  GT
+                      PARAM(transform->ccol[i].index);
+                      FLOAT_CONSTANT(0.0);
+                  END;
+              THEN
+                  RETURN
+                      int cat = transform->ccol[i].cat;
+                      GENERIC_CONSTANT(dataset->desired_response->classes[cat]);
+                  END;
+              ELSE
+                  NOP;
+              END;
+          }
+          INSERT_NODE(substitute_params(dataset, node));
+        END;
+    END_CODE;
+    return new_node;
+}
+
+static void find_clear_cut_columns_destroy(dataset_t*dataset)
+{
+    transform_find_clear_cut_columns_t* transform = (transform_find_clear_cut_columns_t*)dataset->transform;
+    free(dataset->columns);
+    free(dataset);
+    free(transform->index);
+    free(transform);
+}
+
+static void remove_rows(dataset_t*dataset, bool*remove_row)
+{
+    int i;
+    int pos = 0;
+    for(i=0;i<=dataset->num_columns;i++) {
+        int j;
+        column_t*column;
+
+        bool response_column = (i == dataset->num_columns);
+        column = response_column? dataset->desired_response : dataset->columns[i];
+
+        pos = 0;
+        for(j=0;j<dataset->num_rows;j++) {
+            if(!remove_row[j]) {
+                column->entries[pos++] = column->entries[j];
+            }
+        }
+    }
+    dataset->num_rows = pos;
+}
+
+dataset_t* find_clear_cut_columns(dataset_t*old_dataset)
+{
+    transform_find_clear_cut_columns_t*transform = calloc(1, sizeof(transform_find_clear_cut_columns_t));
+    transform->index = calloc(sizeof(int),old_dataset->num_columns);
+    transform->ccol = calloc(sizeof(void*),old_dataset->num_columns);
+
+    bool*remove_row = calloc(sizeof(bool),old_dataset->num_rows);
+
+    int i;
+    for(i=0;i<old_dataset->num_columns;i++) {
+        int j;
+        column_t*column = old_dataset->columns[i];
+
+        bool found_clear_cut = false;
+        category_t old_resp = -1;
+        if(old_dataset->columns[i]->type == CONTINUOUS) {
+            bool response_differs = false;
+            for(j=0;j<old_dataset->num_rows;j++) {
+                if(column->entries[j].f > 0) {
+                    category_t resp = old_dataset->desired_response->entries[j].c;
+                    if(old_resp>=0 && resp!=old_resp) {
+                        response_differs = true;
+                        break;
+                    } else {
+                        old_resp = resp;
+                    }
+                }
+            }
+
+            if(old_resp != -1 && !response_differs) {
+                found_clear_cut = true;
+            }
+        }
+
+        if(!found_clear_cut) {
+            // keep column
+            transform->index[transform->num++] = i;
+        } else {
+            clear_cut_column_t cc;
+            cc.index = i;
+            cc.cat = old_resp;
+            transform->ccol[transform->num_ccols++] = cc;
+        }
+
+        if(found_clear_cut) {
+            for(j=0;j<old_dataset->num_rows;j++) {
+                if(column->entries[j].f > 0) {
+                    remove_row[j] = true;
+                }
+            }
+        }
+    }
+
+    dataset_t*newdata = memdup(old_dataset, sizeof(dataset_t));
+    transform->head.revert_in_code = find_clear_cut_columns_revert_in_code;
+    transform->head.destroy = find_clear_cut_columns_destroy;
+    transform->head.original = old_dataset;
+    transform->head.name = "find_clear_cut_columns";
+    newdata->transform = (transform_t*)transform;
+
+    newdata->columns = (column_t**)malloc(sizeof(column_t*)*transform->num);
+    newdata->num_columns = transform->num;
+    for(i=0;i<transform->num;i++) {
+        newdata->columns[i] = old_dataset->columns[transform->index[i]];
+    }
+
+    remove_rows(newdata, remove_row);
+    return newdata;
+}
 
 // ----------------------- expand text columns transform ----------------------
 

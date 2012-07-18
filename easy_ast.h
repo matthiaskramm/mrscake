@@ -46,10 +46,15 @@
                 node_append_child(current_node, (new_node)); \
             } while(0);
 
-#define NODE_CLOSE do {assert(current_node->num_children >= current_node->type->min_args && \
-                           current_node->num_children <= current_node->type->max_args);\
-                       current_node = current_node->parent; \
-                   } while(0)
+#define NODE_CLOSE do { \
+        if(!(current_node->num_children >= current_node->type->min_args && \
+             current_node->num_children <= current_node->type->max_args)) { \
+            fprintf(stderr, "%s\n", current_node->type->name); \
+        }; \
+        assert(current_node->num_children >= current_node->type->min_args && \
+               current_node->num_children <= current_node->type->max_args);\
+        current_node = current_node->parent; \
+    } while(0)
 
 #define START_CODE(program) \
         node_t* program = 0; \

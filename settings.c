@@ -138,11 +138,16 @@ void config_parse_remote_servers(const char*filename)
     }
 }
 
-void config_setparameter(const char*key, const char*value)
+bool config_setparameter(const char*key, const char*value)
 {
     if(!strcmp(key, "subset_variables")) {
         config_subset_variables = atoi(value);
     } else if(!strcmp(key, "even_out_class_count")) {
         config_even_out_class_count = atoi(value);
+    } else if(!strcmp(key, "fork_for_training")) {
+        config_fork_for_training = atoi(value);
+    } else {
+        return false;
     }
+    return true;
 }

@@ -507,7 +507,10 @@ static PyObject* mrscake_set_parameter(PyObject* module, PyObject* args, PyObjec
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss", kwlist, &key, &value))
         return NULL;
     state_t*state = STATE(module);
-    config_setparameter(key,value);
+    bool ok = config_setparameter(key,value);
+    if(!ok) {
+        return PY_ERROR("Couldn't set parameter %s", key);
+    }
     return PY_NONE;
 }
 
@@ -542,6 +545,7 @@ static PyMethodDef mrscake_methods[] =
 {
     {"add_server", (PyCFunction)mrscake_add_server, M_FLAGS, mrscake_add_server_doc},
     {"set_parameter", (PyCFunction)mrscake_set_parameter, M_FLAGS, mrscake_set_parameter_doc},
+    {"set",           (PyCFunction)mrscake_set_parameter, M_FLAGS, mrscake_set_parameter_doc},
     {"model_names", (PyCFunction)mrscake_model_names, M_FLAGS, mrscake_model_names_doc},
 
     {"load_model", (PyCFunction)py_model_load, M_FLAGS, model_load_doc},

@@ -54,7 +54,7 @@ extern bool config_even_out_class_count;
 extern bool config_fork_for_training;
 extern bool config_limit_network_io;
 
-void config_setparameter(const char*key, const char*value);
+bool config_setparameter(const char*key, const char*value);
 
 void config_parse_remote_servers(const char*filename);
 void config_add_remote_server(const char*host, int port);

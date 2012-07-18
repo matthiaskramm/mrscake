@@ -129,6 +129,18 @@ void perceptron_train_halfsided(perceptron_t*p, dataset_t*d, int sign)
                 perceptron_update_weights(p, d, row);
             }
         }
+
+#define DEBUG
+#ifdef DEBUG
+        int right = 0;
+        for(i=0;i<d->num_rows;i++) {
+            if(perceptron_predict(p, d, i) == d->desired_response->entries[i].c) {
+                right++;
+            }
+        }
+        printf("%.1f\n", right * 100.0 / d->num_rows);
+#endif
+
         int x;
         drop = 0;
         int worst = -1;
@@ -220,6 +232,7 @@ static node_t*perceptron_train_model(perceptron_model_factory_t*factory, dataset
 {
     d = expand_text_columns(d);
     d = expand_categorical_columns(d);
+    d = find_clear_cut_columns(d);
 
     perceptron_t*p = perceptron_new(d);
     if(factory->halfside) {
@@ -230,6 +243,7 @@ static node_t*perceptron_train_model(perceptron_model_factory_t*factory, dataset
     node_t*program = perceptron_get_code(d, p);
     perceptron_destroy(p);
 
+    d = dataset_revert_one_transformation(d, &program);
     d = dataset_revert_one_transformation(d, &program);
     d = dataset_revert_one_transformation(d, &program);
     return program;
