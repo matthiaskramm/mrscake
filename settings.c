@@ -25,21 +25,21 @@
 #include "settings.h"
 #include "util.h"
 
-int config_num_remote_servers = 0;
-remote_server_t*config_remote_servers = 0;
+int config_verbosity = 1;
+bool config_subset_variables = false;
+bool config_even_out_class_count = true;
+bool config_fork_for_training = true;
 int config_job_wait_timeout = 300;
+int config_num_remote_servers = 0;
 int config_remote_read_timeout = 5;
 bool config_do_remote_processing = false;
 int config_number_of_remote_workers = 2;
-int config_verbosity = 1;
-char*config_dataset_cache_directory = "/tmp/mrscake";
 int config_num_seeded_hosts = 1;
-bool config_subset_variables = false;
 int config_remote_worker_timeout = 60;
-bool config_even_out_class_count = true;
-bool config_fork_for_training = true;
+char*config_dataset_cache_directory = "/tmp/mrscake";
 bool config_limit_network_io = true;
 
+remote_server_t*config_remote_servers = 0;
 static int remote_server_size = 0;
 
 void remote_server_is_broken(remote_server_t*server, const char*error)
@@ -146,6 +146,10 @@ bool config_setparameter(const char*key, const char*value)
         config_even_out_class_count = atoi(value);
     } else if(!strcmp(key, "fork_for_training")) {
         config_fork_for_training = atoi(value);
+    } else if(!strcmp(key, "job_wait_timeout")) {
+        config_job_wait_timeout = atoi(value);
+    } else if(!strcmp(key, "verbosity")) {
+        config_verbosity = atoi(value);
     } else {
         return false;
     }

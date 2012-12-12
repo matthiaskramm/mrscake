@@ -139,7 +139,7 @@ static int reader_fileread_with_timeout(reader_t*r, void* data, int len)
                 break;
         }
         if(!FD_ISSET(i->handle, &readfds)) {
-            fprintf(stderr, "timeout while trying to read %d bytes\n", len);
+            //fprintf(stderr, "timeout while trying to read %d bytes\n", len);
             r->error = "timeout";
             return -1;
         }
