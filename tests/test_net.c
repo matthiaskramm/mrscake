@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <netdb.h>
 
-#include "net.h"
+#include "../net/protocol.h"
 #include "io.h"
 #include "settings.h"
 #include "job.h"
