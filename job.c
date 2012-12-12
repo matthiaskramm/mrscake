@@ -71,6 +71,9 @@ void job_process(job_t*job)
             //child
             close(read_fd); // close read
 
+            close(1); // close stdout
+            close(2); // close stderr
+
             job_train_and_score(job);
 
             writer_t*w = filewriter_new(write_fd);
