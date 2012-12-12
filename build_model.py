@@ -62,13 +62,13 @@ with open(filename, "rb") as fi:
 
 file_type = max([(csv_score, "csv"), (tsv_score, "tsv"), (ssv_score, "ssv")])[1]
 
-seperator_char = ","
+separator_char = ","
 if file_type == "csv":
-    seperator_char = ","
+    separator_char = ","
 elif file_type == "ssv":
-    seperator_char = " "
+    separator_char = " "
 elif file_type == "tsv":
-    seperator_char = "\t"
+    separator_char = "\t"
 
 data = []
 with open(filename, "rb") as fi:
@@ -76,7 +76,7 @@ with open(filename, "rb") as fi:
         line = line.strip()
         items = []
         inside_quotes = 0
-        for item in line.split(seperator_char):
+        for item in line.split(separator_char):
             if not inside_quotes:
                 if item.startswith('"'):
                     item = item[1:]
@@ -86,7 +86,7 @@ with open(filename, "rb") as fi:
                 if item.endwith('"'):
                     item = item[:-1]
                     inside_quotes = 0
-                items[-1] += seperator_char + item
+                items[-1] += separator_char + item
         data.append(items)
 
 # header detection

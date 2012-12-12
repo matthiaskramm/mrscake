@@ -5,7 +5,7 @@
 #include "ast.h"
 
 /* The macros in this file allow you to write code
-   in the following matter:
+   in the following manner:
 
    START_CODE
     IF 
