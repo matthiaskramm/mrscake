@@ -93,6 +93,22 @@ static inline PyObject*pyint_fromlong(long l)
     return PyInt_FromLong(l);
 #endif
 }
+static inline int pyint_check(PyObject*o)
+{
+#ifdef PYTHON3
+    return PyLong_Check(o);
+#else
+    return PyInt_Check(o);
+#endif
+}
+static inline long pyint_as_long(PyObject*s)
+{
+#ifdef PYTHON3
+    return PyLong_AS_LONG(s);
+#else
+    return PyInt_AS_LONG(s);
+#endif
+}
 static inline const char*pystring_asstring(PyObject*s)
 {
 #ifdef PYTHON3
@@ -115,12 +131,12 @@ PyObject*forward_getattr(PyObject*self, char *a)
 //--------------------helper functions --------------------------------
 int add_item(example_t*e, int pos, PyObject*item)
 {
-    if(PyInt_Check(item)) {
-        e->inputs[pos] = variable_new_continuous(PyInt_AS_LONG(item));
+    if(pyint_check(item)) {
+        e->inputs[pos] = variable_new_continuous(pyint_as_long(item));
     } else if(PyFloat_Check(item)) {
         e->inputs[pos] = variable_new_continuous(PyFloat_AS_DOUBLE(item));
-    } else if(PyString_Check(item)) {
-        e->inputs[pos] = variable_new_text(PyString_AsString(item));
+    } else if(pystring_check(item)) {
+        e->inputs[pos] = variable_new_text(pystring_asstring(item));
     } else {
         PY_ERROR("bad object %s in list", item->ob_type->tp_name);
         return 0;
@@ -148,7 +164,7 @@ example_t* pylist_to_example(PyObject*input)
         e = example_new(size);
         e->input_names = (const char**)malloc(sizeof(e->input_names[0])*size);
         while(PyDict_Next(input, &pos, &pkey, &pvalue)) {
-            if(!PyString_Check(pkey))
+            if(!pystring_check(pkey))
                 return PY_ERROR("dict object must use strings as keys");
             const char*s = pystring_asstring(pkey);
             if(!add_item(e, t, pvalue))
@@ -223,7 +239,7 @@ static PyObject* py_model_predict(PyObject* _self, PyObject* args, PyObject* kwa
     example_destroy(e);
 
     if(i.type == TEXT)
-        return PyString_FromString(i.text);
+        return pystring_fromstring(i.text);
     else if(i.type == CATEGORICAL)
         return pyint_fromlong(i.category);
     else if(i.type == CONTINUOUS)
@@ -245,7 +261,7 @@ static PyObject* py_model_generate_code(PyObject* _self, PyObject* args, PyObjec
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwlist, &language))
         return NULL;
     char*code = model_generate_code(self->model, language);
-    return PyString_FromString(code);
+    return pystring_fromstring(code);
 }
 PyDoc_STRVAR(model_load_doc, \
 "load_model()\n\n"
@@ -318,10 +334,10 @@ static PyObject* py_dataset_add(PyObject * _self, PyObject* args, PyObject* kwar
     example_t*e = pylist_to_example(input);
     if(!e)
         return NULL;
-    if(PyInt_Check(output)) {
-        e->desired_response = variable_new_categorical(PyInt_AS_LONG(output));
-    } else if(PyString_Check(output)) {
-        e->desired_response = variable_new_text(PyString_AsString(output));
+    if(pyint_check(output)) {
+        e->desired_response = variable_new_categorical(pyint_as_long(output));
+    } else if(pystring_check(output)) {
+        e->desired_response = variable_new_text(pystring_asstring(output));
     } else {
         return PY_ERROR("output parameter must be an integer or a string");
     }
@@ -536,7 +552,7 @@ static PyObject* mrscake_model_names(PyObject* module, PyObject* args, PyObject*
     PyObject*list = PyList_New(count);
     int i;
     for(i=0;i<count;i++) {
-        PyList_SetItem(list, i, PyString_FromString(model_names[i]));
+        PyList_SetItem(list, i, pystring_fromstring(model_names[i]));
     }
     return list;
 }
