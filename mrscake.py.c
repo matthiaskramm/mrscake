@@ -185,6 +185,9 @@ static void model_dealloc(PyObject* _self) {
 static PyObject* model_getattr(PyObject * _self, char* a)
 {
     ModelObject*self = (ModelObject*)_self;
+    if(!strcmp(a, "name")) {
+        return pystring_fromstring(self->model->name);
+    }
     return forward_getattr(_self, a);
 }
 static int model_setattr(PyObject * self, char* a, PyObject * o) {
