@@ -1,16 +1,41 @@
-mrscake (read: "Mrs. Cake") is a model selection algorithm built 
-on top of machine learning algorithms from OpenCV.
+About:
+------
+
+mrscake (read: "Mrs. Cake") is a machine learning library that automatically picks the best model for you.
+It can also generate code. 
+Generated code might look like this:
+
+```python
+
+def predict(aquatic, domestic, eggs, backbone, feathers, 
+            predator, airborne, hair, toothed, tail, 
+            breathes, catsize, venomous, legs, fins, milk):
+    if eggs == "no":
+        return "mammal"
+    else:
+        if backbone == "yes":
+            return "bird"
+        else:
+            if aquatic == "no":
+                return "insect"
+            else:
+                return "crustacean"
+```
+
+
+Compiling:
+----------
 
 Compile it using
+    ./configure
     make
     make install
 .
-(Potentially tweak the Makefile first)
 
 It has a Ruby and a Python interface.
 
-Python:
--------
+Usage (Python):
+---------------
 
 import mrscake
 data = mrscake.DataSet()
@@ -28,8 +53,8 @@ code = model.generate_code("python") # or: ruby, javascript, c
 
 print code
 
-Ruby:
------
+Usage (Ruby):
+-------------
 
 require 'mrscake'
 data = MrsCake::DataSet.new
