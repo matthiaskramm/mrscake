@@ -1,7 +1,7 @@
 About:
 ------
 
-mrscake (read: "Mrs. Cake") is a machine learning library that automatically picks the best model for you.
+mrscake (read: "Mrs. Cake") is a machine learning library that automatically picks the best[1] model for you.
 It can also generate code. 
 Generated code might look like this:
 
@@ -37,6 +37,7 @@ It has a Ruby and a Python interface.
 Usage (Python):
 ---------------
 
+```python
 import mrscake
 data = mrscake.DataSet()
 data.add(["a", 1.0, "blue"], output="yes")
@@ -52,10 +53,12 @@ result = model.predict(["a", 2.0, "red"])
 code = model.generate_code("python") # or: ruby, javascript, c
 
 print code
+```
 
 Usage (Ruby):
 -------------
 
+```ruby
 require 'mrscake'
 data = MrsCake::DataSet.new
 data.add([:a, 1.0, :blue], :yes)
@@ -72,3 +75,15 @@ result = model.predict([:a, 2.0, :red])
 code = model.generate_code("ruby") # or: ruby, javascript, c
 
 puts code
+```
+
+<hr>
+
+  [1]: Mrscake picks a model by an information-theoretic approach called MDL: It picks the model with 
+       the shortest description length. I.e., from a code generation standpoint, it gives you the 
+       shortest piece of code that would recognize all[2] the examples in your
+       training set. (Also known of the Kolmogorov complexity of the labels, given the
+       feature data)
+  [2]: Yes, all. It internally builds a program consisting out of the classifier it returns as well 
+       as special cases for all the incorrectly labeled elements in the training set.
+
