@@ -6,7 +6,7 @@ It can also generate code.
 Generated code might look like this:
 
 ```python
-
+#### GENERATED CODE ####
 def predict(aquatic, domestic, eggs, backbone, feathers, 
             predator, airborne, hair, toothed, tail, 
             breathes, catsize, venomous, legs, fins, milk):
@@ -27,15 +27,20 @@ Compiling:
 ----------
 
 Compile it using
+
+```bash
     ./configure
     make
     make install
+```
 .
 
 It has a Ruby and a Python interface.
 
-Usage (Python):
----------------
+Usage:
+------
+
+### Python
 
 ```python
 import mrscake
@@ -55,8 +60,7 @@ code = model.generate_code("python") # or: ruby, javascript, c
 print code
 ```
 
-Usage (Ruby):
--------------
+### Ruby
 
 ```ruby
 require 'mrscake'
@@ -79,11 +83,6 @@ puts code
 
 <hr>
 
-  [1]: Mrscake picks a model by an information-theoretic approach called MDL: It picks the model with 
-       the shortest description length. I.e., from a code generation standpoint, it gives you the 
-       shortest piece of code that would recognize all[2] the examples in your
-       training set. (Also known of the Kolmogorov complexity of the labels, given the
-       feature data)
-  [2]: Yes, all. It internally builds a program consisting out of the classifier it returns as well 
-       as special cases for all the incorrectly labeled elements in the training set.
+[1] Mrscake picks a model by an information-theoretic approach called MDL: It picks the model with the shortest description length. I.e., from a code generation standpoint, it gives you the shortest piece of code that would recognize all[2] the examples in your training set. (Also known of the Kolmogorov complexity of the labels, given the feature data)
+[2] Yes, all. It internally builds a program consisting out of the classifier it returns as well as special cases for all the incorrectly labeled elements in the training set.
 
