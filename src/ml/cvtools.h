@@ -22,11 +22,11 @@
 #ifndef __CVTOOLS_H__
 #define __CVTOOLS_H__
 
-#include "lib/ml.hpp"
-#include "lib/core_c.h"
+#include "opencv/ml.hpp"
+#include "opencv/core_c.h"
 #include "mrscake.h"
 #include "dataset.h"
-#include "lib/internal.hpp"
+#include "opencv/internal.hpp"
 
 /* FIXME- these should come from opencv's include files */
 CVAPI(CvMat*) cvCreateMat( int rows, int cols, int type );

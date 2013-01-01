@@ -31,23 +31,61 @@ CXX=g++ $(CPPFLAGS) $(CXXFLAGS) -pg -g -fPIC -Wimplicit
 INSTALL=/usr/bin/install -c
 DEP=cpp -
 
-MODELS=model_cv_dtree.cpp model_cv_ann.cpp model_cv_svm.cpp model_cv_linear.cpp model_perceptron.c model_knearest.c
-VAR_SELECTORS=varselect_cv_dtree.cpp
-CODE_GENERATORS=codegen_python.c codegen_ruby.c codegen_js.c codegen_c.c
-MRSCAKE_SOURCES=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) cvtools.c constant.c ast.c \
-	model.c serialize.c io.c list.c model_select.c dict.c dataset.c \
-	datacache.c text.c environment.c codegen.c ast_transforms.c \
-	stringpool.c settings.c job.c var_selection.c \
-	transform.c mrscake.c util.c
+MODELS= src/ml/model_cv_dtree.cpp \
+        src/ml/model_cv_ann.cpp \
+        src/ml/model_cv_svm.cpp \
+        src/ml/model_cv_linear.cpp \
+        src/ml/model_perceptron.c \
+        src/ml/model_knearest.c
 
-NET_SOURCES=net/distribute.c net/protocol.c net/server.c 
+VAR_SELECTORS=\
+        src/ml/varselect_cv_dtree.cpp
 
-CV_SOURCES=lib/alloc.cpp lib/ann_mlp.cpp lib/arithm.cpp lib/array.cpp lib/boost.cpp lib/cnn.cpp lib/convert.cpp lib/copy.cpp lib/data.cpp \
-	lib/datastructs.cpp lib/ertrees.cpp lib/estimate.cpp lib/gbt.cpp lib/inner_functions.cpp lib/knearest.cpp lib/mathfuncs.cpp lib/matmul.cpp \
-	lib/matrix.cpp lib/missing.cpp lib/persistence.cpp lib/precomp.cpp lib/rand.cpp lib/rtrees.cpp lib/stat.cpp lib/svm.cpp lib/system.cpp lib/tables.cpp \
-	lib/testset.cpp lib/tree.cpp
+ML_SOURCES=src/ml/cvtools.cpp \
+	src/ml/dataset.c \
+	src/ml/model.c \
+	src/ml/model_select.c \
+	src/ml/text.c \
+	src/ml/transform.c \
+	src/ml/var_selection.c
 
-SOURCES=$(MRSCAKE_SOURCES) $(NET_SOURCES) $(CV_SOURCES) 
+CODE_GENERATORS=\
+	src/vm/codegen_python.c \
+        src/vm/codegen_ruby.c \
+	src/vm/codegen_js.c \
+	src/vm/codegen_c.c
+
+VM_SOURCES=\
+        src/vm/ast.c \
+	src/vm/ast_transforms.c \
+	src/vm/codegen.c \
+	src/vm/environment.c
+
+JOB_ENGINE=src/jobs/datacache.c \
+	src/jobs/job.c \
+	src/jobs/net/distribute.c \
+	src/jobs/net/protocol.c \
+	src/jobs/net/server.c
+	    
+MRSCAKE_SOURCES=$(MODELS) $(VAR_SELECTORS) $(CODE_GENERATORS) \
+	$(ML_SOURCES) $(VM_SOURCES) $(JOB_ENGINE) \
+	src/constant.c \
+	src/dict.c \
+	src/io.c \
+	src/list.c \
+	src/util.c \
+	src/serialize.c \
+	src/settings.c \
+	src/stringpool.c \
+	src/mrscake.c
+
+CV_SOURCES=\
+	src/ml/opencv/alloc.cpp src/ml/opencv/ann_mlp.cpp src/ml/opencv/arithm.cpp src/ml/opencv/array.cpp src/ml/opencv/boost.cpp src/ml/opencv/cnn.cpp src/ml/opencv/convert.cpp src/ml/opencv/copy.cpp src/ml/opencv/data.cpp \
+	src/ml/opencv/datastructs.cpp src/ml/opencv/ertrees.cpp src/ml/opencv/estimate.cpp src/ml/opencv/gbt.cpp src/ml/opencv/inner_functions.cpp src/ml/opencv/knearest.cpp src/ml/opencv/mathfuncs.cpp src/ml/opencv/matmul.cpp \
+	src/ml/opencv/matrix.cpp src/ml/opencv/missing.cpp src/ml/opencv/persistence.cpp src/ml/opencv/precomp.cpp src/ml/opencv/rand.cpp src/ml/opencv/rtrees.cpp src/ml/opencv/stat.cpp src/ml/opencv/svm.cpp src/ml/opencv/system.cpp src/ml/opencv/tables.cpp \
+	src/ml/opencv/testset.cpp src/ml/opencv/tree.cpp
+
+SOURCES=$(MRSCAKE_SOURCES) $(CV_SOURCES) 
 OBJECTS=$(addsuffix .o,$(basename $(SOURCES)))
 DEPS=$(addsuffix .dep,$(basename $(SOURCES)))
 
@@ -60,19 +98,20 @@ DEPS=$(addsuffix .dep,$(basename $(SOURCES)))
 	cat $(DEPS) > .deps
 	rm -f *.dep net/*.dep lib/*.dep
 
-all: mrscake-job-server mrscake.$(A) mrscake.$(SO_PYTHON) mrscake.$(SO_RUBY)
+all: bin/mrscake-job-server mrscake.$(A) python/mrscake.$(SO_PYTHON) ruby/mrscake.$(SO_RUBY)
 
-lib/libml.a: lib/*.cpp lib/*.hpp lib/*.h
-	cd lib;make libml.a
+OPENCV_LIB=src/ml/opencv/libml.a
+$(OPENCV_LIB): src/ml/opencv/*.cpp src/ml/opencv/*.hpp src/ml/opencv/*.h
+	cd src/ml/opencv/;make libml.a
 
-mrscake-job-server: server.$(O) $(OBJECTS) lib/libml.a
-	$(CXX) server.$(O) $(OBJECTS) lib/libml.a -o $@ $(LIBS)
+bin/mrscake-job-server: src/jobs/server.$(O) $(OBJECTS) $(OPENCV_LIB)
+	$(CXX) src/jobs/server.$(O) $(OBJECTS) $(OPENCV_LIB) -o $@ $(LIBS)
 
 %.$(O): %.c
-	$(CC) -c -I. -Ilib $< -o $@
+	$(CC)  -c -I. -Isrc -Isrc/ml -Isrc/vm -Isrc/jobs -Isrc/jobs/net $< -o $@
 
 %.$(O): %.cpp
-	$(CXX) -c -I. -Ilib $< -o $@
+	$(CXX) -c -I. -Isrc -Isrc/ml -Isrc/vm -Isrc/jobs -Isrc/jobs/net -Isrc/vm/opencv  $< -o $@
 
 # ------------ static library ----------------
 
@@ -81,27 +120,27 @@ mrscake.$(A): $(OBJECTS)
 
 # ------------ python interface --------------
 
-mrscake.$(SO_PYTHON): mrscake.py.c mrscake.h list.h $(OBJECTS) lib/libml.a
-	$(CC) $(PYTHON_INCLUDE) -shared mrscake.py.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
+python/mrscake.$(SO_PYTHON): python/mrscake.py.c src/mrscake.h src/list.h $(OBJECTS) $(OPENCV_LIB)
+	$(CC) $(PYTHON_INCLUDE) -shared -Isrc python/mrscake.py.c $(OBJECTS) $(OPENCV_LIB) -o $@ $(LIBS) $(PYTHON_LIB) -lstdc++
 
-python_interpreter: python_interpreter.c
-	$(CC) $(PYTHON_INCLUDE) python_interpreter.c -o python_interpreter $(PYTHON_LIB)
+python/python_interpreter: python/python_interpreter.c
+	$(CC) $(PYTHON_INCLUDE) python/python_interpreter.c -o $@ $(PYTHON_LIB)
 
 # ------------ ruby interface ----------------
 
-mrscake.$(SO_RUBY): mrscake.rb.c mrscake.h $(OBJECTS)
-	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) mrscake.rb.c $(OBJECTS) lib/libml.a -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
+ruby/mrscake.$(SO_RUBY): ruby/mrscake.rb.c src/mrscake.h $(OBJECTS) $(OPENCV_LIB)
+	$(CC) $(RUBY_LDFLAGS) $(RUBY_CPPFLAGS) $(RUBY_INCLUDE) -Isrc ruby/mrscake.rb.c $(OBJECTS) $(OPENCV_LIB) -o $@ $(LIBS) $(RUBY_LIB) -lstdc++
 
 # ------------ installation ------------------
 
 install:
-	$(INSTALL) mrscake.$(SO_RUBY) $(RUBY_INSTALLDIR)/mrscake.$(SO_RUBY)
-	$(INSTALL) mrscake.$(SO_PYTHON) $(PYTHON_INSTALLDIR)/mrscake.$(SO_PYTHON)
+	$(INSTALL) ruby/mrscake.$(SO_RUBY) $(RUBY_INSTALLDIR)/mrscake.$(SO_RUBY)
+	$(INSTALL) python/mrscake.$(SO_PYTHON) $(PYTHON_INSTALLDIR)/mrscake.$(SO_PYTHON)
 
 # ------------ old test code -----------------
 
 test: mrscake.so
-	python test_python_module.py
+	python python/test_python_module.py
 
 local-clean:
 	rm -f *.dep net/*.dep net/*.o lib/*.dep *.o *.obj *.$(O) mrscake.$(SO) predict.$(SO) prediction.$(SO)
