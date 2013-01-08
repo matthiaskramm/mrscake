@@ -248,6 +248,7 @@ max_args:1,
 
 constant_t node_return_eval(node_t*n, environment_t* env)
 {
+    /* FIXME: this should abort evaluation */
     return EVAL_CHILD(0);
 }
 nodetype_t node_return =
