@@ -1,56 +1,56 @@
+<!DOCTYPE html>
 <html>
-<head>
-<style type="text/css">
-* {
-    font-family: Lucida Sans Unicode, Lucida Grande, sans-serif;
-    font-size: 16pt;
-    background-color: #202040; 
-    color: #ffffff;
-}
-pre.code, pre.commit, pre.ruby, pre.shell, pre.python, pre.c {
-    border: 1px solid #a0b090;
-    font-family: Lucida Console, Monaco, monospace;
-    font-size: 16pt;
-    background-color: #204040; 
-    color: #ffffff;
-    width: 100%;
-}
-pre.commit, pre.generated {
-    border: 1px solid #ffffff;
-    background-color: #000000; 
-    color: #ffffff;
-    font-size: 14pt;
-}
-h1 {
-    color: #ffffff;
-    font-size: 20pt;
-    text-decoration: underline;
-    text-align:center;
-}
-h2 {
-    color: #4080f0;
-    font-size: 19pt;
-    text-decoration: underline;
-}
-</style>
-</head>
 
-<body>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="slate.css">
 
-<h1>MrsCake Tutorial</h1>
+    <title>mrscake tutorial</title>
+  </head>
 
-<h2>Installing</h2>
+  <body>
 
-To install mrscake, clone the github archive and then do the usual
-configure / make / make install incantation:
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+        <!--
+          <a id="forkme_banner" href="repository_url}}">View on GitHub</a>
+        -->
 
-<pre class="code">
-git clone git://github.com/matthiaskramm/mrscake.git
-cd mrscake
-./configure
-make 
-make install
-</pre>
+<!--
+<h1 id="project_title">mrscake</h1>
+-->
+
+<h2 id="project_tagline">
+MrsCake Tutorial
+</h2>
+          <!--
+          <section id="downloads">
+            <a class="zip_download_link" href="#">Download this project as a .zip file</a>
+            <a class="tar_download_link" href="#">Download this project as a tar.gz file</a>
+          </section>
+          -->
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+
+    <div id="main_content_wrap" class="outer">
+
+<section id="main_content" class="inner">
+
+    <h2>Installing</h2>
+
+    To install mrscake, clone the github archive and then do the usual
+    configure / make / make install incantation:
+
+    <pre class="code">
+    git clone git://github.com/matthiaskramm/mrscake.git
+    cd mrscake
+    ./configure
+    make 
+    make install</pre>
 
 <h2>Creating Datasets</h2>
 
@@ -115,7 +115,7 @@ d.add({:author=&gt;:peter, :added_lines=&gt;3, :removed_lines=&gt;7,
 </pre>
 
 <p>
-As you can see, <tt>DataSet::add</tt> takes two parameters: A hash (or array) or features, and the
+As you can see, <code>DataSet::add</code> takes two parameters: A hash (or array) or features, and the
 training label (i.e., the desired output for these features.)
 </p>
 
@@ -127,14 +127,14 @@ not make numerical prediction (it's a classification engine, not a regression su
 
 <p>
 Once you've fed your data into mrscake in this way, you can train a prediction model. The easiest way to
-do this is by just using <tt>DataSet::train</tt> and have mrscake pick the right model for you:
+do this is by just using <code>DataSet::train</code> and have mrscake pick the right model for you:
 </p>
 
 <pre class="code">
 model = d.train()
 </pre>
 
-<p><tt>train</tt> will run a model selection over a large number of models, including neuronal networks,
+<p><code>train</code> will run a model selection over a large number of models, including neuronal networks,
 decision trees, random forests, support vector machines and many others. It will then pick the model
 that explains your data best (and in the most condensed way.)
 </p>
@@ -207,7 +207,7 @@ p MrsCake::model_names
 mrscake-job-server
 </pre>
 
-<p>on a couple of machines and then add them to mrscake before you run <tt>train()</tt>:</p>
+<p>on a couple of machines and then add them to mrscake before you run <code>train()</code>:</p>
 
 <pre class="code">
 MrsCake::add_server("129.187.2.1")
@@ -216,6 +216,16 @@ MrsCake::add_server("129.187.2.3")
 MrsCake::add_server("129.187.2.4")
 </pre>
 
+</section>
 
-</body>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">mrscake &copy; <a href="http://www.quiss.org">Matthias Kramm</a>, 2010-2013</p>
+      </footer>
+    </div>
+
+  </body>
 </html>
