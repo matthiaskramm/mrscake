@@ -4,7 +4,7 @@ CC=gcc -g -DHAVE_SHA1 -I..
 CXX=g++ -g -DHAVE_SHA1
 
 RUBY_LIBS=-lruby18
-PYTHON_LIBS=-lpthread -lrt -lpython2.6
+PYTHON_LIBS=-lpthread -lrt -lpython2.7
 JS_LIBS=-lmozjs185
 LUA_LIBS=-llua
 LIBS=$(JS_LIBS) $(PYTHON_LIBS) $(RUBY_LIBS) $(LUA_LIBS) -lz -lcrypto
@@ -35,7 +35,7 @@ language_js.o: language_js.c language_interpreter.h
 	$(CC) -c -I/usr/include/js/ language_js.c
 
 language_py.o: language_py.c language_interpreter.h
-	$(CC) -c -I/usr/include/python2.6/ language_py.c
+	$(CC) -c -I/usr/include/python2.7/ language_py.c
 
 language_rb.o: language_rb.c language_interpreter.h
 	$(CC) -c -I /usr/lib/ruby/1.8/i686-linux language_rb.c
