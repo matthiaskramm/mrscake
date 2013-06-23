@@ -83,6 +83,5 @@ puts code
 
 <hr>
 
-[1] Mrscake picks a model by an information-theoretic approach called MDL: It picks the model with the shortest description length. I.e., from a code generation standpoint, it gives you the shortest piece of code that would recognize all[2] the examples in your training set. (Also known of the Kolmogorov complexity of the labels, given the feature data)
-[2] Yes, all. It internally builds a program consisting out of the classifier it returns as well as special cases for all the incorrectly labeled elements in the training set.
+[1] Mrscake picks a model by an information-theoretic approach called MDL: It selects the model with the shortest description length. I.e., from a code generation standpoint, it gives you the shortest piece of code that would recognize all the examples in your training set. (Also known of the Kolmogorov complexity of the labels, given the feature data)
 
