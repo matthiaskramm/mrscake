@@ -399,8 +399,22 @@ void python_write_node_brackets(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ")");
 }
+static void python_write_function_term_frequency(state_t*s)
+{
+    strf(s,
+"import re\n"
+"def term_frequency(str, term):\n"
+"    words = re.split(\"\\s*\", str)\n"
+"    return float(len([t for t in words if t == term])) / len(words)\n");
+}
 void python_write_header(model_t*model, state_t*s)
 {
+    node_t*root = (node_t*)model->code;
+
+    if(node_has_child(root, &node_term_frequency)) {
+        python_write_function_term_frequency(s);
+    }
+
     strf(s, "def predict(");
     if(s->model->sig->has_column_names) {
         int t;
