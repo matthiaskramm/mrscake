@@ -394,8 +394,22 @@ void ruby_write_node_brackets(node_t*n, state_t*s)
     write_node(s, n->child[0]);
     strf(s, ")");
 }
+static void ruby_write_function_term_frequency(state_t*s)
+{
+    strf(s,
+"def term_frequency(str, term)\n"
+"    words = str.split(/\\s+/)\n"
+"    words.select {|word| word == term}.length.to_f / words.length\n"
+"end\n");
+}
 void ruby_write_header(model_t*model, state_t*s)
 {
+    node_t*root = (node_t*)model->code;
+
+    if(node_has_child(root, &node_term_frequency)) {
+        ruby_write_function_term_frequency(s);
+    }
+
     strf(s, "def predict(");
     if(s->model->sig->has_column_names) {
         int t;
