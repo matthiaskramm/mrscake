@@ -439,6 +439,15 @@ static void js_write_function_arg_min(state_t*s, char*suffix, char*type)
 "    return min;\n"
 "}\n");
 }
+static void js_write_function_term_frequency(state_t*s)
+{
+    strf(s,
+"function term_frequency(str, term)\n"
+"{\n"
+"    var words = str.split(/\\s+/);\n"
+"    return words.filter(function(t) { return t == term; }).length / words.length;\n"
+"}\n");
+}
 void js_write_header(model_t*model, state_t*s)
 {
     node_t*root = (node_t*)model->code;
@@ -452,6 +461,9 @@ void js_write_header(model_t*model, state_t*s)
     if(node_has_child(root, &node_arg_min) ||
        node_has_child(root, &node_arg_min_i)) {
         js_write_function_arg_min(s, "", "double");
+    }
+    if(node_has_child(root, &node_term_frequency)) {
+        js_write_function_term_frequency(s);
     }
 
     strf(s, "function predict(");
