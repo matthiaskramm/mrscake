@@ -146,9 +146,9 @@ void js_write_node_gte_i(node_t*n, state_t*s)
 }
 void js_write_node_in(node_t*n, state_t*s)
 {
-    write_node(s, n->child[0]);
-    strf(s, ".index(");
     write_node(s, n->child[1]);
+    strf(s, ".indexOf(");
+    write_node(s, n->child[0]);
     strf(s, ")>=0");
 }
 void js_write_node_not(node_t*n, state_t*s)
