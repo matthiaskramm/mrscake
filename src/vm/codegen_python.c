@@ -405,7 +405,7 @@ static void python_write_function_term_frequency(state_t*s)
 "import re\n"
 "def term_frequency(str, term):\n"
 "    words = re.split(\"\\s*\", str)\n"
-"    return float(len([t for t in words if t == term])) / len(words)\n");
+"    return float(words.count(term)) / len(words)\n");
 }
 void python_write_header(model_t*model, state_t*s)
 {
