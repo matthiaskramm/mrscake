@@ -445,6 +445,7 @@ static void js_write_function_term_frequency(state_t*s)
 "function term_frequency(str, term)\n"
 "{\n"
 "    var words = str.split(/\\s+/);\n"
+"    if (words.length == 0) return 0;\n"
 "    return words.filter(function(t) { return t == term; }).length / words.length;\n"
 "}\n");
 }

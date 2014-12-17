@@ -400,6 +400,7 @@ static void ruby_write_function_term_frequency(state_t*s)
     strf(s,
 "def term_frequency(str, term)\n"
 "    words = str.split(/\\s+/)\n"
+"    return 0.0 if words.empty?\n"
 "    words.select {|word| word == term}.length.to_f / words.length\n"
 "end\n");
 }
